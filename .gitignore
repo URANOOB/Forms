@@ -1,0 +1,16 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+*.sqlite3
+.ruff_cache/
+staticfiles/
+media/
+.coverage
+htmlcov/
+.idea/
+.vscode/
+
+/private_uploads/

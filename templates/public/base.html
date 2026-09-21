@@ -1,0 +1,20 @@
+{% load static form_appearance %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="same-origin">
+    <title>{% block title %}Formulario{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'forms/public.css' %}?v=black-text-1">
+    <link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7">
+    <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=theme-presets-1">
+</head>
+<body class="public-form-page" data-form-background="{{ appearance.background|default:'plain' }}" style="{{ appearance|theme_style }}">
+    <main class="page {% block page_class %}{% endblock %}">{% block content %}{% endblock %}</main>
+    <footer>Formularios institucionales</footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

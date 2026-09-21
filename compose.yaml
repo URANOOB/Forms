@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: forms
+      POSTGRES_USER: forms
+      POSTGRES_PASSWORD: forms_local_only
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - forms_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forms -d forms"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  forms_postgres:

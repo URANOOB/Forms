@@ -1,0 +1,10 @@
+<div class="scale-options {% if widget.scale.rating %}rating-options{% endif %}" id="{{ widget.attrs.id }}" tabindex="-1">
+{% for group_name, options, index in widget.optgroups %}{% for option in options %}
+    <label class="scale-option">
+        <input type="radio" name="{{ widget.name }}" value="{{ option.value }}" id="{{ option.attrs.id }}" {% if option.selected %}checked{% endif %} aria-label="{{ option.label }} de {{ widget.scale.max }}">
+        {% if widget.scale.rating %}<span class="rating-symbol" aria-hidden="true">{{ widget.scale.symbol }}</span>{% endif %}
+        <span>{{ option.label }}</span>
+    </label>
+{% endfor %}{% endfor %}
+</div>
+{% if widget.scale.min_label or widget.scale.max_label %}<div class="scale-labels"><span>{{ widget.scale.min_label }}</span><span>{{ widget.scale.max_label }}</span></div>{% endif %}

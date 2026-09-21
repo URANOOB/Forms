@@ -1,0 +1,97 @@
+{% extends "public/base.html" %}
+{% load static form_appearance %}
+{% block title %}{{ form_title }}{% endblock %}
+{% block page_class %}{% if welcome and not response_form.is_bound %}showing-welcome{% endif %}{% endblock %}
+{% block content %}
+{% if welcome %}
+<section class="welcome-screen" id="welcome-screen" data-horizontal="{{ welcome.horizontal }}" data-vertical="{{ welcome.vertical }}" aria-labelledby="welcome-title" {% if response_form.is_bound %}hidden{% endif %}>
+    {% if welcome.image_url %}<img class="welcome-background" src="{{ welcome.image_url }}" alt="">{% endif %}
+    <div class="welcome-card">
+        {% if preview %}<p class="welcome-preview-note">Vista previa</p>{% endif %}
+        <h1 id="welcome-title">{{ welcome.title }}</h1>
+        {% if welcome.text %}<div class="welcome-text">{{ welcome.text|linebreaksbr }}</div>{% endif %}
+        <button type="button" id="welcome-start">{{ welcome.button_label }} <span aria-hidden="true">→</span></button>
+        <noscript><a href="#form-content">Continuar a las preguntas →</a></noscript>
+    </div>
+</section>
+<noscript><style>#form-content[hidden]{display:block!important}#welcome-start{display:none}.page.showing-welcome{max-width:780px}</style></noscript>
+{% endif %}
+<div id="form-content" {% if welcome and not response_form.is_bound %}hidden{% endif %}>
+{% with header_url=appearance|header_image_url %}{% if header_url %}<img class="form-header-image" src="{{ header_url }}" alt="Encabezado del formulario">{% endif %}{% endwith %}
+<header class="intro">
+    {% if welcome %}<button type="button" id="welcome-back" class="welcome-back">← Volver a la bienvenida</button>{% endif %}
+    {% if staff_edit %}<p><a href="{{ back_url }}">← Volver a la respuesta</a></p>{% endif %}
+    {% if preview %}<p class="hint"><strong>Vista previa · Las respuestas no se guardarán.</strong></p>{% endif %}
+    <h1>{{ form_title }}</h1>
+    {% if form_description %}<p class="description">{{ form_description|linebreaksbr }}</p>{% endif %}
+    <p class="hint">{% if staff_edit %}Edita los datos recibidos y guarda los cambios.{% else %}Completa la información y envía tu respuesta.{% endif %} Los campos con <span aria-label="asterisco">*</span> son obligatorios.</p>
+</header>
+<form method="post" enctype="multipart/form-data" id="public-form" {% if preview %}data-preview="true"{% endif %} {% if staff_edit %}data-edit="true"{% endif %} novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="submission_token" value="{{ token }}">
+    {% if staff_edit %}
+        <input type="hidden" name="revision" value="{{ revision }}">
+        <div class="section-intro"><label for="{{ response_form.response_status.id_for_label }}">Estado</label>{{ response_form.response_status }}{{ response_form.response_status.errors }}</div>
+    {% endif %}
+    {% if response_form.errors %}
+    <div class="error-summary" role="alert" tabindex="-1" id="error-summary">
+        <strong>Revisa la información antes de enviar.</strong>
+        {{ response_form.non_field_errors }}
+        <ul>{% for input in response_form %}{% for error in input.errors %}
+            <li><a href="#{{ input.id_for_label }}">{{ input.label }}: {{ error }}</a></li>
+        {% endfor %}{% endfor %}</ul>
+    </div>
+    {% endif %}
+    <noscript><p class="hint">Activa JavaScript para recorrer el formulario por secciones. Sin JavaScript se muestran todas las preguntas; las condiciones y los saltos se revisarán al enviar.</p></noscript>
+    <p class="section-progress" id="section-progress" aria-live="polite" hidden></p>
+    {% for item in sections %}
+    <section class="form-section" data-section="{{ item.section.pk }}" tabindex="-1" {% if item.section.configuration.hide_header %}aria-label="Sección {{ forloop.counter }}"{% else %}aria-labelledby="section-{{ item.section.pk }}"{% endif %}>
+        {% if not item.section.configuration.hide_header %}
+        <div class="section-intro"><div class="section-heading"><span class="section-number" aria-hidden="true">{{ forloop.counter|stringformat:'02d' }}</span>
+            <h2 id="section-{{ item.section.pk }}" tabindex="-1">{{ item.section.title }}</h2></div>
+        {% if item.section.description %}<p class="hint">{{ item.section.description|linebreaksbr }}</p>{% endif %}
+        </div>
+        {% endif %}
+        {% for row in item.rows %}
+        <div class="field" data-field="{{ row.field.pk }}">
+            {% if row.field.image_id %}<img class="form-image" src="{{ row.field.image.get_absolute_url }}" alt="{{ row.field.label }}" loading="lazy">{% endif %}
+            {% if row.input %}
+                {% if row.field.field_type == 'MULTIPLE_CHOICE' or row.field.configuration.widget == 'radio' or row.field.field_type == 'LINEAR_SCALE' or row.field.field_type == 'RATING' or row.field.field_type == 'GRID_SINGLE' or row.field.field_type == 'GRID_MULTIPLE' %}<fieldset><legend>{{ row.field.label }} <span data-required {% if not row.field.required %}hidden{% endif %}>*</span></legend>
+                {% else %}<label for="{{ row.input.id_for_label }}">{{ row.field.label }} <span data-required {% if not row.field.required %}hidden{% endif %}>*</span></label>{% endif %}
+                {% if row.field.help_text %}<p class="help" id="{{ row.input.auto_id }}_helptext">{{ row.field.help_text }}</p>{% endif %}
+                {{ row.input }}
+                {% if row.attachments %}
+                <div class="stored-files"><p class="help">Archivos actuales. Marca únicamente los que quieras quitar.</p>
+                    {% for file in row.attachments %}<div class="stored-file">
+                        <a href="{{ file.url }}">{{ file.name }}</a>
+                        <label><input type="checkbox" name="remove_files" value="{{ file.id }}" data-stored-file {% if file.remove %}checked{% endif %}> Quitar</label>
+                    </div>{% endfor %}
+                </div>
+                {% endif %}
+                {% if row.upload_hint %}<p class="help upload-hint">{{ row.upload_hint }}</p>{% endif %}
+                {{ row.input.errors }}
+                {% if row.field.field_type == 'MULTIPLE_CHOICE' or row.field.configuration.widget == 'radio' or row.field.field_type == 'LINEAR_SCALE' or row.field.field_type == 'RATING' or row.field.field_type == 'GRID_SINGLE' or row.field.field_type == 'GRID_MULTIPLE' %}</fieldset>{% endif %}
+            {% else %}
+                {% if row.field.field_type == 'HEADING' %}<h3>{{ row.field.label }}</h3>{% else %}<p class="information">{{ row.field.label }}</p>{% endif %}
+                {% if row.field.help_text %}<p class="hint">{{ row.field.help_text|linebreaksbr }}</p>{% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endfor %}
+    <div class="submit-panel">
+        <p class="hint">Sólo el personal autorizado podrá consultar tu respuesta.</p>
+        <div class="section-navigation">
+            <button type="button" id="back-button" class="secondary" hidden>← Atrás</button>
+            <button type="button" id="next-button" hidden>Siguiente →</button>
+            <button type="submit" id="submit-button">{% if staff_edit %}Guardar cambios{% elif preview %}Finalizar vista previa{% else %}Enviar respuesta <span aria-hidden="true">→</span>{% endif %}</button>
+        </div>
+        <p class="hint" id="submit-status" aria-live="polite"></p>
+    </div>
+</form>
+</div>
+{% endblock %}
+{% block scripts %}
+{{ schema|json_script:"form-schema" }}
+<script src="{% static 'forms/public.js' %}?v=welcome-screen-1" defer></script>
+{% endblock %}

@@ -1,0 +1,14 @@
+<div class="flex flex-col gap-6">
+{% for section in sections %}
+    <section class="border border-base-200 rounded-default p-4 dark:border-base-800">
+        <h3 class="font-semibold mb-4">{{ section.title }}</h3>
+        <dl class="flex flex-col gap-4">
+        {% for answer in section.answers %}
+            <div><dt class="font-medium">{{ answer.label }}</dt>
+                <dd class="mt-1 whitespace-pre-wrap">{{ answer.value }}</dd>
+                {% for file in answer.files %}<dd class="mt-2"><a class="text-primary-600 underline" href="{{ file.url }}">Descargar {{ file.name }}</a></dd>{% endfor %}</div>
+        {% endfor %}
+        </dl>
+    </section>
+{% empty %}<p>No hay datos registrados.</p>{% endfor %}
+</div>

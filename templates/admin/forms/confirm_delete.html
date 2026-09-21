@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<section class="border border-base-200 rounded-default p-6 dark:border-base-800">
+    <h1 class="text-xl font-semibold mb-4">¿Eliminar el formulario?</h1>
+    <ul class="mb-4">{% for form in forms_to_delete %}<li><strong>{{ form.name }}</strong></li>{% endfor %}</ul>
+    <p class="mb-2">Dejará de aparecer en Formularios y su enlace público dejará de recibir respuestas.</p>
+    <p class="mb-6">Las respuestas existentes se conservarán y podrás consultarlas en Respuestas. Esta acción no libera el almacenamiento de sus imágenes.</p>
+    <form method="post">{% csrf_token %}
+        <input type="hidden" name="action" value="delete_forms">
+        {% for form in forms_to_delete %}<input type="hidden" name="_selected_action" value="{{ form.pk }}">{% endfor %}
+        <div class="flex flex-wrap gap-4 items-center">
+            <button type="submit" name="confirm_form_delete" value="yes" class="rounded-default px-4 py-2" style="background:#b42318;color:white">Eliminar formulario</button>
+            <a href="{% url 'admin:forms_form_changelist' %}">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

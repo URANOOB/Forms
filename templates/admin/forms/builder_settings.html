@@ -1,0 +1,33 @@
+<section id="builder-settings-panel" class="builder-settings-panel" aria-label="Configuración del formulario" hidden>
+    <div class="builder-settings-heading"><h2>Configuración</h2><button type="button" data-action="save">Guardar cambios</button></div>
+    <section class="builder-settings-card">
+        <h3>Información del formulario</h3>
+        <label for="settings-title">Nombre del formulario</label><input id="settings-title" data-form-setting="title" maxlength="200" placeholder="Formulario sin título">
+        <label for="settings-description">Descripción</label><textarea id="settings-description" data-form-setting="description" rows="4" maxlength="10000" placeholder="Descripción del formulario"></textarea>
+        <p class="settings-hint">Guardar actualiza el formulario. Si está publicado, los cambios se muestran en su enlace público.</p>
+    </section>
+    <section class="builder-settings-card">
+        <h3>Publicación y acceso</h3>
+        <dl class="settings-metadata"><div><dt>Estado</dt><dd id="settings-status">No publicado</dd></div><div><dt>Versión activa</dt><dd id="settings-active-version">Sin publicar</dd></div></dl>
+        <p class="settings-hint" id="settings-access-hint">Publica el formulario para recibir respuestas.</p>
+        <div id="settings-sharing" hidden>
+            <label for="settings-share-url">Enlace público</label>
+            <div class="settings-link-row">
+                <div class="settings-link-bar"><input id="settings-share-url" readonly aria-label="Enlace público"><button type="button" class="settings-copy" data-action="copy-link" aria-label="Copiar enlace" title="Copiar enlace"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button></div>
+                <a id="settings-public-link" target="_blank" rel="noopener">Abrir formulario <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span></a>
+            </div>
+        </div>
+        <div class="settings-switches">
+            <div class="settings-switch-row"><div><span id="settings-public-label">Formulario público</span><p id="settings-public-state" class="settings-hint">No público</p></div><button type="button" class="settings-switch" id="settings-public-switch" data-action="toggle-public" role="switch" aria-checked="false" aria-labelledby="settings-public-label" aria-describedby="settings-public-state"><span aria-hidden="true"></span></button></div>
+            <div class="settings-switch-row"><div><span id="settings-reception-label">Recepción de respuestas</span><p id="settings-reception-state" class="settings-hint">Desactivada</p></div><button type="button" class="settings-switch" id="settings-reception-switch" data-action="toggle-reception" role="switch" aria-checked="false" aria-labelledby="settings-reception-label" aria-describedby="settings-reception-state" disabled><span aria-hidden="true"></span></button></div>
+        </div>
+    </section>
+    <section class="builder-settings-card">
+        <h3>Información de creación</h3>
+        <dl class="settings-metadata"><div><dt>Creado por</dt><dd id="settings-created-by">—</dd></div><div><dt>Creado el</dt><dd id="settings-created-at">—</dd></div><div><dt>Actualizado el</dt><dd id="settings-updated-at">—</dd></div></dl>
+    </section>
+    <section class="builder-settings-card">
+        <h3>Versiones</h3>
+        <div class="builder-response-table-scroll"><table class="builder-response-table"><thead><tr><th>Versión</th><th>Estado</th><th>Versión del esquema</th><th>Creada el</th><th>Publicada el</th></tr></thead><tbody id="settings-versions"></tbody></table></div>
+    </section>
+</section>

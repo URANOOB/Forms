@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div class="flex flex-wrap gap-4 items-center mb-6">
+    <a href="{% url 'admin:submissions_submission_changelist' %}" class="inline-flex items-center gap-2"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>Respuestas</a>
+    {% if can_edit %}<a href="{% url 'admin:submissions_submission_edit' original.pk %}" class="inline-flex items-center gap-2 rounded-default px-4 py-2" style="background:#6941c6;color:white"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar respuesta</a>{% endif %}
+    {% if can_delete %}<a href="{% url 'admin:submissions_submission_remove' original.pk %}" class="inline-flex items-center gap-2" style="color:#b42318"><span class="material-symbols-outlined" aria-hidden="true">delete</span>Eliminar</a>{% endif %}
+</div>
+<section class="border border-base-200 rounded-default p-6 mb-6 dark:border-base-800">
+    <h1 class="text-xl font-semibold mb-4">{{ original.form.name }}</h1>
+    <dl class="flex flex-wrap gap-6">
+        <div><dt class="text-sm">Respuesta</dt><dd>{{ original }}</dd></div>
+        <div><dt class="text-sm">Versión</dt><dd>{{ original.form_version.version_number }}</dd></div>
+        <div><dt class="text-sm">Fecha de envío</dt><dd>{{ original.submitted_at }}</dd></div>
+        <div><dt class="text-sm">Estado</dt><dd>{{ original.get_status_display }}</dd></div>
+    </dl>
+</section>
+{{ details }}
+{% endblock %}

@@ -1,0 +1,41 @@
+.metrics-dashboard { --metric-ink:#172033; --metric-muted:#7b8393; --metric-line:#e8ebf1; --metric-surface:#fff; padding:24px 8px 40px; color:var(--metric-ink); }
+.metrics-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:26px; }
+.metrics-eyebrow { font-size:11px; letter-spacing:1.7px; font-weight:600; color:#8b7ec8; margin-bottom:6px; }
+.metrics-heading h1 { font-size:25px; font-weight:650; letter-spacing:-.5px; }
+.metrics-updated { font-size:12px; color:var(--metric-muted); }
+.metrics-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
+.metric-card,.workspace-metric-card { background:var(--metric-surface); border:1px solid var(--metric-line); border-radius:14px; padding:24px; box-shadow:0 3px 14px #17203303; }
+.metric-top { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size:13px; font-weight:500; }
+.metric-icon { display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; flex-shrink:0; font-size:22px; }
+.metric-icon.purple { background:#f1eafe; color:#8b51df; }
+.metric-icon.blue { background:#eaf1fe; color:#4989df; }
+.metric-icon.green { background:#e7f6ef; color:#30a77c; }
+.metric-icon.orange { background:#fff2e6; color:#e79b46; }
+.metric-value { display:block; font-size:36px; font-weight:650; letter-spacing:-1px; line-height:1.4; margin:17px 0 7px; overflow-wrap:anywhere; }
+.metric-caption { color:var(--metric-muted); font-size:12px; line-height:1.6; }
+.storage-meter { height:5px; border-radius:9px; background:var(--metric-line); overflow:hidden; margin:13px 0 5px; }
+.storage-meter span { display:block; height:100%; border-radius:9px; background:#eab173; }
+.metrics-section-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; margin:36px 0 18px; }
+.metrics-section-heading h2 { font-size:17px; font-weight:600; }
+.pending-badge { color:var(--metric-muted); font-size:12px; }
+.workspace-metrics-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.workspace-metric-heading { display:flex; align-items:center; gap:12px; }
+.workspace-symbol { display:flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:#f6f4fc; color:#8874b2; flex-shrink:0; }
+.workspace-metric-heading h3 { font-size:15px; font-weight:600; flex:1; overflow-wrap:anywhere; }
+.workspace-status { font-size:10px; font-weight:600; background:#eaf7ef; color:#3c9868; padding:4px 9px; border-radius:20px; }
+.workspace-status.inactive { background:#f2f2f4; color:#8c8995; }
+.workspace-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:27px 0; }
+.workspace-stats>div { border-right:1px solid var(--metric-line); }
+.workspace-stats>div:last-child { border-right:0; }
+.workspace-stats strong { display:block; font-size:28px; font-weight:600; margin-bottom:4px; }
+.workspace-stats span { font-size:12px; color:var(--metric-muted); }
+.workspace-metric-card footer { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding-top:16px; border-top:1px solid var(--metric-line); font-size:11px; color:var(--metric-muted); }
+.workspace-metric-card footer>span { display:flex; gap:6px; align-items:center; }
+.workspace-metric-card footer .material-symbols-outlined { font-size:17px; }
+.metrics-footnote { color:var(--metric-muted); font-size:11px; line-height:1.6; margin-top:22px; }
+.dark .metrics-dashboard { --metric-ink:#e8eaf0; --metric-muted:#9da4b5; --metric-line:#303746; --metric-surface:#181e2a; }
+.dark .metric-icon,.dark .workspace-symbol { background:#2c2940; }
+.dark .workspace-status { background:#203b31; color:#7ccaa4; }
+.dark .workspace-status.inactive { background:#303440; color:#a6aab6; }
+@media(max-width:1200px) { .metrics-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:700px) { .metrics-dashboard { padding:18px 0 30px; } .metrics-heading,.metrics-section-heading { align-items:flex-start; flex-direction:column; gap:8px; } .metrics-heading h1 { font-size:22px; } .metrics-grid,.workspace-metrics-grid { grid-template-columns:1fr; gap:14px; } .metric-card,.workspace-metric-card { padding:20px; } .workspace-stats { gap:10px; } }

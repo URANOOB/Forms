@@ -1,0 +1,193 @@
+/* From Uiverse.io by uiverse-astronaut; provided as a reference by the user. */
+[data-form-background="blue_dots"],
+.dark [data-form-background="blue_dots"] {
+  background-color: #e5e5f7;
+  background-image: radial-gradient(#444cf7 10%, transparent 10%),
+    radial-gradient(#444cf7 10%, transparent 10%);
+  background-size: 100px 100px;
+  background-position: 0 0, 50px 50px;
+}
+
+/* Grid pattern provided by the user. */
+[data-form-background="gray_grid"],
+.dark [data-form-background="gray_grid"] {
+  --pattern-grid-color: #e1e1e1;
+  background-color: #f3f3f3;
+  background-image: linear-gradient(
+      0deg, transparent 24%, var(--pattern-grid-color) 25%,
+      var(--pattern-grid-color) 26%, transparent 27%, transparent 74%,
+      var(--pattern-grid-color) 75%, var(--pattern-grid-color) 76%,
+      transparent 77%, transparent
+    ),
+    linear-gradient(
+      90deg, transparent 24%, var(--pattern-grid-color) 25%,
+      var(--pattern-grid-color) 26%, transparent 27%, transparent 74%,
+      var(--pattern-grid-color) 75%, var(--pattern-grid-color) 76%,
+      transparent 77%, transparent
+    );
+  background-size: 55px 55px;
+  background-position: 0 0;
+}
+
+/* Notebook pattern provided by the user. */
+[data-form-background="notebook"],
+.dark [data-form-background="notebook"] {
+  background: linear-gradient(#3f87a6 10%, #ebf8e1a2 10%),
+    linear-gradient(to right, #ebf8e100 10%, #c73030 10% 10.2%, #ebf8e100 10.5%);
+  background-size: 100% 25px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+}
+
+/* Subtle dotted pattern provided by the user. */
+[data-form-background="gray_dots"],
+.dark [data-form-background="gray_dots"] {
+  background-color: #ffffff;
+  background-image: radial-gradient(rgba(12, 12, 12, 0.171) 2px, transparent 0);
+  background-size: 30px 30px;
+  background-position: -5px -5px;
+}
+
+/* Geometric cube pattern provided by the user. */
+[data-form-background="gray_cubes"],
+.dark [data-form-background="gray_cubes"] {
+  --pattern-cube-size: 84px;
+  --pattern-cube-light: #f2f2f2;
+  --pattern-cube-mid: #cdcbcc;
+  --pattern-cube-dark: #999999;
+  --pattern-cube-stops: 0 120deg, #0000 0;
+  background: conic-gradient(
+      from 0deg at calc(500% / 6) calc(100% / 3),
+      var(--pattern-cube-dark) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from -120deg at calc(100% / 6) calc(100% / 3),
+      var(--pattern-cube-mid) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from 120deg at calc(100% / 3) calc(500% / 6),
+      var(--pattern-cube-light) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from 120deg at calc(200% / 3) calc(500% / 6),
+      var(--pattern-cube-light) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from -180deg at calc(100% / 3) 50%,
+      var(--pattern-cube-mid) 60deg,
+      var(--pattern-cube-light) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from 60deg at calc(200% / 3) 50%,
+      var(--pattern-cube-light) 60deg,
+      var(--pattern-cube-dark) var(--pattern-cube-stops)
+    ),
+    conic-gradient(
+      from -60deg at 50% calc(100% / 3),
+      var(--pattern-cube-light) 120deg,
+      var(--pattern-cube-mid) 0 240deg,
+      var(--pattern-cube-dark) 0
+    );
+  background-size: calc(var(--pattern-cube-size) * 1.732) var(--pattern-cube-size);
+}
+
+/* Pink diamond pattern provided by the user. */
+[data-form-background="pink_diamonds"],
+.dark [data-form-background="pink_diamonds"] {
+  --pattern-diamond-size: 222px;
+  --pattern-diamond-dark: #7f727b;
+  --pattern-diamond-light: #d6b4c2;
+  --pattern-diamond-mid: #baa0ab;
+  --pattern-diamond-stops: var(--pattern-diamond-dark) 10%,
+    var(--pattern-diamond-light) 10.5% 19%, #0000 19.5% 80.5%,
+    var(--pattern-diamond-light) 81% 89.5%, var(--pattern-diamond-mid) 90%;
+  --pattern-diamond-conic: from -90deg at 37.5% 50%, #0000 75%;
+  --pattern-diamond-line1: linear-gradient(145deg, var(--pattern-diamond-stops));
+  --pattern-diamond-line2: linear-gradient(35deg, var(--pattern-diamond-stops));
+  background: var(--pattern-diamond-line1),
+    var(--pattern-diamond-line1) calc(var(--pattern-diamond-size) / 2) var(--pattern-diamond-size),
+    var(--pattern-diamond-line2),
+    var(--pattern-diamond-line2) calc(var(--pattern-diamond-size) / 2) var(--pattern-diamond-size),
+    conic-gradient(var(--pattern-diamond-conic), var(--pattern-diamond-dark) 0) calc(var(--pattern-diamond-size) / 8) 0,
+    conic-gradient(var(--pattern-diamond-conic), var(--pattern-diamond-mid) 0) calc(var(--pattern-diamond-size) / 2) 0,
+    linear-gradient(
+      90deg,
+      var(--pattern-diamond-mid) 38%,
+      var(--pattern-diamond-dark) 0 50%,
+      var(--pattern-diamond-mid) 0 62%,
+      var(--pattern-diamond-dark) 0
+    );
+  background-size: var(--pattern-diamond-size) calc(2 * var(--pattern-diamond-size) / 3);
+}
+
+/* Green block pattern provided by the user. */
+[data-form-background="green_blocks"],
+.dark [data-form-background="green_blocks"] {
+  background-repeat: repeat;
+  background-position: 50% 50%;
+  background-size: 154px 265px;
+  background-image: conic-gradient(
+      from 0deg at 92.66% 50%, #6a994e 0 120deg, #fff0 0 100%
+    ),
+    conic-gradient(from -60deg at 81.66% 10.25%, #6a994e 0 180deg, #fff0 0 100%),
+    conic-gradient(from -60deg at 66.66% 22.25%, #a7c957 0 120deg, #fff0 0 100%),
+    conic-gradient(from 0deg at 71.66% 43%, #386641 0 120deg, #fff0 0 100%),
+    conic-gradient(from 0deg at 66.66% 45.95%, #386641 0 60deg, #fff0 0 100%),
+    conic-gradient(from 120deg at 25% 91.5%, #a7c957 0 120deg, #fff0 0 100%),
+    conic-gradient(from 180deg at 16% 73.5%, #6a994e 0 120deg, #fff0 0 100%),
+    conic-gradient(from 180deg at 16% 73.5%, #6a994e 0 120deg, #fff0 0 100%),
+    conic-gradient(from 180deg at 16% 73.5%, #6a994e 0 120deg, #fff0 0 100%),
+    conic-gradient(from 180deg at 16% 73.5%, #6a994e 0 120deg, #fff0 0 100%),
+    conic-gradient(
+      from 180deg at 39.5% 65.65%, #386641 0 60deg, #a7c957 0 120deg, #fff0 0 100%
+    ),
+    conic-gradient(
+      from 180deg at 39.5% 65.65%, #386641 0 60deg, #a7c957 0 120deg, #fff0 0 100%
+    ),
+    conic-gradient(
+      from 180deg at 39.5% 65.65%, #386641 0 60deg, #a7c957 0 120deg, #fff0 0 100%
+    ),
+    conic-gradient(
+      from 180deg at 39.5% 65.65%, #386641 0 60deg, #a7c957 0 120deg, #fff0 0 100%
+    ),
+    conic-gradient(
+      from 60deg at 50% 51.5%, #a7c957 0 60deg, #6a994e 0 120deg, #4a8656 0 100%
+    );
+}
+
+.background-selector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 24px 20px;
+}
+.background-selector > span {
+  color: var(--muted);
+  margin-right: 8px;
+}
+.builder .background-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font-size: 12px;
+}
+.builder .background-choice[aria-pressed="true"] {
+  border-color: var(--purple);
+}
+.background-swatch {
+  display: block;
+  width: 132px;
+  height: 66px;
+  border-radius: 4px;
+}
+.background-swatch[data-form-background="plain"] {
+  background: #eeecfc;
+}
+.dark .background-swatch[data-form-background="plain"] {
+  background: #221e30;
+}

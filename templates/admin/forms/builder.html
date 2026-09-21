@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/builder.css' %}?v=theme-presets-1"><link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7"><link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=theme-presets-1">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/builder.js' %}?v=theme-presets-1" defer></script><script src="{% static 'forms/builder-responses.js' %}?v=theme-presets-1" defer></script>{% endblock %}
+{% block header %}{% endblock %}
+{% block is_fullwidth %}1{% endblock %}
+{% block content %}
+<div id="builder" class="builder" data-base="{% if form %}{% url 'admin:forms_form_builder_edit' form.pk %}{% endif %}" data-create-url="{% url 'admin:forms_form_add' %}" data-creation-token="{{ creation_token }}" data-archived="{% if form.status == 'ARCHIVED' %}true{% endif %}">
+    {% csrf_token %}
+    <header class="builder-top">
+        <div class="builder-identity">
+            <button type="button" class="header-icon builder-sidebar-toggle" x-on:click="sidebarToggle()" aria-label="Mostrar u ocultar menú" title="Menú"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
+            <a class="builder-logo" href="{% url 'admin:forms_form_changelist' %}" aria-label="Volver a Formularios" title="Volver a Formularios"><span class="material-symbols-outlined" aria-hidden="true">list_alt</span></a>
+            <div class="builder-name-group"><label class="sr-only" for="form-title">Nombre del formulario</label><input class="builder-name" id="form-title" maxlength="200" placeholder="Formulario sin título" value="{{ builder_data.title }}"><p id="save-status" role="status" aria-live="polite">{% if is_new %}Formulario sin guardar{% else %}Formulario guardado{% endif %}</p></div>
+        </div>
+        <div class="builder-actions" aria-label="Acciones del formulario">
+            <button type="button" class="header-icon" data-action="toggle-background" aria-controls="builder-backgrounds" aria-expanded="false" title="Personalizar tema" aria-label="Personalizar tema"><span class="material-symbols-outlined" aria-hidden="true">palette</span></button>
+            <button type="button" class="header-icon" data-action="preview" title="Vista previa" aria-label="Vista previa"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button>
+            <button type="button" class="header-icon" data-action="save" title="Guardar formulario" aria-label="Guardar formulario"><span class="material-symbols-outlined" aria-hidden="true">save</span></button>
+            <button type="button" class="header-icon" id="builder-share-toggle" data-action="toggle-sharing" aria-controls="sharing" aria-expanded="false" title="Enlace del formulario" aria-label="Enlace del formulario"><span class="material-symbols-outlined" aria-hidden="true">link</span></button>
+            <div class="publication-toggle"><span id="builder-public-state">No publicado</span><button type="button" class="settings-switch" id="builder-public-switch" data-action="toggle-public" role="switch" aria-checked="false" aria-label="Publicación del formulario" aria-describedby="builder-public-state"><span aria-hidden="true"></span></button></div>
+        </div>
+    </header>
+    <nav class="builder-tabs" aria-label="Formulario"><button type="button" data-builder-tab="questions" aria-pressed="true" aria-controls="builder-questions-panel">Preguntas</button><button type="button" id="builder-responses" data-builder-tab="responses" data-url="{{ responses_url }}" aria-pressed="false" aria-controls="builder-responses-panel" {% if not responses_url %}hidden{% endif %}>Respuestas <span id="builder-response-count"></span></button><button type="button" id="builder-settings" data-builder-tab="settings" aria-pressed="false" aria-controls="builder-settings-panel">Configuración</button></nav>
+    <div id="builder-message" role="alert" hidden></div>
+    <div class="builder-sharing" id="sharing" hidden><label for="share-url">Enlace para responder</label><div class="settings-link-row"><div class="settings-link-bar"><input id="share-url" readonly aria-label="Enlace público" value="{{ share_url }}"><button type="button" class="settings-copy" data-action="copy-link" title="Copiar enlace" aria-label="Copiar enlace"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button></div><a id="builder-public" href="{{ share_url }}" target="_blank" rel="noopener">Abrir formulario <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span></a></div></div>
+    <div id="builder-questions-panel">
+
+    <div class="builder-canvas" data-form-background="{{ builder_data.appearance.background|default:'plain' }}">
+        <main class="builder-paper" id="builder-paper"><img id="builder-header-image" class="form-header-image" alt="Encabezado del formulario" hidden>
+            <section class="welcome-editor" aria-labelledby="welcome-editor-title">
+                <h2 id="welcome-editor-title">Pantalla de bienvenida</h2>
+                <p>Se muestra antes de las preguntas. Personaliza la imagen, el mensaje y la posición del recuadro.</p>
+                <div class="welcome-image-actions"><button type="button" class="text-button" data-action="welcome-image"><span class="material-symbols-outlined" aria-hidden="true">image</span> Elegir imagen</button><button type="button" class="text-button" data-action="remove-welcome-image" id="remove-welcome-image" hidden>Quitar imagen</button><span>PNG, JPG o WebP · Hasta 5 MB</span></div>
+                <div class="welcome-settings">
+                    <label>Título del recuadro<input data-welcome="title" maxlength="200" placeholder="Usar el título del formulario"></label>
+                    <label>Texto informativo<textarea data-welcome="text" rows="4" maxlength="10000" placeholder="Explica qué encontrará la persona antes de comenzar"></textarea></label>
+                    <label>Texto del botón<input data-welcome="button_label" maxlength="60" placeholder="Comenzar"></label>
+                    <div class="welcome-position-settings"><label>Posición horizontal<select data-welcome="horizontal"><option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option></select></label><label>Posición vertical<select data-welcome="vertical"><option value="top">Arriba</option><option value="center">Centro</option><option value="bottom">Abajo</option></select></label></div>
+                </div>
+                <div class="welcome-preview" id="welcome-preview" data-horizontal="right" data-vertical="center">
+                    <img id="welcome-preview-image" alt="" hidden>
+                    <div class="welcome-preview-card"><h3 id="welcome-preview-title"></h3><p id="welcome-preview-text"></p><span id="welcome-preview-button">Comenzar</span></div>
+                </div>
+            </section>
+            <div id="builder-sections"></div>
+            <button type="button" class="add-section-bottom" data-action="add-section">＋ Añadir sección</button>
+            <p class="builder-note">Cada sección es una página con sus preguntas. Al final, elige si continúa a la siguiente sección, salta a otra o envía el formulario. «Mostrar según respuesta» controla qué preguntas aparecen dentro de cada página.</p>
+        </main>
+        <aside class="builder-tools" aria-label="Añadir contenido"><button type="button" data-action="add-question" title="Añadir pregunta" aria-label="Añadir pregunta"><span class="material-symbols-outlined">add_circle</span></button><button type="button" data-action="add-text" title="Añadir título y descripción" aria-label="Añadir título y descripción"><span class="material-symbols-outlined">text_fields</span></button><button type="button" data-action="add-image" title="Añadir imagen" aria-label="Añadir imagen"><span class="material-symbols-outlined">image</span></button><button type="button" data-action="add-section" title="Añadir sección" aria-label="Añadir sección"><span class="material-symbols-outlined">view_agenda</span></button></aside>
+    </div>
+    </div>
+    <section id="builder-responses-panel" class="builder-responses-panel" aria-label="Respuestas del formulario" hidden>
+        <div class="builder-responses-heading"><h2>Respuestas recibidas</h2><button type="button" data-response-action="refresh"><span class="material-symbols-outlined" aria-hidden="true">refresh</span> Actualizar</button></div>
+        <form id="builder-response-search" class="builder-response-search" role="search"><label for="builder-response-query">Buscar en las respuestas</label><div><input id="builder-response-query" type="search" maxlength="200" placeholder="Buscar en los datos recibidos"><button type="submit">Buscar</button></div></form>
+        <p id="builder-responses-status" role="status" aria-live="polite"></p>
+        <div id="builder-responses-list"></div>
+    </section>
+    {% include "admin/forms/builder_settings.html" %}
+    {% include "admin/forms/theme_panel.html" %}
+    {# Unfold expects a path input in the file widget's enclosing container. #}
+    <div hidden><div><div><input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></div></div><input type="text" readonly aria-label="Archivo seleccionado"></div>
+</div>
+{{ builder_data|json_script:"builder-data" }}
+{{ field_types|json_script:"field-types" }}
+{{ theme_config|json_script:"theme-config" }}
+{% endblock %}

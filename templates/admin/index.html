@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}">{% endblock %}
+{% block content %}
+<div class="metrics-dashboard">
+    <header class="metrics-heading"><div><p class="metrics-eyebrow">VISTA GENERAL</p><h1>Tu plataforma en números</h1></div><span class="metrics-updated">Actualizado a las {{ dashboard_updated|date:'H:i' }}</span></header>
+    <div class="metrics-grid">
+        {% for card in dashboard_cards %}
+        <article class="metric-card"><div class="metric-top"><span>{{ card.label }}</span><span class="metric-icon {{ card.color }} material-symbols-outlined" aria-hidden="true">{{ card.icon }}</span></div><strong class="metric-value">{{ card.value }}</strong><p class="metric-caption">{{ card.note }}</p>{% if card.percent != None %}<div class="storage-meter" role="meter" aria-label="Porcentaje de disco utilizado" aria-valuenow="{{ card.percent }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ card.percent }}%"></span></div><small class="metric-caption">{{ card.percent }}% del disco utilizado por todos los servicios</small>{% endif %}</article>
+        {% endfor %}
+    </div>
+    {% if dashboard_forms %}
+    <div class="metrics-section-heading"><h2>Actividad por formulario</h2>{% if dashboard_pending != None %}<span class="pending-badge">{{ dashboard_pending }} respuestas pendientes de revisión</span>{% endif %}</div>
+    <div class="workspace-metrics-grid">
+        {% for form in dashboard_forms %}
+        <article class="workspace-metric-card"><div class="workspace-metric-heading"><div class="workspace-symbol material-symbols-outlined" aria-hidden="true">description</div><h3>{{ form.name }}</h3><span class="workspace-status {% if form.status != 'PUBLISHED' %}inactive{% endif %}">{{ form.get_status_display }}</span></div><strong class="metric-value">{{ form.response_count }}</strong><p class="metric-caption">Respuestas recibidas</p></article>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <p class="metrics-footnote">Usuarios registrados cuenta las cuentas de la plataforma. Las respuestas públicas son envíos y pueden incluir varias respuestas de una misma persona.</p>
+</div>
+{% endblock %}

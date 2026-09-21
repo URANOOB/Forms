@@ -1,0 +1,25 @@
+<aside id="builder-backgrounds" class="theme-panel" aria-labelledby="theme-panel-title" hidden>
+    <header class="theme-panel-header"><h2 id="theme-panel-title"><span class="material-symbols-outlined" aria-hidden="true">palette</span> Tema</h2><button type="button" class="icon-button" data-action="close-theme" title="Cerrar personalización" aria-label="Cerrar personalización"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></header>
+    <div class="theme-panel-content">
+        <section class="theme-section"><h3>Estilo del texto</h3>
+        {% for group in theme_typography %}
+            <label for="theme-{{ group.key }}-font">{{ group.label }}</label><div class="theme-type-row"><select id="theme-{{ group.key }}-font" data-theme="{{ group.key }}_font" aria-label="Fuente de {{ group.label|lower }}">{% for key, name in theme_fonts %}<option value="{{ key }}">{{ name }}</option>{% endfor %}</select><select data-theme="{{ group.key }}_size" data-number aria-label="Tamaño de {{ group.label|lower }}">{% for size in group.sizes %}<option value="{{ size }}">{{ size }}</option>{% endfor %}</select></div>
+        {% endfor %}
+        </section>
+        <section class="theme-section"><h3>Color</h3><div class="theme-colors" role="group" aria-label="Color principal">{% for color in theme_colors %}<button type="button" class="theme-color" data-action="theme-color" data-color="{{ color }}" style="--swatch-color: {{ color }}" aria-label="Color {{ color }}" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">check</span></button>{% endfor %}<label class="theme-custom-color" title="Color personalizado"><span class="material-symbols-outlined" aria-hidden="true">add</span><input type="color" data-theme="color" aria-label="Color principal personalizado"></label></div>
+        <div class="theme-background-color"><h3>Fondo liso</h3><div class="theme-colors theme-background-colors" role="group" aria-label="Colores de fondo liso">{% for color, name in theme_background_colors %}<button type="button" class="theme-color" data-action="theme-background" data-color="{{ color }}" style="--swatch-color: {{ color }}" aria-label="{{ name }}" title="{{ name }}" aria-pressed="false"><span class="material-symbols-outlined" aria-hidden="true">check</span></button>{% endfor %}</div></div></section>
+        <section class="theme-section"><h3>Patrones de fondo</h3>
+    <div class="background-selector" role="group" aria-label="Fondo del formulario">
+        <span>Fondo del formulario</span>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="plain" aria-pressed="true"><span class="background-swatch" data-form-background="plain" aria-hidden="true"></span>Color liso</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="blue_dots" aria-pressed="false"><span class="background-swatch" data-form-background="blue_dots" aria-hidden="true"></span>Puntos azules</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="gray_grid" aria-pressed="false"><span class="background-swatch" data-form-background="gray_grid" aria-hidden="true"></span>Cuadrícula gris</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="notebook" aria-pressed="false"><span class="background-swatch" data-form-background="notebook" aria-hidden="true"></span>Hoja de cuaderno</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="gray_dots" aria-pressed="false"><span class="background-swatch" data-form-background="gray_dots" aria-hidden="true"></span>Puntos grises</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="gray_cubes" aria-pressed="false"><span class="background-swatch" data-form-background="gray_cubes" aria-hidden="true"></span>Cubos grises</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="pink_diamonds" aria-pressed="false"><span class="background-swatch" data-form-background="pink_diamonds" aria-hidden="true"></span>Rombos rosados</button>
+        <button type="button" class="background-choice" data-action="select-background" data-pattern="green_blocks" aria-pressed="false"><span class="background-swatch" data-form-background="green_blocks" aria-hidden="true"></span>Bloques verdes</button>
+    </div>
+        </section>
+    </div>
+</aside>
