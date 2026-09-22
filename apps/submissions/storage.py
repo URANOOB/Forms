@@ -11,4 +11,7 @@ def response_file_storage():
 
 
 def response_file_path(instance, filename):
-    return f"responses/{instance.answer.submission_id}/{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
+    return (
+        f"responses/{instance.answer.submission_id}/"
+        f"{uuid.uuid4().hex}{Path(filename).suffix.lower()}"
+    )

@@ -4,11 +4,16 @@ from django.urls import path
 from apps.forms.builder_views import form_image
 from apps.submissions.views import public_form, response_file, thanks
 
+from .views import home
+
 admin.site.site_title = "Formularios institucionales"
 admin.site.site_header = "Formularios"
 admin.site.index_title = "Inicio"
 
+handler404 = "config.views.page_not_found"
+
 urlpatterns = [
+    path("", home, name="home"),
     path("response-files/<uuid:file_id>/", response_file, name="response_file"),
     path("form-images/<uuid:image_id>/", form_image, name="form_image"),
     path("admin/", admin.site.urls),

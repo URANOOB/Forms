@@ -2,6 +2,7 @@ from graphlib import CycleError, TopologicalSorter
 
 from django.core.exceptions import ValidationError
 
+from .additional_choices import additional_text_config
 from .public_fields import CHOICE_TYPES, DISPLAY_TYPES, TEXT_TYPES, empty, json_value, public_field
 from .question_fields import FILE_TYPES, GRID_TYPES, SCALE_TYPES
 
@@ -12,7 +13,7 @@ class FormSchema:
         self.sections = list(version.sections.order_by("order", "id"))
         self.fields = list(
             version.fields.select_related("section", "image")
-            .prefetch_related("options")
+            .prefetch_related("options__image")
             .order_by("section__order", "section_id", "order", "id")
         )
         self.by_id = {str(field.pk): field for field in self.fields}
@@ -24,11 +25,15 @@ class FormSchema:
             following = self.section_ids[index + 1] if index + 1 < len(self.sections) else None
             destination = section.configuration.get("next_section", "NEXT")
             if not isinstance(destination, str) or destination not in {
-                "NEXT", "SUBMIT", *self.section_ids
+                "NEXT",
+                "SUBMIT",
+                *self.section_ids,
             }:
                 raise ValidationError(f"Revisa el destino de la sección «{section.title}».")
-            target = following if destination == "NEXT" else (
-                None if destination == "SUBMIT" else destination
+            target = (
+                following
+                if destination == "NEXT"
+                else (None if destination == "SUBMIT" else destination)
             )
             self.navigation[key] = {"next": target, "following": following}
             navigation_graph[key] = {target} if target else set()
@@ -206,6 +211,7 @@ class FormSchema:
                     "type": field.field_type,
                     "required": field.required,
                     "section": str(field.section_id),
+                    "additional_text": additional_text_config(field),
                 }
                 for key, field in self.by_id.items()
             },

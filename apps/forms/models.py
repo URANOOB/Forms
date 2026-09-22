@@ -101,7 +101,11 @@ class FormVersion(UUIDModel):
     welcome = models.JSONField(default=dict, blank=True, validators=[validate_object])
     appearance = models.JSONField(default=dict, blank=True, validators=[validate_object])
     welcome_image = models.ForeignKey(
-        "FormImage", on_delete=models.PROTECT, null=True, blank=True, related_name="welcome_versions"
+        "FormImage",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="welcome_versions",
     )
 
     class Meta:
@@ -298,6 +302,14 @@ class FieldOption(VersionContent):
     value = models.CharField("valor", max_length=150)
     order = models.PositiveIntegerField("orden", default=0)
     is_active = models.BooleanField("activa", default=True)
+    image = models.ForeignKey(
+        FormImage,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="options",
+        verbose_name="imagen de la opción",
+    )
 
     class Meta:
         ordering = ["order", "id"]
@@ -318,6 +330,12 @@ class FieldOption(VersionContent):
             FormField.Type.MULTIPLE_CHOICE,
         }:
             raise ValidationError({"field": "Sólo los campos de selección admiten opciones."})
+        if (
+            self.image_id
+            and self.field_id
+            and self.image.form_id != self.field.form_version.form_id
+        ):
+            raise ValidationError({"image": "La imagen debe pertenecer a este formulario."})
 
     def __str__(self):
         return self.label

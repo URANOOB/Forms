@@ -2,8 +2,8 @@ import uuid
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
 from django.urls import reverse
+from django.utils import timezone
 
 from .storage import response_file_path, response_file_storage
 
@@ -84,7 +84,9 @@ class SubmissionAnswer(models.Model):
 class SubmissionFile(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     answer = models.ForeignKey(SubmissionAnswer, on_delete=models.PROTECT, related_name="files")
-    file = models.FileField(storage=response_file_storage, upload_to=response_file_path, max_length=300)
+    file = models.FileField(
+        storage=response_file_storage, upload_to=response_file_path, max_length=300
+    )
     original_name = models.CharField(max_length=255)
     size = models.PositiveBigIntegerField()
 

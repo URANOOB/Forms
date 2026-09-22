@@ -1,0 +1,70 @@
+.file-picker { margin-top: 8px; }
+.file-dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 20px;
+  border: 1px dashed #bdc5d0;
+  border-radius: 9px;
+  background: #fafbfc;
+  text-align: center;
+  transition: background 150ms, border-color 150ms;
+}
+.file-dropzone:hover,
+.file-dropzone:focus-within,
+.file-dropzone.is-dragging { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, white); }
+.file-dropzone:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.form-sheet .file-dropzone input.file-picker-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.file-upload-icon { display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 4px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 9%, white); color: var(--accent); }
+.file-drop-title { font-weight: 500; color: #25272b; }
+.file-drop-instruction { color: #687180; font-size: 13px; }
+.file-browse-label { display: inline-block; margin-top: 8px; padding: 8px 16px; border: 1px solid #d6dce4; border-radius: 6px; background: white; color: #343b46; font-size: 13px; font-weight: 500; }
+.file-picker-status, .file-picker-error, .file-picker-note { margin: 12px 0 0; font-size: 12px; line-height: 1.6; }
+.file-picker-status { color: #555b64; }
+.file-picker-status:empty { display: none; }
+.file-picker-error { padding: 10px 12px; background: #fff1f2; border-radius: 6px; color: #ad263b; overflow-wrap: anywhere; }
+.file-picker-note { color: #687180; }
+.file-cards { display: grid; gap: 14px; margin-top: 16px; }
+.file-cards:empty { display: none; }
+.file-card { display: grid; grid-template-columns: minmax(160px, 220px) minmax(0, 1fr); overflow: hidden; border: 1px solid #dce1e7; border-radius: 9px; background: #fff; }
+.file-preview { display: grid; place-items: center; min-width: 0; min-height: 180px; padding: 10px; background: #f4f5f7; border-right: 1px solid #e5e7eb; }
+.file-preview img { display: block; width: 100%; height: 170px; object-fit: contain; }
+.file-preview object { display: block; width: 100%; height: 190px; border: 0; }
+.file-preview-generic { align-content: center; gap: 12px; }
+.file-extension { padding: 12px; border: 1px solid #d6dce4; border-radius: 6px; background: #fff; color: #4b5563; font-size: 20px; font-weight: 600; }
+.file-preview-fallback { font-size: 11px; text-align: center; color: #687180; }
+.file-text-preview { width: 100%; max-height: 170px; margin: 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: #4b5563; font-size: 11px; }
+.file-details { min-width: 0; padding: 20px; align-self: center; }
+.public-form-page .file-card .file-name { margin: 0 0 6px; font-family: var(--form-text-font, Inter, sans-serif); font-size: 14px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.file-meta { margin: 0 0 12px; color: #687180; font-size: 12px; }
+.file-state { margin: 0 0 14px; color: #687180; font-size: 12px; }
+.file-card.is-confirmed .file-state { color: #237047; }
+.file-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.public-form-page .file-actions button, .file-actions a { min-height: 36px; padding: 7px 11px; border-radius: 5px; font-size: 12px; font-weight: 500; }
+.public-form-page .file-confirm { background: color-mix(in srgb, var(--accent) 12%, white); color: #25272b; border: 1px solid color-mix(in srgb, var(--accent) 28%, white); }
+.public-form-page .file-confirm:hover { background: color-mix(in srgb, var(--accent) 20%, white); }
+.public-form-page .file-remove { background: white; color: #555b64; border: 1px solid #dce1e7; }
+.public-form-page .file-remove:hover { color: #ad263b; border-color: #e6acb6; background: #fff8f8; }
+.file-actions a { color: #4b5563; text-underline-offset: 3px; }
+.file-picker.is-disabled { opacity: 0.65; }
+.file-picker.is-disabled .file-picker-native { cursor: default; }
+@media (max-width: 600px) {
+  .file-card { grid-template-columns: minmax(0, 1fr); }
+  .file-preview { border-right: 0; border-bottom: 1px solid #e5e7eb; }
+  .file-preview object { height: 230px; }
+  .file-dropzone { padding: 24px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .file-dropzone { transition: none; } }

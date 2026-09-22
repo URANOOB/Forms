@@ -1,0 +1,1 @@
+{% if widget.wrap_label %}<label{% if widget.attrs.id %} for="{{ widget.attrs.id }}"{% endif %}>{% endif %}{% include "django/forms/widgets/input.html" %}{% if widget.image_url %}<img class="choice-option-image" src="{{ widget.image_url }}" alt="" loading="lazy">{% endif %}{% if widget.wrap_label %}<span>{{ widget.label }}</span></label>{% endif %}

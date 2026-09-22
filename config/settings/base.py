@@ -3,6 +3,7 @@ from pathlib import Path
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 from dotenv import load_dotenv
 
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.DevelopmentNotFoundMiddleware",
 ]
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [
@@ -97,7 +99,8 @@ ENABLE_DEMO_SEED = False
 UNFOLD = {
     "DASHBOARD_CALLBACK": "apps.accounts.dashboard.dashboard_callback",
     "SITE_TITLE": "Formularios institucionales",
-    "SITE_HEADER": "Formularios",
+    "SITE_HEADER": "LogicForms",
+    "SITE_LOGO": lambda request: static("forms/brand/logicforms-logo.png") + "?v=2",
     "SITE_SUBHEADER": "Gestión institucional",
     "SITE_SYMBOL": "assignment",
     "SHOW_HISTORY": True,
@@ -125,13 +128,9 @@ UNFOLD = {
                         "title": "Usuarios",
                         "icon": "group",
                         "link": reverse_lazy("admin:accounts_user_changelist"),
-                        "permission": lambda r: r.user.is_superuser,
-                    },
-                    {
-                        "title": "Grupos y permisos",
-                        "icon": "admin_panel_settings",
-                        "link": reverse_lazy("admin:auth_group_changelist"),
-                        "permission": lambda r: r.user.is_superuser,
+                        "permission": lambda r: (
+                            r.user.is_active and r.user.is_staff and r.user.is_superuser
+                        ),
                     },
                 ],
             }
