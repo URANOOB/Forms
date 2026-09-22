@@ -4,15 +4,38 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('forms', '0006_form_deleted_at'),
+        ("forms", "0006_form_deleted_at"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='formfield',
-            name='field_type',
-            field=models.CharField(choices=[('SHORT_TEXT', 'Respuesta corta'), ('LONG_TEXT', 'Párrafo'), ('EMAIL', 'Correo electrónico'), ('PHONE', 'Teléfono'), ('NUMBER', 'Número'), ('DATE', 'Fecha'), ('TIME', 'Hora'), ('SINGLE_CHOICE', 'Varias opciones'), ('MULTIPLE_CHOICE', 'Casillas'), ('LINEAR_SCALE', 'Escala lineal'), ('RATING', 'Calificación'), ('GRID_SINGLE', 'Cuadrícula de varias opciones'), ('GRID_MULTIPLE', 'Cuadrícula de casillas'), ('BOOLEAN', 'Sí / No'), ('FILE', 'Subir archivos'), ('DOCUMENT', 'Documento'), ('HEADING', 'Encabezado'), ('INFORMATION', 'Información'), ('IMAGE', 'Imagen')], max_length=20, verbose_name='tipo'),
+            model_name="formfield",
+            name="field_type",
+            field=models.CharField(
+                choices=[
+                    ("SHORT_TEXT", "Respuesta corta"),
+                    ("LONG_TEXT", "Párrafo"),
+                    ("EMAIL", "Correo electrónico"),
+                    ("PHONE", "Teléfono"),
+                    ("NUMBER", "Número"),
+                    ("DATE", "Fecha"),
+                    ("TIME", "Hora"),
+                    ("SINGLE_CHOICE", "Varias opciones"),
+                    ("MULTIPLE_CHOICE", "Casillas"),
+                    ("LINEAR_SCALE", "Escala lineal"),
+                    ("RATING", "Calificación"),
+                    ("GRID_SINGLE", "Cuadrícula de varias opciones"),
+                    ("GRID_MULTIPLE", "Cuadrícula de casillas"),
+                    ("BOOLEAN", "Sí / No"),
+                    ("FILE", "Subir archivos"),
+                    ("DOCUMENT", "Documento"),
+                    ("HEADING", "Encabezado"),
+                    ("INFORMATION", "Información"),
+                    ("IMAGE", "Imagen"),
+                ],
+                max_length=20,
+                verbose_name="tipo",
+            ),
         ),
     ]

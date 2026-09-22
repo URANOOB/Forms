@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Crea formularios, comparte su enlace y gestiona las respuestas desde un solo lugar.">
+    <title>LogicForms · Todo en un lugar</title>
+    <link rel="icon" type="image/png" href="{% static 'forms/brand/logicforms-icon.png' %}?v=2">
+    <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'forms/home.css' %}?v=6">
+    <script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script>
+    <script src="{% static 'forms/home.js' %}?v=1" defer></script>
+    <script src="{% static 'forms/home-raccoon.js' %}?v=1" defer></script>
+</head>
+<body>
+    <a class="skip-link" href="#inicio">Ir al contenido</a>
+    <header class="home-header">
+        <a class="home-brand" href="{% url 'home' %}" aria-label="LogicForms, inicio">
+            <img class="home-logo" src="{% static 'forms/brand/logicforms-logo.png' %}?v=2" width="2089" height="753" alt="LogicForms">
+        </a>
+        <a class="home-login" href="{% url 'admin:index' %}">{% if request.user.is_active and request.user.is_staff %}Abrir plataforma{% else %}Iniciar sesión{% endif %}<span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main id="inicio" class="home-main">
+        <section class="home-hero" aria-labelledby="home-title">
+            <div class="hero-copy">
+                <h1 id="home-title">Tus formularios.<br><span>Todo en un lugar.</span></h1>
+                <p class="hero-description">Crea lo que necesitas preguntar, comparte el enlace y organiza cada respuesta. Así de simple.</p>
+                <a class="home-primary" href="{% url 'admin:forms_form_changelist' %}">{% if request.user.is_active and request.user.is_staff %}Ir a mis formularios{% else %}Ingresar a la plataforma{% endif %}<span aria-hidden="true">→</span></a>
+                <p class="hero-note">Un espacio para crear, compartir y gestionar.</p>
+            </div>
+            <div class="home-animation" id="home-animation-panel" hidden>
+                <div id="home-animation" data-animation="{% static 'forms/home-animation.json' %}" aria-hidden="true"></div>
+                <button type="button" class="home-animation-toggle" id="home-animation-toggle" aria-controls="home-animation">Pausar animación</button>
+            </div>
+        </section>
+
+    </main>
+    <footer class="home-credit" aria-label="Créditos">
+        <div class="raccoon-track">
+            <button type="button" class="raccoon-walker" id="raccoon-walker" title="Pausar animación del mapache" aria-label="Created and Developed by H. Pausar animación del mapache">
+                <span class="raccoon-bubble">Created and Developed by H</span>
+                <span class="raccoon-sprite" aria-hidden="true">
+                    <img id="raccoon-gif" src="{% static 'forms/home-raccoon.gif' %}" width="748" height="330" alt="">
+                    <canvas id="raccoon-still" width="748" height="330" hidden></canvas>
+                </span>
+            </button>
+        </div>
+    </footer>
+</body>
+</html>

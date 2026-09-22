@@ -96,9 +96,14 @@
     if (
       field.type === "PHONE" &&
       value &&
-      !/^\+?[0-9().\-\s]{6,25}$/.test(value)
+      !/^[0-9]{6,25}$/.test(value)
     )
       return null;
+    if (field.type === "NUMBER" && value) {
+      if (!/^[0-9]+$/.test(value)) return null;
+      if (inputs[0].hasAttribute("min") && Number(value) < Number(inputs[0].min)) return null;
+      if (inputs[0].hasAttribute("max") && Number(value) > Number(inputs[0].max)) return null;
+    }
     if (field.type === "NUMBER")
       return value === "" || !Number.isFinite(Number(value))
         ? null
@@ -182,12 +187,43 @@
       container.hidden = !visible;
       const inputs = [...container.querySelectorAll("input,select,textarea")];
       for (const input of inputs) {
+        if (input.hasAttribute("data-additional-text")) {
+          const config = schema.fields[key].additional_text;
+          const selected = config?.values.includes(values[key]);
+          const needed = visible && selected;
+          input.closest("[data-additional-container]").hidden = !needed;
+          input.disabled = !needed;
+          input.required = Boolean(needed);
+          if (!selected) input.value = "";
+          let error = "";
+          if (needed) {
+            if (input.validity.badInput) error = "Ingrese un número válido.";
+            else if (!input.value.trim()) error = "Complete este campo adicional.";
+            else if (config.type === "number" && !/^[0-9]+$/.test(input.value)) error = "Este campo solo admite números del 0 al 9.";
+            else if (config.type === "number" && !Number.isFinite(Number(input.value))) error = "Ingrese un número finito.";
+            else if (input.validity.typeMismatch) error = "Ingrese un correo electrónico válido.";
+            else if (input.value.length > 500) error = "El campo adicional admite hasta 500 caracteres.";
+          }
+          input.setCustomValidity(error);
+          continue;
+        }
         input.disabled = !visible;
         input.required =
           required && !input.hasAttribute("data-stored-file")
           && !(uploads.has(schema.fields[key].type) && retainedFiles(container).length)
           && !["MULTIPLE_CHOICE", "GRID_MULTIPLE"].includes(schema.fields[key].type);
-        input.setCustomValidity("");
+        let error = "";
+        if (visible && input.hasAttribute("data-digits-only") && input.value) {
+          if (!/^[0-9]+$/.test(input.value)) error = "Este campo solo admite números del 0 al 9.";
+          else if (schema.fields[key].type === "PHONE" && !/^[0-9]{6,25}$/.test(input.value)) error = "Ingrese un teléfono de 6 a 25 dígitos.";
+          else if (schema.fields[key].type === "NUMBER") {
+            const number = Number(input.value);
+            if (!Number.isFinite(number)) error = "Ingrese un número válido.";
+            else if (input.hasAttribute("min") && number < Number(input.min)) error = `El valor mínimo permitido es ${input.min}.`;
+            else if (input.hasAttribute("max") && number > Number(input.max)) error = `El valor máximo permitido es ${input.max}.`;
+          }
+        }
+        input.setCustomValidity(error);
       }
       if (
         visible &&
@@ -195,18 +231,19 @@
         schema.fields[key].type === "MULTIPLE_CHOICE" &&
         !inputs.some((input) => input.checked)
       ) {
-        inputs[0]?.setCustomValidity("Selecciona al menos una opción.");
+        inputs[0]?.setCustomValidity("Seleccione al menos una opción.");
       }
       if (visible && required && schema.fields[key].type === "GRID_MULTIPLE") {
         for (const row of container.querySelectorAll("[data-grid-row]")) {
-          if (!row.querySelector("input:checked")) row.querySelector("input")?.setCustomValidity("Selecciona al menos una opción en esta fila.");
+          if (!row.querySelector("input:checked")) row.querySelector("input")?.setCustomValidity("Seleccione al menos una opción en esta fila.");
         }
       }
       if (visible && uploads.has(schema.fields[key].type)) {
         const input = inputs[0], files = [...input.files];
         const extensions = input.accept.split(",").map((value) => value.trim().toLowerCase());
         let error = "";
-        if (files.length + retainedFiles(container).length > Number(input.dataset.maxFiles)) error = `Puedes conservar hasta ${input.dataset.maxFiles} archivo(s), contando los nuevos.`;
+        if (Number(input.dataset.uploadPending) > 0) error = "Revise y confirme los archivos seleccionados antes de continuar.";
+        else if (files.length + retainedFiles(container).length > Number(input.dataset.maxFiles)) error = `Puede conservar hasta ${input.dataset.maxFiles} archivo(s), incluidos los nuevos.`;
         else if (files.some((file) => file.size > Number(input.dataset.maxBytes))) error = "Un archivo supera el tamaño máximo permitido.";
         else if (files.some((file) => !extensions.some((extension) => file.name.toLowerCase().endsWith(extension)))) error = "Uno de los archivos tiene un formato no permitido.";
         input.setCustomValidity(error);
@@ -245,7 +282,22 @@
     invalid.focus();
     return false;
   }
-  form.addEventListener("input", update);
+  form.addEventListener("beforeinput", (event) => {
+    if (event.target.hasAttribute("data-digits-only") && event.inputType === "insertText" && event.data && /[^0-9]/.test(event.data)) event.preventDefault();
+  });
+  form.addEventListener("input", (event) => {
+    const input = event.target;
+    if (input.hasAttribute("data-digits-only")) {
+      const original = input.value;
+      const cleaned = original.replace(/[^0-9]/g, "");
+      if (original !== cleaned) {
+        const position = original.slice(0, input.selectionStart ?? original.length).replace(/[^0-9]/g, "").length;
+        input.value = cleaned;
+        input.setSelectionRange(position, position);
+      }
+    }
+    update();
+  });
   form.addEventListener("change", update);
   nextButton.addEventListener("click", () => {
     update();
@@ -278,7 +330,7 @@
       return;
     }
     button.disabled = true;
-    status.textContent = form.dataset.edit ? "Guardando cambios…" : "Enviando tu respuesta…";
+    status.textContent = form.dataset.edit ? "Guardando cambios…" : "Enviando respuesta…";
   });
   window.addEventListener("pageshow", () => {
     button.disabled = false;

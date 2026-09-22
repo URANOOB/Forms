@@ -8,8 +8,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Max
 
-from .conditions import FormSchema
 from .appearance import validate_appearance
+from .conditions import FormSchema
 from .models import ConditionalRule, FieldOption, Form, FormField, FormSection, FormVersion
 from .public_fields import CHOICE_TYPES
 
@@ -25,7 +25,7 @@ def current_version(form):
 def document(version):
     form = version.form
     sections = []
-    fields = list(version.fields.select_related("image").prefetch_related("options"))
+    fields = list(version.fields.select_related("image").prefetch_related("options__image"))
     for section in version.sections.all():
         sections.append(
             {
@@ -51,6 +51,14 @@ def document(version):
                                 "label": option.label,
                                 "value": option.value,
                                 "is_active": option.is_active,
+                                **(
+                                    {
+                                        "image": str(option.image_id),
+                                        "image_url": option.image.get_absolute_url(),
+                                    }
+                                    if option.image_id
+                                    else {}
+                                ),
                             }
                             for option in field.options.all()
                         ],
@@ -70,7 +78,9 @@ def document(version):
         "welcome": {
             **version.welcome,
             "image": str(version.welcome_image_id) if version.welcome_image_id else None,
-            "image_url": version.welcome_image.get_absolute_url() if version.welcome_image_id else "",
+            "image_url": version.welcome_image.get_absolute_url()
+            if version.welcome_image_id
+            else "",
         },
         "sections": sections,
         "rules": [
@@ -92,15 +102,23 @@ def document(version):
     ).hexdigest()
     data["settings"] = {
         "status": form.status,
-        "status_label": "No publicado" if form.status == Form.Status.DRAFT else form.get_status_display(),
+        "status_label": "No publicado"
+        if form.status == Form.Status.DRAFT
+        else form.get_status_display(),
         "active_version": form.active_version.version_number if form.active_version_id else None,
         "created_by": form.created_by.get_full_name() or form.created_by.get_username(),
         "created_at": form.created_at.isoformat(),
         "updated_at": form.updated_at.isoformat(),
         "versions": [
-            {"number": item.version_number, "status": "Guardada" if item.status == FormVersion.Status.DRAFT else item.get_status_display(),
-             "schema_version": item.schema_version, "created_at": item.created_at.isoformat(),
-             "published_at": item.published_at.isoformat() if item.published_at else None}
+            {
+                "number": item.version_number,
+                "status": "Guardada"
+                if item.status == FormVersion.Status.DRAFT
+                else item.get_status_display(),
+                "schema_version": item.schema_version,
+                "created_at": item.created_at.isoformat(),
+                "published_at": item.published_at.isoformat() if item.published_at else None,
+            }
             for item in form.versions.order_by("-version_number")
         ],
     }
@@ -155,14 +173,18 @@ def save_document(form_id, data, publish=False):
         "horizontal": text_value(welcome, "horizontal", 10, "right"),
         "vertical": text_value(welcome, "vertical", 10, "center"),
     }
-    if welcome_config["horizontal"] not in {"left", "center", "right"} or welcome_config["vertical"] not in {"top", "center", "bottom"}:
+    if welcome_config["horizontal"] not in {"left", "center", "right"} or welcome_config[
+        "vertical"
+    ] not in {"top", "center", "bottom"}:
         raise ValidationError("Selecciona una posición válida para el recuadro de bienvenida.")
     welcome_image = None
     if welcome.get("image"):
         try:
             welcome_image = form.images.get(pk=welcome["image"])
         except (ValueError, TypeError, ValidationError, form.images.model.DoesNotExist):
-            raise ValidationError("La imagen de bienvenida no pertenece a este formulario.") from None
+            raise ValidationError(
+                "La imagen de bienvenida no pertenece a este formulario."
+            ) from None
     sections_data = rows(data, "sections", 50)
     if sum(len(rows(s, "fields", 200)) for s in sections_data) > 200:
         raise ValidationError("El formulario admite hasta 200 preguntas o bloques.")
@@ -227,12 +249,21 @@ def save_document(form_id, data, publish=False):
             if options and kind not in CHOICE_TYPES:
                 raise ValidationError("Sólo las preguntas de selección admiten opciones.")
             for k, option in enumerate(options):
+                option_image = None
+                if option.get("image"):
+                    try:
+                        option_image = form.images.get(pk=option["image"])
+                    except (ValueError, TypeError, ValidationError, form.images.model.DoesNotExist):
+                        raise ValidationError(
+                            "La imagen de la opción no pertenece a este formulario."
+                        ) from None
                 FieldOption.objects.create(
                     field=field,
                     order=k,
                     label=text_value(option, "label", 240),
                     value=text_value(option, "value", 150),
                     is_active=option.get("is_active", True),
+                    image=option_image,
                 )
     # Section ids are regenerated on every draft save; remap navigation as well.
     for section_data in sections_data:

@@ -76,7 +76,17 @@ class FormAdmin(PlatformAdmin):
 
     def get_urls(self):
         urls = []
-        for operation in ("edit", "save", "publish", "pause", "resume", "unpublish", "preview", "image", "responses"):
+        for operation in (
+            "edit",
+            "save",
+            "publish",
+            "pause",
+            "resume",
+            "unpublish",
+            "preview",
+            "image",
+            "responses",
+        ):
 
             def view(request, object_id, operation=operation):
                 return editor_view(self, request, object_id, operation)
@@ -125,9 +135,7 @@ class FormAdmin(PlatformAdmin):
         initial = super().get_changeform_initial_data(request)
         preset = PRESETS.get(request.GET.get("template"))
         if preset:
-            initial.update(
-                name=preset["name"], description=preset["description"]
-            )
+            initial.update(name=preset["name"], description=preset["description"])
         return initial
 
     def add_view(self, request, form_url="", extra_context=None):
@@ -186,16 +194,24 @@ class FormAdmin(PlatformAdmin):
         if not forms:
             return None
         if request.POST.get("confirm_form_delete") != "yes":
-            return TemplateResponse(request, "admin/forms/confirm_delete.html", {
-                **self.admin_site.each_context(request),
-                "opts": self.model._meta,
-                "title": "Eliminar formulario",
-                "forms_to_delete": forms,
-            })
+            return TemplateResponse(
+                request,
+                "admin/forms/confirm_delete.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "opts": self.model._meta,
+                    "title": "Eliminar formulario",
+                    "forms_to_delete": forms,
+                },
+            )
         for form in forms:
             deleted = delete_form(form.pk)
             self.log_change(request, deleted, "Eliminó el formulario; respuestas conservadas.")
-        self.message_user(request, "Formulario eliminado. Sus respuestas se conservan en Respuestas.", messages.SUCCESS)
+        self.message_user(
+            request,
+            "Formulario eliminado. Sus respuestas se conservan en Respuestas.",
+            messages.SUCCESS,
+        )
         return None
 
     @admin.action(description="Publicar y habilitar enlace público", permissions=["change"])

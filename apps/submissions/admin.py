@@ -1,9 +1,11 @@
+from pathlib import PurePath
+
 from django.contrib import admin
 from django.db.models import Exists, OuterRef, Q
 from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
 from django.urls import path, reverse
 from django.utils.html import format_html_join
+from django.utils.safestring import mark_safe
 
 from apps.forms.admin import PlatformAdmin
 
@@ -46,16 +48,25 @@ class SubmissionAdmin(PlatformAdmin):
         return request.user.has_perm("submissions.delete_submission")
 
     def get_urls(self):
-        from .admin_views import response_detail, response_edit, response_delete
+        from .admin_views import response_delete, response_detail, response_edit
 
         urls = []
-        for operation, handler in (("detail", response_detail), ("edit", response_edit), ("remove", response_delete)):
+        for operation, handler in (
+            ("detail", response_detail),
+            ("edit", response_edit),
+            ("remove", response_delete),
+        ):
+
             def view(request, object_id, handler=handler):
                 return handler(self, request, object_id)
-            urls.append(path(
-                f"<uuid:object_id>/{operation}/", self.admin_site.admin_view(view),
-                name=f"submissions_submission_{operation}",
-            ))
+
+            urls.append(
+                path(
+                    f"<uuid:object_id>/{operation}/",
+                    self.admin_site.admin_view(view),
+                    name=f"submissions_submission_{operation}",
+                )
+            )
         return urls + super().get_urls()
 
     def get_list_display(self, request):
@@ -68,18 +79,32 @@ class SubmissionAdmin(PlatformAdmin):
                 actions.append(("remove", "delete", "Eliminar respuesta", "#b42318"))
             return format_html_join(
                 " ",
-                '<a href="{}" title="{}" aria-label="{}" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;color:{}"><span class="material-symbols-outlined" aria-hidden="true">{}</span></a>',
-                [(reverse(f"admin:submissions_submission_{operation}", args=[obj.pk]), label, label, color, icon)
-                 for operation, icon, label, color in actions],
+                '<a href="{}" title="{}" aria-label="{}" '
+                'style="display:inline-flex;align-items:center;justify-content:center;'
+                'width:36px;height:36px;border-radius:6px;color:{}">'
+                '<span class="material-symbols-outlined" aria-hidden="true">{}</span></a>',
+                [
+                    (
+                        reverse(f"admin:submissions_submission_{operation}", args=[obj.pk]),
+                        label,
+                        label,
+                        color,
+                        icon,
+                    )
+                    for operation, icon, label, color in actions
+                ],
             )
+
         return [*self.list_display, response_actions]
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         from .admin_views import response_detail
+
         return response_detail(self, request, object_id)
 
     def delete_view(self, request, object_id, extra_context=None):
         from .admin_views import response_delete
+
         return response_delete(self, request, object_id)
 
     def get_search_results(self, request, queryset, search_term):
@@ -105,8 +130,26 @@ class SubmissionAdmin(PlatformAdmin):
             options = {option.value: option.label for option in answer.field.options.all()}
             attachments = []
             if answer.field.field_type in {"FILE", "DOCUMENT"}:
-                attachments = [{"name": file.original_name, "url": file.get_absolute_url()}
-                               for file in answer.files.all()]
+                preview_types = {
+                    ".pdf": "pdf",
+                    ".png": "image",
+                    ".jpg": "image",
+                    ".jpeg": "image",
+                    ".webp": "image",
+                    ".txt": "text",
+                    ".csv": "text",
+                }
+                for file in answer.files.all():
+                    extension = PurePath(file.original_name).suffix.lower()
+                    attachments.append(
+                        {
+                            "name": file.original_name,
+                            "url": file.get_absolute_url(),
+                            "size": file.size,
+                            "extension": extension.lstrip(".").upper() or "ARCHIVO",
+                            "preview": preview_types.get(extension, "unsupported"),
+                        }
+                    )
                 text = "" if attachments else "Sin archivos"
             elif answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
                 config = answer.field.configuration
@@ -116,11 +159,18 @@ class SubmissionAdmin(PlatformAdmin):
                 for row in config.get("rows", []):
                     selected = value.get(row["id"], [])
                     selected = selected if isinstance(selected, list) else [selected]
-                    result = ", ".join(columns.get(item, item) for item in selected) or "Sin respuesta"
+                    result = (
+                        ", ".join(columns.get(item, item) for item in selected) or "Sin respuesta"
+                    )
                     lines.append(f"{row['label']}: {result}")
                 text = "\n".join(lines)
             elif answer.field.field_type in {"LINEAR_SCALE", "RATING"} and value is not None:
                 text = f"{value} de {answer.field.configuration.get('max', 5)}"
+            elif answer.field.field_type == "SINGLE_CHOICE" and isinstance(value, dict):
+                selected = value.get("selected", "")
+                label = options.get(selected, selected) or "Sin respuesta"
+                detail = value.get("text", "")
+                text = f"{label}: {detail}" if detail else label
             elif isinstance(value, bool):
                 text = "Sí" if value else "No"
             elif isinstance(value, list):
@@ -129,7 +179,16 @@ class SubmissionAdmin(PlatformAdmin):
                 text = "Sin respuesta"
             else:
                 text = options.get(str(value), str(value))
-            bucket["answers"].append({"label": answer.field.label, "value": text, "files": attachments})
+            bucket["answers"].append(
+                {
+                    "label": answer.field.label,
+                    "value": text,
+                    "files": attachments,
+                    "wide": answer.field.field_type
+                    in {"FILE", "DOCUMENT", "LONG_TEXT", "GRID_SINGLE", "GRID_MULTIPLE"},
+                    "empty": not attachments and (value is None or value == "" or value == []),
+                }
+            )
         return mark_safe(
             render_to_string("admin/submissions/answers.html", {"sections": sections.values()})
         )

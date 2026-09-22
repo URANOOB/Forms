@@ -61,9 +61,11 @@ def set_form_access(form_id, operation):
     if operation == "unpublish":
         form.status = Form.Status.DRAFT
     elif operation in {"pause", "resume"}:
-        if (form.status not in {Form.Status.PUBLISHED, Form.Status.PAUSED}
-                or not form.active_version_id
-                or form.active_version.status != FormVersion.Status.PUBLISHED):
+        if (
+            form.status not in {Form.Status.PUBLISHED, Form.Status.PAUSED}
+            or not form.active_version_id
+            or form.active_version.status != FormVersion.Status.PUBLISHED
+        ):
             raise ValidationError("Publica el formulario antes de activar la recepción.")
         form.status = Form.Status.PAUSED if operation == "pause" else Form.Status.PUBLISHED
     else:
