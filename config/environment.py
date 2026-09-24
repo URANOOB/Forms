@@ -7,7 +7,10 @@ def configure_settings(default="config.settings.production"):
     if os.environ.get("VERCEL") == "1":
         # Vercel discovers settings through manage.py as well as the entrypoint.
         # Neither discovery nor runtime may inherit development/Worker settings.
-        os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.production"
+        # The builder generates this shim to override STATIC_ROOT for its CDN.
+        # It imports production settings and must survive manage.py startup.
+        if os.environ.get("DJANGO_SETTINGS_MODULE") != "_vercel_collectstatic_settings":
+            os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.production"
         # These hosts come from Vercel's deployment metadata, never the request.
         # Allow exact deployment/production domains without a *.vercel.app wildcard.
         for name in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):

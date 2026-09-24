@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from django.conf import settings
@@ -94,6 +95,31 @@ class VercelDiscoveryTests(SimpleTestCase):
         result = self.discover(self.environment())
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout)["module"], "config.settings.local")
+
+    def test_vercel_collectstatic_uses_builder_output_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "cdn"
+            shim = Path(directory) / "_vercel_collectstatic_settings.py"
+            shim.write_text(
+                f"from config.settings.production import *\nSTATIC_ROOT = {str(destination)!r}\n",
+                encoding="utf-8",
+            )
+            env = self.environment()
+            env.update(
+                VERCEL="1",
+                DJANGO_SETTINGS_MODULE="_vercel_collectstatic_settings",
+                PYTHONPATH=directory,
+            )
+            result = subprocess.run(
+                [sys.executable, "manage.py", "collectstatic", "--noinput", "--verbosity=0"],
+                cwd=Path(settings.BASE_DIR),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue((destination / "unfold/css/styles.css").is_file())
 
     def test_missing_database_configuration_is_not_hidden(self):
         env = self.environment()

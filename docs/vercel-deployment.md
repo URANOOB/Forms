@@ -5,6 +5,8 @@ El proyecto declara `config.wsgi:application` como entrypoint en `pyproject.toml
 Cuando Vercel establece `VERCEL=1`, tanto los comandos como WSGI/ASGI seleccionan
 `config.settings.production`, incluso si `DJANGO_SETTINGS_MODULE` está vacío o
 conserva por error la configuración local o experimental de Workers.
+Se respeta únicamente la configuración temporal `_vercel_collectstatic_settings`
+que genera el builder para publicar los estáticos en su CDN.
 Los dominios exactos que Vercel proporciona en `VERCEL_URL` y
 `VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
 conservando los dominios propios configurados sin aceptar `*.vercel.app`.
@@ -30,6 +32,8 @@ Configurar estas variables en los entornos de Vercel donde se vaya a desplegar:
 No copiar credenciales a Git ni hacer público el bucket. `.vercelignore` excluye
 los secretos locales, archivos subidos y artefactos de Cloudflare. Vercel recoge
 los estáticos mediante `collectstatic`; los documentos privados permanecen en R2.
+`vercel.json` incluye explícitamente las plantillas, porque el empaquetador de
+Python excluye por defecto cualquier carpeta llamada `public`.
 El build no debe ejecutar migraciones ni crear datos de demostración.
 
 Usar el preset Django y el directorio raíz del repositorio. Eliminar cualquier
