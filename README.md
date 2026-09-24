@@ -158,6 +158,7 @@ su activación y el traslado requieren configurar las credenciales del destino.
 Correo y auditoría de lecturas permanecen pendientes.
 La conexión de GitHub no despliega por sí sola este servidor Django: ver
 [compatibilidad con Cloudflare gratuito](docs/cloudflare-deployment.md).
+Para Vercel, consultar la [configuración de arranque y variables](docs/vercel-deployment.md).
 
 Consultar [decisiones de arquitectura](docs/architecture.md) y
 [contexto original](docs/project-brief.md). La ampliación de formularios públicos y
