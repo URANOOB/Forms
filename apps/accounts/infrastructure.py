@@ -94,7 +94,7 @@ def _file_storages():
 
 
 def _bucket_client(storage):
-    return boto3.client(
+    client = boto3.client(
         "s3",
         endpoint_url=storage.endpoint_url,
         region_name=storage.region_name,
@@ -108,6 +108,11 @@ def _bucket_client(storage):
             retries={"total_max_attempts": 1},
         ),
     )
+    if storage.__class__.__module__ == "config.workers_storage":
+        from config.workers_storage import normalize_s3_headers
+
+        client.meta.events.register("before-send.s3", normalize_s3_headers)
+    return client
 
 
 def bucket_usage(storage):

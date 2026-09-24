@@ -155,7 +155,7 @@ exactas están en `uv.lock`. Todas las modificaciones de esquema requieren migra
 
 Los campos de una versión publicada son inmutables. El proveedor R2 está integrado;
 su activación y el traslado requieren configurar las credenciales del destino.
-Correo, auditoría de lecturas y despliegue Cloudflare permanecen pendientes.
+Correo y auditoría de lecturas permanecen pendientes.
 La conexión de GitHub no despliega por sí sola este servidor Django: ver
 [compatibilidad con Cloudflare gratuito](docs/cloudflare-deployment.md).
 

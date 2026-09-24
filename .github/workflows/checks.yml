@@ -31,3 +31,16 @@ jobs:
       - run: uv run python manage.py check
       - run: uv run python manage.py test --noinput
       - run: uv run python manage.py collectstatic --noinput
+  worker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npx wrangler deploy --dry-run

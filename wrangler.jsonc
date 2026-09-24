@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "forms",
+  "main": ".cloudflare/src/entry.py",
+  "compatibility_date": "2026-09-24",
+  "compatibility_flags": ["python_workers"],
+  "workers_dev": true,
+  "build": {"command": "uv run --locked python scripts/build_cloudflare.py"},
+  "assets": {"directory": ".cloudflare/assets", "binding": "ASSETS"},
+  "observability": {"enabled": true, "logs": {"invocation_logs": true}},
+  "vars": {
+    "DJANGO_ALLOWED_HOSTS": "forms.sololperco.workers.dev",
+    "DJANGO_CSRF_TRUSTED_ORIGINS": "https://forms.sololperco.workers.dev",
+    "FILE_STORAGE": "r2",
+    "DATABASE_CAPACITY_BYTES": "500000000",
+    "R2_FREE_STORAGE_REFERENCE_BYTES": "10000000000"
+  }
+}
