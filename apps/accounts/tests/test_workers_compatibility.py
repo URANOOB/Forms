@@ -1,3 +1,4 @@
+from io import BytesIO
 from types import SimpleNamespace
 
 from django.contrib.auth.hashers import PBKDF2PasswordHasher
@@ -29,8 +30,10 @@ class WorkersPasswordTests(SimpleTestCase):
 class WorkersS3Tests(SimpleTestCase):
     def test_signed_headers_reach_fetch_as_text_without_changing_values(self):
         request = SimpleNamespace(
-            headers={"X-Amz-Date": b"20260924T044250Z", "Authorization": "signed-value"}
+            headers={"X-Amz-Date": b"20260924T044250Z", "Authorization": "signed-value"},
+            body=BytesIO(b"synthetic upload"),
         )
         normalize_s3_headers(request)
         self.assertEqual(request.headers["X-Amz-Date"], "20260924T044250Z")
         self.assertEqual(request.headers["Authorization"], "signed-value")
+        self.assertEqual(request.body, b"synthetic upload")

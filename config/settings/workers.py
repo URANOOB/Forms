@@ -37,7 +37,13 @@ PASSWORD_HASHERS = ["config.workers_hashers.WorkersPBKDF2PasswordHasher"]
 
 # boto3's transfer thread pool is unavailable in WebAssembly.
 from boto3.s3.transfer import TransferConfig  # noqa: E402
+from botocore.config import Config  # noqa: E402
 
 for alias in ("default", "responses"):
     STORAGES[alias]["BACKEND"] = "config.workers_storage.WorkersS3Storage"  # noqa: F405
     STORAGES[alias]["OPTIONS"]["transfer_config"] = TransferConfig(use_threads=False)  # noqa: F405
+    STORAGES[alias]["OPTIONS"]["client_config"] = Config(  # noqa: F405
+        signature_version="s3v4",
+        request_checksum_calculation="when_required",
+        response_checksum_validation="when_required",
+    )
