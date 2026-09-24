@@ -20,7 +20,9 @@ values = {key: getattr(module, key) for key in dir(module) if key.isupper()}
 json.dumps(values, default=str)
 print(json.dumps({'module': name, 'debug': values['DEBUG'],
                  'demo': values['ENABLE_DEMO_SEED'],
-                 'wsgi': values['WSGI_APPLICATION']}))
+                 'wsgi': values['WSGI_APPLICATION'],
+                 'hosts': values['ALLOWED_HOSTS'],
+                 'origins': values['CSRF_TRUSTED_ORIGINS']}))
 """
 
 
@@ -66,8 +68,27 @@ class VercelDiscoveryTests(SimpleTestCase):
                         "debug": False,
                         "demo": False,
                         "wsgi": "config.wsgi.application",
+                        "hosts": ["build.invalid"],
+                        "origins": [],
                     },
                 )
+
+    def test_vercel_domains_are_allowed_exactly_and_preserve_custom_domains(self):
+        env = self.environment()
+        env.update(
+            VERCEL="1",
+            VERCEL_URL="forms-build-example.vercel.app",
+            VERCEL_PROJECT_PRODUCTION_URL="forms-production-example.vercel.app",
+            DJANGO_CSRF_TRUSTED_ORIGINS="https://build.invalid",
+        )
+        result = self.discover(env)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(
+            data["hosts"],
+            ["build.invalid", env["VERCEL_URL"], env["VERCEL_PROJECT_PRODUCTION_URL"]],
+        )
+        self.assertEqual(data["origins"], [f"https://{host}" for host in data["hosts"]])
 
     def test_native_development_still_uses_local_settings(self):
         result = self.discover(self.environment())

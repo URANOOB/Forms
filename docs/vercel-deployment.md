@@ -5,6 +5,9 @@ El proyecto declara `config.wsgi:application` como entrypoint en `pyproject.toml
 Cuando Vercel establece `VERCEL=1`, tanto los comandos como WSGI/ASGI seleccionan
 `config.settings.production`, incluso si `DJANGO_SETTINGS_MODULE` está vacío o
 conserva por error la configuración local o experimental de Workers.
+Los dominios exactos que Vercel proporciona en `VERCEL_URL` y
+`VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
+conservando los dominios propios configurados sin aceptar `*.vercel.app`.
 
 Los enlaces de Unfold se resuelven durante las peticiones, para que la detección
 pueda serializar los ajustes sin iniciar el registro de aplicaciones.
