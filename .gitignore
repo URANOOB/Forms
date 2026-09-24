@@ -14,3 +14,11 @@ htmlcov/
 .vscode/
 
 /private_uploads/
+
+# Cloudflare build outputs and local secrets
+.cloudflare/
+.wrangler/
+.venv-workers/
+python_modules/
+node_modules/
+.dev.vars*

@@ -13,6 +13,8 @@ dependencies = [
   "openpyxl>=3.1.5,<4",
   "defusedxml>=0.7.1,<1",
   "django-storages[s3]>=1.14.6,<2",
+  "pycryptodome>=3.23,<4",
+  "tzdata>=2025.2",
 ]
 
 [dependency-groups]
