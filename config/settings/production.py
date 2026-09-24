@@ -2,6 +2,9 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
 
+if os.environ.get("VERCEL") == "1":  # noqa: F405
+    ASGI_APPLICATION = None  # Vercel's Django detector prefers ASGI over WSGI.
+
 if len(SECRET_KEY) < 50:  # noqa: F405
     raise ImproperlyConfigured("DJANGO_SECRET_KEY debe contener al menos 50 caracteres.")
 if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:  # noqa: F405

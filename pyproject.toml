@@ -20,6 +20,9 @@ dependencies = [
 [dependency-groups]
 dev = ["ruff>=0.12,<1"]
 
+[tool.vercel]
+entrypoint = "config.wsgi:application"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

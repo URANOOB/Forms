@@ -4,7 +4,7 @@ from pathlib import Path
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from django.templatetags.static import static
-from django.urls import reverse_lazy
+from django.urls import reverse
 from dotenv import load_dotenv
 
 from config.storage import storage_settings
@@ -133,23 +133,27 @@ UNFOLD = {
             {
                 "title": "Administración",
                 "items": [
-                    {"title": "Inicio", "icon": "dashboard", "link": reverse_lazy("admin:index")},
+                    {
+                        "title": "Inicio",
+                        "icon": "dashboard",
+                        "link": lambda request: reverse("admin:index"),
+                    },
                     {
                         "title": "Formularios",
                         "icon": "description",
-                        "link": reverse_lazy("admin:forms_form_changelist"),
+                        "link": lambda request: reverse("admin:forms_form_changelist"),
                         "permission": lambda r: r.user.has_perm("forms.view_form"),
                     },
                     {
                         "title": "Respuestas",
                         "icon": "inbox",
-                        "link": reverse_lazy("admin:submissions_submission_changelist"),
+                        "link": lambda request: reverse("admin:submissions_submission_changelist"),
                         "permission": lambda r: r.user.has_perm("submissions.view_submission"),
                     },
                     {
                         "title": "Usuarios",
                         "icon": "group",
-                        "link": reverse_lazy("admin:accounts_user_changelist"),
+                        "link": lambda request: reverse("admin:accounts_user_changelist"),
                         "permission": lambda r: (
                             r.user.is_active and r.user.is_staff and r.user.is_superuser
                         ),

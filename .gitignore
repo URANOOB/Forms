@@ -22,3 +22,7 @@ htmlcov/
 python_modules/
 node_modules/
 .dev.vars*
+.vercel/
+
+.vercel
+.env*
