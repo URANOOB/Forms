@@ -67,7 +67,7 @@ def gallery_context(request, changelist):
                     else "admin:forms_form_change",
                     args=[form.pk],
                 ),
-                "public_url": request.build_absolute_uri(form.get_absolute_url()),
+                "public_url": form.get_public_url(request),
                 "responses_url": reverse("admin:submissions_submission_changelist")
                 + f"?form={form.pk}",
             }

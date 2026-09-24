@@ -1,5 +1,5 @@
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import User, Workspace, legacy_form_container
@@ -37,6 +37,26 @@ class GalleryTests(TestCase):
 
     def setUp(self):
         self.client.force_login(self.user)
+
+    @override_settings(PUBLIC_BASE_URL="https://www.logicforms.xyz")
+    def test_shared_links_use_canonical_domain_from_any_admin_host(self):
+        response = self.client.get(self.url)
+        for card in response.context["cards"]:
+            self.assertEqual(
+                card["public_url"],
+                "https://www.logicforms.xyz" + card["form"].get_absolute_url(),
+            )
+        form = response.context["cards"][0]["form"]
+        editor = self.client.get(reverse("admin:forms_form_builder_edit", args=[form.pk]))
+        self.assertEqual(editor.context["share_url"], form.get_public_url(editor.wsgi_request))
+
+    @override_settings(PUBLIC_BASE_URL="")
+    def test_local_shared_links_fall_back_to_request_origin(self):
+        form = Form.objects.first()
+        request = RequestFactory().get("/admin/", secure=True)
+        self.assertEqual(
+            form.get_public_url(request), "https://testserver" + form.get_absolute_url()
+        )
 
     def test_gallery_filter_sort_and_previews_use_real_records(self):
         response = self.client.get(
