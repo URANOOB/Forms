@@ -165,7 +165,7 @@ class FormAdmin(PlatformAdmin):
         obj = self.get_object(request, object_id)
         extra_context = dict(extra_context or {})
         if obj and self.has_view_permission(request, obj):
-            extra_context["share_url"] = request.build_absolute_uri(obj.get_absolute_url())
+            extra_context["share_url"] = obj.get_public_url(request)
             extra_context["is_published"] = obj.status == Form.Status.PUBLISHED
             extra_context["can_publish"] = obj.status != Form.Status.ARCHIVED
             if request.user.has_perm("submissions.view_submission"):

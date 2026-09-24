@@ -83,6 +83,14 @@ class Form(UUIDModel):
     def get_absolute_url(self):
         return reverse("public_form", kwargs={"form_id": self.pk})
 
+    def get_public_url(self, request):
+        path = self.get_absolute_url()
+        return (
+            settings.PUBLIC_BASE_URL + path
+            if settings.PUBLIC_BASE_URL
+            else request.build_absolute_uri(path)
+        )
+
 
 class FormVersion(UUIDModel):
     class Status(models.TextChoices):

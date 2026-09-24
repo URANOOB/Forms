@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
@@ -25,6 +27,19 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+if PUBLIC_BASE_URL:
+    origin = urlsplit(PUBLIC_BASE_URL)
+    if (
+        origin.scheme not in {"http", "https"}
+        or not origin.hostname
+        or origin.username is not None
+        or origin.password is not None
+        or origin.path
+        or origin.query
+        or origin.fragment
+    ):
+        raise ImproperlyConfigured("PUBLIC_BASE_URL debe ser un origen sin ruta ni credenciales.")
 INSTALLED_APPS = [
     "unfold",
     "django.contrib.admin",
@@ -82,7 +97,11 @@ AUTH_PASSWORD_VALIDATORS = [
     ]
 ]
 LANGUAGE_CODE = "es-co"
-TIME_ZONE = "UTC"
+TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "America/Bogota")
+try:
+    ZoneInfo(TIME_ZONE)
+except (ZoneInfoNotFoundError, ValueError):
+    raise ImproperlyConfigured("DJANGO_TIME_ZONE debe ser una zona horaria válida.") from None
 USE_I18N = True
 USE_TZ = True
 STATIC_URL = "static/"

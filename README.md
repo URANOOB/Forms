@@ -9,7 +9,10 @@ Los nuevos enlaces usan `/f/<uuid>/`; los enlaces anteriores siguen funcionando.
 
 Monolito Django con PostgreSQL y Django Unfold. Incluye la base administrativa,
 constructor visual, formularios públicos sin registro y respuestas privadas en el backend.
-La aplicación todavía no está desplegada en Internet.
+La aplicación se despliega en Vercel desde GitHub (`main`), con Supabase PostgreSQL
+para los datos y Cloudflare R2 privado para los archivos. El dominio principal
+configurado es `www.logicforms.xyz`; consultar la
+[configuración de producción](docs/vercel-deployment.md).
 
 ## Desarrollo local
 
@@ -58,7 +61,7 @@ técnico está inactivo y no tiene contraseña. Usar `createsuperuser` para acce
   encadenadas. Duplicación, orden, obligatoriedad y vista previa interactiva.
 - Editar un formulario publicado crea un nuevo borrador; las versiones anteriores
   y sus respuestas permanecen intactas. Publicar activa la nueva versión.
-- Personal limitado a su workspace activo; usuarios y grupos sólo para superusuarios.
+- Acceso según permisos por rol; administración de usuarios sólo para superusuarios.
 - Restricciones de integridad, protección de versiones publicadas en escrituras
   ordinarias y pruebas sobre PostgreSQL real.
 - Publicación y pausa, URL pública por formulario, validación cliente/servidor,
@@ -75,8 +78,8 @@ enlaces de respuestas/compartir según permisos.
 
 La franja superior ofrece un formulario en blanco y cinco plantillas institucionales.
 Seleccionar una plantilla abre directamente el constructor con el nombre, descripción,
-campos y opciones sugeridos. El formulario en blanco abre el mismo editor. El espacio
-del usuario se selecciona automáticamente; un superusuario puede elegirlo en el editor.
+campos y opciones sugeridos. El formulario en blanco abre el mismo editor. La relación
+histórica con espacios se asigna internamente y no se presenta en el editor.
 El registro se crea al guardar, previsualizar, publicar o subir la primera imagen.
 Abrir la página por sí solo no crea formularios. Nunca publica automáticamente.
 Las plantillas viven en `apps/forms/presets.py` y no requieren tablas adicionales.
@@ -88,10 +91,10 @@ Las plantillas viven en `apps/forms/presets.py` y no requieren tablas adicionale
    **Ver respuestas de este formulario**, sólo para personal autorizado.
 5. **Guardar y pausar recepción** deshabilita el enlace sin borrar los datos recibidos.
 
-La ruta incluye el workspace para evitar colisiones de slug:
-`/f/demo-workspace/registro-pacientes/`. En desarrollo se abre con
-`http://127.0.0.1:8000` como origen. **localhost sólo funciona en tu propio equipo**;
-para compartir por Internet se necesita desplegar Django y configurar un dominio HTTPS.
+La ruta actual es `/f/<uuid>/`; las rutas antiguas con workspace y slug se conservan
+por compatibilidad. En producción, `PUBLIC_BASE_URL` fija el dominio de los enlaces
+compartidos. Sin esa variable se utiliza el origen de la petición.
+**localhost sólo funciona en tu propio equipo**.
 No se publica automáticamente un borrador creado por el seed.
 
 `setup_roles` crea **Administrator**, **Manager**, **Reviewer** y **Viewer** sin datos
@@ -99,11 +102,11 @@ demo; también se ejecuta desde el seed. Los dos primeros reciben permisos Djang
 `view/add/change` sobre los modelos de forms; los otros, `view`. Ninguno recibe delete.
 El comando añade permisos base sin quitar asignaciones personalizadas. La creación
 de la versión inicial es automática; la clonación se reserva para el constructor.
-Todos los grupos pueden consultar respuestas de su workspace; Administrator, Manager
+Todos los grupos pueden consultar respuestas según sus permisos; Administrator, Manager
 y Reviewer pueden cambiar su estado, mientras Viewer sólo lee. Los datos enviados
 no se editan desde el admin. Ejecutar `setup_roles` al actualizar permisos.
-Administrar usuarios/grupos/workspaces requiere `is_superuser`. Para el personal,
-asignar `is_staff`, workspace y grupo. Los grupos no evitan el aislamiento por workspace.
+Administrar usuarios requiere `is_superuser`. Para el personal, asignar `is_staff`
+y los permisos o grupo adecuados. Los espacios históricos no aíslan datos ni permisos.
 
 ## Estructura
 
@@ -120,7 +123,8 @@ asignar `is_staff`, workspace y grupo. Los grupos no evitan el aislamiento por w
 `.env` no se versiona. `manage.py` usa `config.settings.local` por defecto.
 Variables principales: `DATABASE_URL`, `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`,
 `DJANGO_ALLOWED_HOSTS` y `DJANGO_CSRF_TRUSTED_ORIGINS`. Fechas conscientes de zona
-horaria (`USE_TZ=True`), UTC internamente y como zona predeterminada.
+horaria (`USE_TZ=True`), UTC internamente y `America/Bogota` para presentación y
+períodos. `DJANGO_TIME_ZONE` permite configurar otra zona.
 WSGI/ASGI usan `config.settings.production`, que exige secreto de al menos 50
 caracteres y hosts explícitos. En producción, fijar `DJANGO_SETTINGS_MODULE`
 explícitamente y no reutilizar `.env` de desarrollo. Generar un secreto aleatorio
@@ -153,11 +157,12 @@ exactas están en `uv.lock`. Todas las modificaciones de esquema requieren migra
 
 ## Pendiente
 
-Los campos de una versión publicada son inmutables. El proveedor R2 está integrado;
-su activación y el traslado requieren configurar las credenciales del destino.
+Los campos de una versión publicada son inmutables. Supabase y R2 están activos
+en producción; los archivos siguen sujetos al límite de 4,5 MB de Vercel Functions
+hasta adaptar las transferencias grandes.
 Correo y auditoría de lecturas permanecen pendientes.
-La conexión de GitHub no despliega por sí sola este servidor Django: ver
-[compatibilidad con Cloudflare gratuito](docs/cloudflare-deployment.md).
+La integración GitHub/Vercel despliega `main`. La alternativa de Workers gratuito
+permanece experimental: ver [compatibilidad con Cloudflare](docs/cloudflare-deployment.md).
 Para Vercel, consultar la [configuración de arranque y variables](docs/vercel-deployment.md).
 
 Consultar [decisiones de arquitectura](docs/architecture.md) y

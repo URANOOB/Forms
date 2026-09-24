@@ -9,6 +9,8 @@ if len(SECRET_KEY) < 50:  # noqa: F405
     raise ImproperlyConfigured("DJANGO_SECRET_KEY debe contener al menos 50 caracteres.")
 if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:  # noqa: F405
     raise ImproperlyConfigured("Define DJANGO_ALLOWED_HOSTS con dominios explícitos.")
+if PUBLIC_BASE_URL and not PUBLIC_BASE_URL.startswith("https://"):  # noqa: F405
+    raise ImproperlyConfigured("PUBLIC_BASE_URL debe usar HTTPS en producción.")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True

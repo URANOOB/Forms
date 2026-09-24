@@ -22,6 +22,9 @@ Configurar estas variables en los entornos de Vercel donde se vaya a desplegar:
 - `DJANGO_SECRET_KEY`: secreto estable de al menos 50 caracteres.
 - `DJANGO_ALLOWED_HOSTS`: dominios concretos separados por comas, sin `https://`.
 - `DJANGO_CSRF_TRUSTED_ORIGINS`: esos orígenes con `https://`.
+- `PUBLIC_BASE_URL`: origen HTTPS canónico para compartir formularios, sin ruta.
+- `DJANGO_TIME_ZONE=America/Bogota`: fechas, filtros y períodos en hora de Colombia;
+  los instantes se conservan en UTC en PostgreSQL.
 - `DATABASE_URL`: conexión de Supabase con TLS, contraseña codificada en la URL.
 - `FILE_STORAGE=r2`.
 - `R2_BUCKET_NAME`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` y `R2_ENDPOINT`
@@ -40,6 +43,17 @@ Usar el preset Django y el directorio raíz del repositorio. Eliminar cualquier
 comando de build o deploy de Wrangler que se haya copiado a los ajustes de Vercel.
 Los secretos, la base y los dominios deben estar configurados también durante el
 build; no se reemplazan por valores ficticios para ocultar errores de producción.
+
+## Dominio de producción
+
+El dominio principal es `www.logicforms.xyz`; `logicforms.xyz` redirige a él con
+308 desde Vercel. Ambos deben figurar en `DJANGO_ALLOWED_HOSTS` y sus orígenes
+HTTPS en `DJANGO_CSRF_TRUSTED_ORIGINS`. Configurar
+`PUBLIC_BASE_URL=https://www.logicforms.xyz` para que los enlaces de la galería,
+el editor y las publicaciones coincidan aunque se acceda por una URL de Vercel.
+Cambiar variables requiere un nuevo despliegue. La asociación del dominio al
+proyecto no demuestra que DNS ni el certificado TLS estén listos: comprobarlos
+por separado y probar el login con CSRF al terminar la propagación.
 
 ## Alcance y validación
 

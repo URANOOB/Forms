@@ -36,6 +36,7 @@ class VercelDiscoveryTests(SimpleTestCase):
         }
         env.update(
             PYTHON_DOTENV_DISABLED="1",
+            PUBLIC_BASE_URL="",
             DATABASE_URL="postgresql://build:build@127.0.0.1/build",
             DJANGO_SECRET_KEY="discovery-test-key-not-used-for-runtime-sessions-0123456789",
             DJANGO_ALLOWED_HOSTS="build.invalid",
@@ -128,6 +129,20 @@ class VercelDiscoveryTests(SimpleTestCase):
         result = self.discover(env)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("DATABASE_URL es obligatoria", result.stderr)
+
+    def test_invalid_public_origins_are_rejected_in_production(self):
+        for origin in (
+            "http://www.logicforms.xyz",
+            "https://user:secret@www.logicforms.xyz",
+            "https://www.logicforms.xyz/path",
+            "https://www.logicforms.xyz?query=1",
+        ):
+            with self.subTest(origin=origin):
+                env = self.environment()
+                env.update(VERCEL="1", PUBLIC_BASE_URL=origin)
+                result = self.discover(env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("PUBLIC_BASE_URL", result.stderr)
 
     def test_navigation_links_resolve_after_django_startup(self):
         navigation = settings.UNFOLD["SIDEBAR"]["navigation"][0]["items"]

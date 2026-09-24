@@ -80,6 +80,11 @@ si fallan o se interrumpen, no se presenta el total parcial como completo ni com
 Para buckets masivos, sustituir la enumeración síncrona por métricas agregadas o
 un proceso de medición en segundo plano.
 
+Los datos se consultan al abrir o recargar el inicio. La pantalla abierta no hace
+sondeo automático ni recibe actualizaciones en tiempo real. En Vercel la caché
+actual es local a cada instancia, por lo que las horas de consulta pueden variar
+entre instancias sin que cambie la fuente de los datos.
+
 Fuentes: [Supabase Free](https://supabase.com/pricing),
 [tamaño de bases en Supabase](https://supabase.com/docs/guides/platform/database-size),
 [precios y cálculo de R2](https://developers.cloudflare.com/r2/pricing/) y
