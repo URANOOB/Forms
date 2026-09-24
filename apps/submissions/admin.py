@@ -1,11 +1,7 @@
-from pathlib import PurePath
-
 from django.contrib import admin
 from django.db.models import Exists, OuterRef, Q
-from django.template.loader import render_to_string
 from django.urls import path, reverse
 from django.utils.html import format_html_join
-from django.utils.safestring import mark_safe
 
 from apps.forms.admin import PlatformAdmin
 
@@ -32,6 +28,8 @@ class FormFilter(admin.SimpleListFilter):
 
 @admin.register(Submission)
 class SubmissionAdmin(PlatformAdmin):
+    change_list_template = "admin/submissions/board.html"
+    list_fullwidth = True
     list_display = ["__str__", "form", "form_version", "submitted_at", "status"]
     list_filter = [FormFilter, "status", ("submitted_at", admin.DateFieldListFilter)]
     list_select_related = ["form", "form_version__form", "form__workspace"]
@@ -41,6 +39,19 @@ class SubmissionAdmin(PlatformAdmin):
     fields = ["id", "form", "form_version", "submitted_at", "status", "answer_details"]
     actions = None
 
+    def get_changelist(self, request, **kwargs):
+        from .board import ResponseChangeList
+
+        return ResponseChangeList
+
+    def changelist_view(self, request, extra_context=None):
+        from .board import board_context
+
+        response = super().changelist_view(request, extra_context)
+        if getattr(response, "context_data", None) and "cl" in response.context_data:
+            response.context_data.update(board_context(request, response.context_data["cl"], self))
+        return response
+
     def has_add_permission(self, request):
         return False
 
@@ -48,13 +59,29 @@ class SubmissionAdmin(PlatformAdmin):
         return request.user.has_perm("submissions.delete_submission")
 
     def get_urls(self):
-        from .admin_views import response_delete, response_detail, response_edit
+        from .admin_views import (
+            response_attention,
+            response_delete,
+            response_detail,
+            response_edit,
+            response_review,
+        )
+        from .export import response_download, responses_download
 
-        urls = []
+        urls = [
+            path(
+                "download/",
+                self.admin_site.admin_view(lambda request: responses_download(self, request)),
+                name="submissions_submission_download_selected",
+            )
+        ]
         for operation, handler in (
             ("detail", response_detail),
             ("edit", response_edit),
             ("remove", response_delete),
+            ("review", response_review),
+            ("attention", response_attention),
+            ("download", response_download),
         ):
 
             def view(request, object_id, handler=handler):
@@ -117,78 +144,6 @@ class SubmissionAdmin(PlatformAdmin):
 
     @admin.display(description="Datos recibidos")
     def answer_details(self, obj):
-        sections = {}
-        answers = (
-            obj.answers.select_related("field__section")
-            .prefetch_related("field__options", "files")
-            .order_by("field__section__order", "field__section_id", "field__order", "field_id")
-        )
-        for answer in answers:
-            section = answer.field.section
-            bucket = sections.setdefault(section.pk, {"title": section.title, "answers": []})
-            value = answer.value
-            options = {option.value: option.label for option in answer.field.options.all()}
-            attachments = []
-            if answer.field.field_type in {"FILE", "DOCUMENT"}:
-                preview_types = {
-                    ".pdf": "pdf",
-                    ".png": "image",
-                    ".jpg": "image",
-                    ".jpeg": "image",
-                    ".webp": "image",
-                    ".txt": "text",
-                    ".csv": "text",
-                }
-                for file in answer.files.all():
-                    extension = PurePath(file.original_name).suffix.lower()
-                    attachments.append(
-                        {
-                            "name": file.original_name,
-                            "url": file.get_absolute_url(),
-                            "size": file.size,
-                            "extension": extension.lstrip(".").upper() or "ARCHIVO",
-                            "preview": preview_types.get(extension, "unsupported"),
-                        }
-                    )
-                text = "" if attachments else "Sin archivos"
-            elif answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
-                config = answer.field.configuration
-                columns = {column["id"]: column["label"] for column in config.get("columns", [])}
-                value = value if isinstance(value, dict) else {}
-                lines = []
-                for row in config.get("rows", []):
-                    selected = value.get(row["id"], [])
-                    selected = selected if isinstance(selected, list) else [selected]
-                    result = (
-                        ", ".join(columns.get(item, item) for item in selected) or "Sin respuesta"
-                    )
-                    lines.append(f"{row['label']}: {result}")
-                text = "\n".join(lines)
-            elif answer.field.field_type in {"LINEAR_SCALE", "RATING"} and value is not None:
-                text = f"{value} de {answer.field.configuration.get('max', 5)}"
-            elif answer.field.field_type == "SINGLE_CHOICE" and isinstance(value, dict):
-                selected = value.get("selected", "")
-                label = options.get(selected, selected) or "Sin respuesta"
-                detail = value.get("text", "")
-                text = f"{label}: {detail}" if detail else label
-            elif isinstance(value, bool):
-                text = "Sí" if value else "No"
-            elif isinstance(value, list):
-                text = ", ".join(options.get(item, item) for item in value) or "Sin respuesta"
-            elif value is None or value == "":
-                text = "Sin respuesta"
-            else:
-                text = options.get(str(value), str(value))
-            bucket["answers"].append(
-                {
-                    "label": answer.field.label,
-                    "value": text,
-                    "files": attachments,
-                    "wide": answer.field.field_type
-                    in {"FILE", "DOCUMENT", "LONG_TEXT", "GRID_SINGLE", "GRID_MULTIPLE"},
-                    "empty": not attachments and (value is None or value == "" or value == []),
-                }
-            )
-        return mark_safe(
-            render_to_string("admin/submissions/answers.html", {"sections": sections.values()})
-        )
+        from .presentation import render_response_details, response_sections
+
+        return render_response_details(response_sections(obj))

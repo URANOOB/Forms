@@ -33,6 +33,7 @@ class Form(UUIDModel):
     name = models.CharField("nombre", max_length=200)
     slug = models.SlugField(max_length=180)
     description = models.TextField("descripción", blank=True)
+    response_summary = models.JSONField(default=dict, blank=True, validators=[validate_object])
     status = models.CharField("estado", max_length=12, choices=Status, default=Status.DRAFT)
     active_version = models.ForeignKey(
         "FormVersion",

@@ -1,45 +1,56 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/gallery.css' %}?v=gallery-delete-1">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/gallery.js' %}?v=gallery-delete-1" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/gallery.css' %}?v=gallery-polish-3">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/gallery.js' %}?v=gallery-polish-3" defer></script>{% endblock %}
+{% block header %}{% endblock %}
 {% block content %}
 <div class="forms-gallery">
     <section class="recent-zone gallery-inner" aria-labelledby="recent-heading">
-        <div class="recent-heading">
-            <h2 id="recent-heading">Formularios recientes <span class="result-count">{{ cl.result_count }}</span></h2>
-            <div class="gallery-heading-actions">
-                {% if has_add_permission %}<a class="create-form-button" href="{% url 'admin:forms_form_add' %}"><span class="material-symbols-outlined" aria-hidden="true">add</span>Crear formulario</a>{% endif %}
+        <header class="gallery-heading">
+            <div class="gallery-heading-title">
+                {% if is_nav_sidebar_enabled and not is_popup %}<button type="button" class="gallery-navigation" x-on:click="sidebarToggle()" aria-label="Abrir o cerrar navegación"><span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span></button>{% endif %}
+                <div><h1 id="recent-heading">Formularios</h1><p>Administra, publica y revisa tus formularios.</p></div>
+            </div>
+            <div class="gallery-heading-actions">{% if has_add_permission %}<a class="create-form-button" href="{% url 'admin:forms_form_add' %}"><span class="material-symbols-outlined" aria-hidden="true">add</span>Crear formulario</a>{% endif %}{% include "unfold/helpers/userlinks.html" %}</div>
+        </header>
+        <form class="gallery-filters" method="get" role="search" aria-label="Buscar y filtrar formularios">
+            <label class="gallery-search"><span class="material-symbols-outlined" aria-hidden="true">search</span><input type="search" name="q" value="{{ cl.query }}" aria-label="Buscar formularios" placeholder="Buscar formularios…" title="Escribe y pulsa Enter"></label>
+            <details class="gallery-filter-menu">
+                <summary><span class="material-symbols-outlined" aria-hidden="true">filter_list</span>Filtros{% if gallery_filter_count %}<span class="gallery-filter-count" aria-label="{{ gallery_filter_count }} filtros activos">{{ gallery_filter_count }}</span>{% endif %}</summary>
+                <div class="gallery-filter-panel">
+                    <label>Propietario<select name="owner" aria-label="Propietario"><option value="">Cualquier propietario</option><option value="mine" {% if gallery_owner == 'mine' %}selected{% endif %}>Creados por mí</option></select></label>
+                    <label>Estado<select name="status__exact" aria-label="Estado">
+                        <option value="">Todos los estados</option>
+                        <option value="DRAFT" {% if gallery_status == 'DRAFT' %}selected{% endif %}>Borrador</option>
+                        <option value="PUBLISHED" {% if gallery_status == 'PUBLISHED' %}selected{% endif %}>Publicado</option>
+                        <option value="PAUSED" {% if gallery_status == 'PAUSED' %}selected{% endif %}>Pausado</option>
+                        <option value="ARCHIVED" {% if gallery_status == 'ARCHIVED' %}selected{% endif %}>Archivado</option>
+                    </select></label>
+                    <label>Fecha de actualización<select name="updated" aria-label="Fecha de actualización">
+                        <option value="">Cualquier fecha</option>
+                        <option value="today" {% if gallery_updated == 'today' %}selected{% endif %}>Hoy</option>
+                        <option value="week" {% if gallery_updated == 'week' %}selected{% endif %}>Últimos 7 días</option>
+                        <option value="month" {% if gallery_updated == 'month' %}selected{% endif %}>Últimos 30 días</option>
+                    </select></label>
+                    <label>Orden<select name="sort" aria-label="Orden">
+                        <option value="recent" {% if gallery_sort == 'recent' %}selected{% endif %}>Actualizados recientemente</option>
+                        <option value="name" {% if gallery_sort == 'name' %}selected{% endif %}>Nombre: A–Z</option>
+                        <option value="oldest" {% if gallery_sort == 'oldest' %}selected{% endif %}>Actualizados hace más tiempo</option>
+                    </select></label>
+                    <div class="gallery-filter-actions"><a href="{{ gallery_clear_url }}">Limpiar filtros</a><button type="submit">Aplicar</button></div>
+                </div>
+            </details>
             <div class="view-switch" role="group" aria-label="Presentación de formularios">
                 <button type="button" class="view-button is-active" data-view="grid" aria-label="Ver como tarjetas" aria-pressed="true" title="Ver como tarjetas"><span class="material-symbols-outlined" aria-hidden="true">grid_view</span></button>
                 <button type="button" class="view-button" data-view="list" aria-label="Ver como lista" aria-pressed="false" title="Ver como lista"><span class="material-symbols-outlined" aria-hidden="true">view_list</span></button>
             </div>
-        </div>
-        </div>
-        <form class="gallery-filters" method="get" role="search">
-            <label class="gallery-search"><span class="material-symbols-outlined" aria-hidden="true">search</span><input type="search" name="q" value="{{ cl.query }}" aria-label="Buscar formularios" placeholder="Buscar formularios"></label>
-            <label><span class="sr-only">Propietario</span><select name="owner" aria-label="Propietario">
-                <option value="">Cualquier propietario</option><option value="mine" {% if gallery_owner == 'mine' %}selected{% endif %}>Creados por mí</option>
-            </select></label>
-            <label><span class="sr-only">Estado</span><select name="status__exact" aria-label="Estado">
-                <option value="">Todos los estados</option>
-                <option value="DRAFT" {% if gallery_status == 'DRAFT' %}selected{% endif %}>Borrador</option>
-                <option value="PUBLISHED" {% if gallery_status == 'PUBLISHED' %}selected{% endif %}>Publicado</option>
-                <option value="PAUSED" {% if gallery_status == 'PAUSED' %}selected{% endif %}>Pausado</option>
-                <option value="ARCHIVED" {% if gallery_status == 'ARCHIVED' %}selected{% endif %}>Archivado</option>
-            </select></label>
-            <label><span class="sr-only">Ordenar</span><select name="sort" aria-label="Ordenar formularios">
-                <option value="recent" {% if gallery_sort == 'recent' %}selected{% endif %}>Más recientes</option>
-                <option value="name" {% if gallery_sort == 'name' %}selected{% endif %}>Nombre: A–Z</option>
-                <option value="oldest" {% if gallery_sort == 'oldest' %}selected{% endif %}>Más antiguos</option>
-            </select></label>
-            <button class="filter-submit" type="submit">Buscar</button>
         </form>
+        <p class="gallery-result-count" role="status">{{ cl.result_count }} formulario{{ cl.result_count|pluralize }} encontrado{{ cl.result_count|pluralize }}{% if cl.query %} para «{{ cl.query }}»{% endif %}</p>
 
         <div class="form-grid" id="form-grid" data-layout="grid">
         {% for card in cards %}
             <article class="form-card theme-{{ card.theme }}">
-                <a class="card-preview" href="{{ card.edit_url }}" aria-label="Abrir {{ card.form.name }}">
-                    <span class="status-badge status-{{ card.form.status|lower }}">{{ card.form.get_status_display }}</span>
+                <a class="card-preview" href="{{ card.edit_url }}" aria-label="Vista de {{ card.form.name }}">
                     <div class="mini-sheet" aria-hidden="true">
                         <div class="mini-heading"><strong>{{ card.form.name }}</strong><p>{{ card.form.description|truncatechars:130 }}</p><i>* Indica una pregunta obligatoria</i></div>
                         {% for field in card.fields %}
@@ -50,9 +61,12 @@
                     </div>
                 </a>
                 <div class="card-info">
+                    <span class="status-badge status-{{ card.form.status|lower }}">{{ card.form.get_status_display }}</span>
                     <a class="card-title" href="{{ card.edit_url }}" title="{{ card.form.name }}">{{ card.form.name }}</a>
+                    <time class="card-updated" datetime="{{ card.form.updated_at|date:'c' }}" title="Última actualización: {{ card.form.updated_at|date:'j M Y, H:i' }}">{{ card.updated_label }}</time>
+                    <div class="card-context">{% if can_view_responses %}<a href="{{ card.responses_url }}">{{ card.response_count }} respuesta{{ card.response_count|pluralize }}</a>{% else %}<span>{{ card.response_count }} respuesta{{ card.response_count|pluralize }}</span>{% endif %} <span aria-hidden="true">·</span> <span class="card-owner" title="Creado por {{ card.owner_name }}">{{ card.owner_name }}</span></div>
                     <div class="card-bottom">
-                        <div class="card-meta"><span class="form-symbol material-symbols-outlined" aria-hidden="true">description</span><span class="material-symbols-outlined owner-symbol" title="Creado por {{ card.form.created_by.get_username }}" aria-label="Creado por {{ card.form.created_by.get_username }}">group</span><time datetime="{{ card.form.updated_at|date:'c' }}" title="Última modificación">{{ card.form.updated_at|date:'j M Y' }}</time></div>
+                        <a class="card-open" href="{{ card.edit_url }}" aria-label="Abrir {{ card.form.name }}">Abrir<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>
                         <details class="card-menu">
                             <summary aria-label="Acciones de {{ card.form.name }}" title="Acciones"><span class="material-symbols-outlined" aria-hidden="true">more_vert</span></summary>
                             <div class="card-menu-panel">
@@ -79,9 +93,10 @@
             <div class="gallery-empty"><span class="material-symbols-outlined" aria-hidden="true">description</span><h3>No hay formularios para mostrar</h3><p>Prueba con otros filtros{% if has_add_permission %} o pulsa «Crear formulario»{% endif %}.</p><a href="{% url 'admin:forms_form_changelist' %}">Limpiar filtros</a></div>
         {% endfor %}
         </div>
+        {% if cl.multi_page and not cl.show_all %}<nav class="gallery-pagination" aria-label="Páginas de formularios">{% if gallery_previous_url %}<a href="{{ gallery_previous_url }}" rel="prev">← Anterior</a>{% endif %}<span>Página {{ cl.page_num }} de {{ cl.paginator.num_pages }}</span>{% if gallery_next_url %}<a href="{{ gallery_next_url }}" rel="next">Siguiente →</a>{% endif %}</nav>{% endif %}
     </section>
     <div id="gallery-notice" class="gallery-notice" role="status" hidden></div>
     <dialog id="copy-dialog"><form method="dialog"><h2>Enlace del formulario</h2><p>Selecciona y copia esta dirección.</p><input id="copy-fallback" aria-label="URL pública" readonly><button type="submit">Cerrar</button></form></dialog>
 </div>
 {% endblock %}
-{% block footer %}{% include "unfold/helpers/pagination.html" %}{% endblock %}
+{% block footer %}{% endblock %}

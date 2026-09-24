@@ -1,7 +1,7 @@
 # Formularios públicos y respuestas
 
 El enlace público permite GET/POST anónimos; el backend exige usuario staff con permisos
-Django y workspace activo. No confundir acceso anónimo con despliegue: una URL localhost
+Django. No confundir acceso anónimo con despliegue: una URL localhost
 no es accesible desde Internet. No se ha configurado dominio ni hosting.
 
 ## Guardado y privacidad
@@ -23,8 +23,8 @@ La lista de Respuestas incluye iconos para ver, editar y eliminar según los per
 La edición conserva fecha y versión originales, valida los tipos y condiciones y permite
 gestionar adjuntos. Detecta cambios concurrentes antes de guardar. El borrado requiere
 confirmación y elimina los datos y adjuntos de esa respuesta. Las operaciones registran
-entradas en la auditoría del admin. Administrator y Manager pueden eliminar; Reviewer
-puede editar y Viewer sólo consultar. Auditoría de lecturas y retención quedan pendientes.
+entradas en la auditoría del admin. Los roles Administrador y Visor pueden gestionar formularios y respuestas;
+solo el Administrador gestiona usuarios. Ver [roles](users.md). Auditoría de lecturas y retención quedan pendientes.
 
 ## Condiciones y validación
 
@@ -32,7 +32,7 @@ Se admiten texto, correo, teléfono, número, fecha, hora, selección, booleano,
 escalas, calificaciones, cuadrículas, archivos y contenido informativo.
 Las cuadrículas obligatorias requieren respuesta en todas sus filas. Los archivos
 admiten hasta 5 adjuntos por pregunta y hasta 10 MB por archivo, según la configuración.
-Se almacenan en `private_uploads/`; su descarga requiere sesión de personal y
+Se almacenan en `private_uploads/` en local o en R2 privado; su descarga requiere sesión de personal y
 `submissions.view_submission`. No se sirve esa carpeta como contenido público.
 Validaciones configurables: min_length/max_length para textos (máximo 20000),
 min_value/max_value para números. Se rechazan NaN e infinito. Fechas en formato ISO.
@@ -50,11 +50,11 @@ El botón se bloquea durante el envío; la garantía de unicidad está en Postgr
 
 ## Operación
 
-Publicar/Pausar se ofrece en el detalle y en acciones de FormAdmin. El enlace incluye
-workspace y slug, y se construye sobre el host de la petición; configurar hosts/orígenes
+Publicar/Pausar se ofrece en el detalle y en acciones de FormAdmin. El enlace usa un UUID (se conservan los enlaces legacy por workspace/slug), y se construye sobre el host de la petición; configurar hosts/orígenes
 HTTPS del despliegue antes de compartir. El esquema publicado es de sólo lectura;
-para modificarlo, el constructor guarda automáticamente una nueva versión en borrador.
-La nueva versión se activa al pulsar Publicar; las respuestas previas no se modifican.
+para modificarlo, el constructor genera una nueva versión. Guardar un formulario ya
+publicado activa esa versión conservando el estado de acceso; las respuestas previas
+no se modifican. Un formulario pausado muestra un aviso y rechaza nuevos envíos.
 
 Referencias: [firma de datos en Django](https://docs.djangoproject.com/en/5.2/topics/signing/)
 y [validación de formularios](https://docs.djangoproject.com/en/5.2/ref/forms/validation/).

@@ -9,9 +9,11 @@ from django.db import transaction
 from django.db.models import Max
 
 from .appearance import validate_appearance
+from .catalog_import import MAX_OPTIONS
 from .conditions import FormSchema
 from .models import ConditionalRule, FieldOption, Form, FormField, FormSection, FormVersion
 from .public_fields import CHOICE_TYPES
+from .response_summary import validate_response_summary
 
 
 class StaleDraft(ValidationError):
@@ -74,6 +76,7 @@ def document(version):
         "status": version.status,
         "title": version.title or form.name,
         "description": version.description if version.title else form.description,
+        "response_summary": form.response_summary,
         "appearance": version.appearance,
         "welcome": {
             **version.welcome,
@@ -245,10 +248,20 @@ def save_document(form_id, data, publish=False):
                 image=image,
             )
             fields[key] = field
-            options = rows(field_data, "options", 100)
+            options = rows(field_data, "options", MAX_OPTIONS)
             if options and kind not in CHOICE_TYPES:
                 raise ValidationError("Sólo las preguntas de selección admiten opciones.")
+            pending_options, option_values = [], set()
             for k, option in enumerate(options):
+                value = text_value(option, "value", 150)
+                label = text_value(option, "label", 240)
+                if not value or not label or value in option_values:
+                    raise ValidationError(
+                        "Cada opción necesita una etiqueta y un valor único no vacío."
+                    )
+                if not isinstance(option.get("is_active", True), bool):
+                    raise ValidationError("Revisa si la opción está activa.")
+                option_values.add(value)
                 option_image = None
                 if option.get("image"):
                     try:
@@ -257,14 +270,19 @@ def save_document(form_id, data, publish=False):
                         raise ValidationError(
                             "La imagen de la opción no pertenece a este formulario."
                         ) from None
-                FieldOption.objects.create(
-                    field=field,
-                    order=k,
-                    label=text_value(option, "label", 240),
-                    value=text_value(option, "value", 150),
-                    is_active=option.get("is_active", True),
-                    image=option_image,
+                pending_options.append(
+                    FieldOption(
+                        field=field,
+                        order=k,
+                        label=label,
+                        value=value,
+                        is_active=option.get("is_active", True),
+                        image=option_image,
+                    )
                 )
+            # The draft is locked and option invariants (type, lengths, uniqueness,
+            # booleans and image ownership) are checked above. Batch large catalogs.
+            FieldOption.objects.bulk_create(pending_options, batch_size=500)
     # Section ids are regenerated on every draft save; remap navigation as well.
     for section_data in sections_data:
         section = sections[text_value(section_data, "id", 100)]
@@ -300,8 +318,11 @@ def save_document(form_id, data, publish=False):
             group_operator=text_value(rule, "group_operator", 3, "AND"),
         )
     FormSchema(version)  # Validate values and reject cycles before committing any changes.
+    form.response_summary = validate_response_summary(
+        data.get("response_summary", form.response_summary), fields.values()
+    )
     form.name, form.description = title, description
-    form.save(update_fields=["name", "description", "updated_at"])
+    form.save(update_fields=["name", "description", "response_summary", "updated_at"])
     if publish or form.status in {Form.Status.PUBLISHED, Form.Status.PAUSED}:
         from .publication import publish_form
 

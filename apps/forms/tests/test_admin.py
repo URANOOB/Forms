@@ -1,13 +1,14 @@
 from io import StringIO
 
-from django.contrib.auth.models import Permission
+from django.contrib import admin
+from django.contrib.auth.models import Group, Permission
 from django.core.management import call_command
 from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.accounts.models import User, Workspace
+from apps.accounts.models import User, Workspace, legacy_form_container
 from apps.forms.models import (
     ConditionalRule,
     FieldOption,
@@ -46,17 +47,16 @@ class AdminAccessTests(TestCase):
     def setUp(self):
         self.client.force_login(self.manager)
 
-    def test_changelist_hides_other_workspaces(self):
+    def test_changelist_shares_forms_across_legacy_workspaces(self):
         response = self.client.get(reverse("admin:forms_form_changelist"))
         self.assertContains(response, "Formulario propio")
-        self.assertNotContains(response, "Formulario ajeno")
+        self.assertContains(response, "Formulario ajeno")
 
-    def test_direct_access_to_foreign_form_is_denied(self):
+    def test_editor_can_open_forms_from_legacy_workspaces(self):
         response = self.client.get(reverse("admin:forms_form_change", args=[self.foreign.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.assertNotContains(response, "Formulario ajeno", status_code=302)
+        self.assertContains(response, "Formulario ajeno")
 
-    def test_forged_workspace_on_create_is_rejected(self):
+    def test_legacy_create_ignores_supplied_workspace_and_slug(self):
         response = self.client.post(
             reverse("admin:forms_form_add"),
             {
@@ -67,8 +67,10 @@ class AdminAccessTests(TestCase):
                 "versions-INITIAL_FORMS": "0",
             },
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(Form.objects.filter(slug="ataque").exists())
+        self.assertEqual(response.status_code, 302)
+        created = Form.objects.get(name="Ataque")
+        self.assertEqual(created.workspace, legacy_form_container())
+        self.assertNotEqual(created.slug, "ataque")
 
     def test_create_form_creates_initial_draft(self):
         response = self.client.post(
@@ -82,11 +84,11 @@ class AdminAccessTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
-        form = Form.objects.get(slug="nuevo")
+        form = Form.objects.get(name="Nuevo")
         self.assertEqual(form.created_by, self.manager)
         self.assertEqual(form.versions.get().version_number, 1)
 
-    def test_archive_action_is_scoped(self):
+    def test_archive_action_applies_to_selected_shared_forms(self):
         self.client.post(
             reverse("admin:forms_form_changelist"),
             {
@@ -97,7 +99,7 @@ class AdminAccessTests(TestCase):
         self.form.refresh_from_db()
         self.foreign.refresh_from_db()
         self.assertEqual(self.form.status, "ARCHIVED")
-        self.assertEqual(self.foreign.status, "DRAFT")
+        self.assertEqual(self.foreign.status, "ARCHIVED")
 
     def test_no_normal_hard_delete_even_for_superuser(self):
         self.client.force_login(self.admin)
@@ -109,24 +111,25 @@ class AdminAccessTests(TestCase):
 
     def test_no_privilege_escalation_through_user_or_group_admin(self):
         self.manager.user_permissions.set(Permission.objects.all())
-        for name in ("accounts_user", "accounts_workspace", "auth_group"):
-            with self.subTest(name=name):
-                self.assertEqual(
-                    self.client.get(reverse(f"admin:{name}_changelist")).status_code, 403
-                )
+        self.assertEqual(
+            self.client.get(reverse("admin:accounts_user_changelist")).status_code, 403
+        )
+        self.assertFalse(admin.site.is_registered(Workspace))
+        self.assertFalse(admin.site.is_registered(Group))
 
-    def test_inactive_workspace_denies_access(self):
+    def test_legacy_workspace_activity_does_not_control_access(self):
         self.workspace.is_active = False
         self.workspace.save()
         response = self.client.get(reverse("admin:forms_form_change", args=[self.form.pk]))
-        self.assertIn(response.status_code, [302, 403])
-        self.assertEqual(self.client.get(reverse("admin:forms_form_add")).status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get(reverse("admin:forms_form_add")).status_code, 200)
 
-    def test_staff_without_workspace_sees_no_forms(self):
+    def test_authorized_staff_without_workspace_sees_shared_forms(self):
         self.manager.workspace = None
         self.manager.save()
         response = self.client.get(reverse("admin:forms_form_changelist"))
-        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "Formulario propio")
+        self.assertContains(response, "Formulario ajeno")
 
     def test_viewer_cannot_change_or_archive(self):
         self.manager.user_permissions.set(
@@ -154,8 +157,6 @@ class AdminAccessTests(TestCase):
             "index",
             "accounts_user_add",
             "accounts_user_changelist",
-            "accounts_workspace_add",
-            "auth_group_add",
             "forms_form_add",
         ):
             with self.subTest(page=name):
@@ -167,9 +168,9 @@ class AdminAccessTests(TestCase):
         self.client.logout()
         self.assertEqual(self.client.get("/admin/").status_code, 302)
         self.assertEqual(self.client.get("/f/registro/").status_code, 404)
-        self.assertEqual(self.client.get("/").status_code, 404)
+        self.assertEqual(self.client.get("/").status_code, 200)
 
-    def test_schema_admin_is_scoped_in_lists_objects_and_foreign_keys(self):
+    def test_schema_admin_shares_legacy_workspaces_and_allows_draft_relations(self):
         self.manager.user_permissions.set(
             Permission.objects.filter(content_type__app_label="forms")
         )
@@ -196,13 +197,13 @@ class AdminAccessTests(TestCase):
             with self.subTest(model=model):
                 response = self.client.get(reverse(f"admin:forms_{model}_changelist"))
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(list(response.context["cl"].queryset), [])
+                self.assertIn(obj, response.context["cl"].queryset)
                 response = self.client.get(reverse(f"admin:forms_{model}_change", args=[obj.pk]))
-                self.assertEqual(response.status_code, 302)
+                self.assertEqual(response.status_code, 200)
                 if model != "formversion":
                     response = self.client.get(reverse(f"admin:forms_{model}_add"))
                     self.assertEqual(response.status_code, 200)
-                    self.assertNotContains(response, "ajeno")
+                    self.assertContains(response, "ajeno")
         response = self.client.post(
             reverse("admin:forms_formsection_add"),
             {
@@ -212,8 +213,8 @@ class AdminAccessTests(TestCase):
                 "configuration": "{}",
             },
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertFalse(FormSection.objects.filter(title="Intrusión").exists())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(FormSection.objects.get(title="Intrusión").form_version, version)
 
     def test_schema_admin_can_create_draft_content_and_protects_published_content(self):
         self.manager.user_permissions.set(

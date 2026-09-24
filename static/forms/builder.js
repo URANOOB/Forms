@@ -56,6 +56,7 @@
     );
   const fields = () => state.sections.flatMap((section) => section.fields);
   const findField = (id) => fields().find((field) => field.id === id);
+  const catalogChildren = (field) => fields().filter((item) => item.configuration.option_filter?.source === field.stable_key);
   const findSection = (id) =>
     state.sections.find((section) => section.id === id);
   const selectedSection = () =>
@@ -167,11 +168,9 @@
         state.rules.filter((r) => r.group_key === rule.group_key).length === 1)
     );
   }
-  function branchToggle(field) {
-    if (!canBranch(field)) return "";
-    const count = state.rules.filter((rule) => simpleBranch(rule, field)).length;
-    const expanded = expandedBranches.get(field.id) ?? count > 0;
-    return `<button type="button" class="branch-toggle" data-action="toggle-branches" aria-expanded="${expanded}" aria-controls="branches-${esc(field.id)}"><span class="branch-toggle-icon material-symbols-outlined" aria-hidden="true">account_tree</span><span class="branch-toggle-copy"><strong>Mostrar según respuesta</strong><small>Define qué preguntas o secciones aparecen con cada opción.</small></span><span class="branch-toggle-count">${count ? `${count} ${count === 1 ? "condición" : "condiciones"}` : "Configurar"}</span><span class="branch-toggle-chevron material-symbols-outlined" aria-hidden="true">expand_more</span></button>`;
+  function additionalToggle(field) {
+    const expanded = expandedAdditional.get(field.id) ?? true;
+    return `<button type="button" class="additional-toggle" data-action="toggle-additional-settings" aria-expanded="${expanded}" aria-controls="additional-settings-${esc(field.id)}"><span class="additional-toggle-icon material-symbols-outlined" aria-hidden="true">edit_note</span><span class="additional-toggle-copy"><strong>Campo adicional</strong><small>Configura cuándo aparece y qué información solicitar.</small></span><span class="additional-toggle-chevron material-symbols-outlined" aria-hidden="true">expand_more</span></button>`;
   }
   function branchTargets(field) {
     let number = 0;
@@ -207,6 +206,7 @@
     const targets = branchTargets(field);
     const entries = [...branches, ...drafts.map((draft) => ({ draft }))];
     return `<div class="answer-branches" id="branches-${esc(field.id)}">
+      <div class="branch-settings-heading"><strong>Mostrar según respuesta</strong>${icon("toggle-branches", "close", "Cerrar configuración de mostrar según respuesta")}</div>
       <p>El contenido elegido se mostrará cuando se cumpla la condición.</p>
       <div class="branch-rules">${entries.map(({ rule, index, draft }, position) => {
         const current = rule ? (rule.target_field ? `f:${rule.target_field}` : `s:${rule.target_section}`) : "";
@@ -311,7 +311,8 @@
     const symbol = (key) => `<span class="material-symbols-outlined" aria-hidden="true">${questionTypeIcons[key] || "help_outline"}</span>`;
     const available = ["SHORT_TEXT", "LONG_TEXT", "NUMBER", "EMAIL", "PHONE", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "DROPDOWN", "DROPDOWN_SEARCH", "DROPDOWN_EXTRA", "FILE", "LINEAR_SCALE", "RATING", "GRID_SINGLE", "GRID_MULTIPLE", "DATE", "TIME"];
     const menuId = `type-menu-${field.id}`;
-    return `<div class="question-type-picker"><select data-prop="field_type" hidden aria-label="Tipo de pregunta">${typeOptions(field)}</select><button type="button" class="question-type" data-action="toggle-type-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="${esc(menuId)}" aria-label="Tipo de pregunta: ${esc(label)}">${symbol(value)}<span class="question-type-label">${esc(label)}</span><span class="material-symbols-outlined" aria-hidden="true">expand_more</span></button><div id="${esc(menuId)}" class="question-type-menu" popover="manual" role="menu" aria-label="Tipo de pregunta">${available.map((key) => `<button type="button" role="menuitemradio" aria-checked="${key === value}" tabindex="-1" data-action="choose-question-type" data-type="${key}">${symbol(key)}<span>${esc(types.find(([type]) => type === key)?.[1] || key)}</span></button>`).join("")}</div></div>`;
+    const importAction = `<button type="button" role="menuitem" class="catalog-menu-entry" tabindex="-1" data-open-catalog aria-haspopup="dialog" aria-controls="catalog-import"><span class="material-symbols-outlined" aria-hidden="true">table_view</span><span class="catalog-menu-copy"><strong>Crear campos desde archivo</strong><small>Elige campos y relaciones</small></span></button>`;
+    return `<div class="question-type-picker"><select data-prop="field_type" hidden aria-label="Tipo de pregunta">${typeOptions(field)}</select><button type="button" class="question-type" data-action="toggle-type-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="${esc(menuId)}" aria-label="Tipo de pregunta: ${esc(label)}">${symbol(value)}<span class="question-type-label">${esc(label)}</span><span class="material-symbols-outlined" aria-hidden="true">expand_more</span></button><div id="${esc(menuId)}" class="question-type-menu" popover="manual" role="menu" aria-label="Tipo de pregunta">${available.map((key) => `<button type="button" role="menuitemradio" aria-checked="${key === value}" tabindex="-1" data-action="choose-question-type" data-type="${key}">${symbol(key)}<span>${esc(types.find(([type]) => type === key)?.[1] || key)}</span></button>${key === "DROPDOWN_EXTRA" ? importAction : ""}`).join("")}</div></div>`;
   }
   function closeTypeMenu(restoreFocus = false) {
     if (!openTypeMenu) return;
@@ -356,9 +357,9 @@
   }
   function questionMoreMenu(field) {
     const id = `question-more-${field.id}`;
-    const additional = editorType(field) === "DROPDOWN_EXTRA";
-    const expanded = expandedAdditional.get(field.id) === true;
-    return `<div class="question-more-picker"><button type="button" class="icon-button" data-action="toggle-type-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="${esc(id)}" aria-label="Más opciones del componente" title="Más opciones"><span class="material-symbols-outlined" aria-hidden="true">more_vert</span></button><div id="${esc(id)}" class="question-type-menu question-more-menu" popover="manual" role="menu" aria-label="Más opciones del componente"><button type="button" role="menuitemcheckbox" aria-checked="${descriptionVisible(field)}" aria-controls="question-description-${esc(field.id)}" tabindex="-1" data-action="toggle-description"><span class="material-symbols-outlined" aria-hidden="true">notes</span><span>Descripción</span><span class="more-menu-check material-symbols-outlined" aria-hidden="true">check</span></button>${additional ? `<button type="button" role="menuitemcheckbox" aria-checked="${expanded}" aria-controls="additional-settings-${esc(field.id)}" tabindex="-1" data-action="toggle-additional-settings"><span class="material-symbols-outlined" aria-hidden="true">edit_note</span><span>Campo adicional</span><span class="more-menu-check material-symbols-outlined" aria-hidden="true">check</span></button>` : ""}<button type="button" role="menuitem" tabindex="-1" data-action="move-question"><span class="material-symbols-outlined" aria-hidden="true">drive_file_move</span><span>Mover a otra sección</span></button></div></div>`;
+    const count = state.rules.filter((rule) => simpleBranch(rule, field)).length;
+    const expanded = expandedBranches.get(field.id) ?? count > 0;
+    return `<div class="question-more-picker"><button type="button" class="icon-button" data-action="toggle-type-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="${esc(id)}" aria-label="Más opciones del componente" title="Más opciones"><span class="material-symbols-outlined" aria-hidden="true">more_vert</span></button><div id="${esc(id)}" class="question-type-menu question-more-menu" popover="manual" role="menu" aria-label="Más opciones del componente"><button type="button" role="menuitemcheckbox" aria-checked="${descriptionVisible(field)}" aria-controls="question-description-${esc(field.id)}" tabindex="-1" data-action="toggle-description"><span class="material-symbols-outlined" aria-hidden="true">notes</span><span>Descripción</span><span class="more-menu-check material-symbols-outlined" aria-hidden="true">check</span></button>${canBranch(field) ? `<button type="button" role="menuitemcheckbox" aria-checked="${expanded}" aria-controls="branches-${esc(field.id)}" tabindex="-1" data-action="toggle-branches"><span class="material-symbols-outlined" aria-hidden="true">account_tree</span><span>Mostrar según respuesta${count ? `<small class="more-menu-detail">${count} ${count === 1 ? "condición" : "condiciones"}</small>` : ""}</span><span class="more-menu-check material-symbols-outlined" aria-hidden="true">check</span></button>` : ""}<button type="button" role="menuitem" tabindex="-1" data-action="move-question"><span class="material-symbols-outlined" aria-hidden="true">drive_file_move</span><span>Mover a otra sección</span></button></div></div>`;
   }
   root.addEventListener("builder:close-menus", () => closeTypeMenu(true));
   function additionalTextOptions(field) {
@@ -388,9 +389,9 @@
       const placeholder = config.additional_text_placeholder ?? "Por favor escriba cual";
       const inputTypes = [["text", "Texto"], ["number", "Numérico"], ["email", "Correo electrónico"]];
       const typeLabel = inputTypes.find(([value]) => value === inputType)?.[1] || "Texto";
-      const expanded = expandedAdditional.get(field.id) === true;
+      const expanded = expandedAdditional.get(field.id) ?? true;
       return `<div class="additional-choice-settings" id="additional-settings-${esc(field.id)}" ${expanded ? "" : "hidden"}>
-        <div class="additional-settings-heading"><div><strong>Campo adicional</strong><p data-additional-summary>${esc(additionalSummary(field))}</p></div><button type="button" class="icon-button" data-action="toggle-additional-settings" aria-label="Cerrar configuración del campo adicional" title="Cerrar configuración"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></div>
+        <p data-additional-summary>${esc(additionalSummary(field))}</p>
         <div class="additional-choice-controls">
           ${additionalPicker(field, "trigger")}
           ${additionalPicker(field, "type")}
@@ -489,6 +490,12 @@
     let body = "";
     if (choices.has(field.field_type)) {
       body = `<div class="option-list">${field.options.map((o, i) => `<div class="option-row"><span class="option-marker ${field.field_type === "MULTIPLE_CHOICE" ? "square" : ""}" aria-hidden="true"></span><input data-option="${i}" maxlength="240" aria-label="Opción ${i + 1}" value="${esc(o.label)}">${o.image_url ? `<img class="option-image-thumbnail" src="${esc(o.image_url)}" alt="Imagen de ${esc(o.label)}">` : ""}${icon("upload-option-image", "image", o.image_url ? "Cambiar imagen de la opción" : "Añadir imagen a la opción", `data-option="${i}"`)}${o.image_url ? icon("remove-option-image", "hide_image", "Quitar imagen de la opción", `data-option="${i}"`) : ""}${icon("remove-option", "close", "Quitar opción", `data-option="${i}"`)}</div>`).join("")}<button type="button" class="text-button" data-action="add-option">＋ Añadir opción</button></div>`;
+      const relation = field.configuration.option_filter;
+      const dependents = catalogChildren(field);
+      if (relation || dependents.length || field.configuration.catalog_import) {
+        const parent = fields().find((item) => item.stable_key === relation?.source);
+        body = `<div class="catalog-link-note"><strong>${relation ? `Opciones según «${esc(parent?.label || "Campo no disponible") }»` : dependents.length ? `Agrupa las opciones de ${dependents.map((item) => `«${esc(item.label)}»`).join(", ")}` : "Opciones importadas desde Excel"}</strong><p>Para cambiar códigos o relaciones, vuelve a importar la tabla.</p></div><details class="catalog-option-list"><summary>${field.options.length} opciones importadas · Ver lista</summary><ul>${field.options.map((option) => `<li><code>${esc(option.value)}</code> ${esc(option.label)}</li>`).join("")}</ul></details>`;
+      }
     } else if (grids.has(field.field_type) || files.has(field.field_type) || ["LINEAR_SCALE", "RATING"].includes(field.field_type))
       body = settingsFor(field);
     else if (!display.has(field.field_type))
@@ -498,8 +505,9 @@
     else if (field.field_type === "IMAGE")
       body +=
         '<div class="image-empty"><button type="button" class="text-button" data-action="upload-image">Seleccionar imagen</button><p>PNG, JPG o WebP · Hasta 5 MB</p></div>';
-    if (editorType(field) === "DROPDOWN_EXTRA") body += settingsFor(field);
-    return `<article class="question-card ${active === field.id ? "active" : ""}" data-field="${esc(field.id)}"><button type="button" class="question-drag-handle" data-action="move-question" aria-label="Arrastrar o mover: ${esc(field.label || 'Componente sin título')}" title="Arrastra para mover o pulsa para elegir destino"><span class="material-symbols-outlined" aria-hidden="true">drag_indicator</span></button><button type="button" class="question-preview" data-action="activate-question" aria-label="Editar: ${esc(field.label || "Pregunta sin título")}" ${active === field.id ? "hidden" : ""}>${questionPreview(field)}</button><div class="question-editor" ${active === field.id ? "" : "hidden"}><div class="question-top"><input class="question-title" data-prop="label" maxlength="240" aria-label="Título de la pregunta" value="${esc(field.label)}">${typePicker(field)}</div><input class="question-help" id="question-description-${esc(field.id)}" ${descriptionVisible(field) ? "" : "hidden"} data-prop="help_text" maxlength="10000" aria-label="Descripción de la pregunta" placeholder="Descripción (opcional)" value="${esc(field.help_text)}">${body}${branchToggle(field)}${answerBranches(field)}<footer class="question-footer"><div class="question-actions">${icon("duplicate-question", "content_copy", "Duplicar pregunta")}${icon("remove-question", "delete", "Eliminar pregunta")}${!display.has(field.field_type) ? `<label class="required-toggle">Obligatorio <input type="checkbox" data-prop="required" ${field.required ? "checked" : ""}></label>` : ""}${questionMoreMenu(field)}</div></footer></div></article>`;
+    body += answerBranches(field);
+    if (editorType(field) === "DROPDOWN_EXTRA") body += additionalToggle(field) + settingsFor(field);
+    return `<article class="question-card ${active === field.id ? "active" : ""}" data-field="${esc(field.id)}"><button type="button" class="question-drag-handle" data-action="move-question" aria-label="Arrastrar o mover: ${esc(field.label || 'Componente sin título')}" title="Arrastra para mover o pulsa para elegir destino"><span class="material-symbols-outlined" aria-hidden="true">drag_indicator</span></button><button type="button" class="question-preview" data-action="activate-question" aria-label="Editar: ${esc(field.label || "Pregunta sin título")}" ${active === field.id ? "hidden" : ""}>${questionPreview(field)}</button><div class="question-editor" ${active === field.id ? "" : "hidden"}><div class="question-top"><input class="question-title" data-prop="label" maxlength="240" aria-label="Título de la pregunta" value="${esc(field.label)}">${typePicker(field)}</div><input class="question-help" id="question-description-${esc(field.id)}" ${descriptionVisible(field) ? "" : "hidden"} data-prop="help_text" maxlength="10000" aria-label="Descripción de la pregunta" placeholder="Descripción (opcional)" value="${esc(field.help_text)}">${body}<footer class="question-footer"><div class="question-actions">${icon("duplicate-question", "content_copy", "Duplicar pregunta")}${icon("remove-question", "delete", "Eliminar pregunta")}${!display.has(field.field_type) ? `<label class="required-toggle">Obligatorio <input type="checkbox" data-prop="required" ${field.required ? "checked" : ""}></label>` : ""}${questionMoreMenu(field)}</div></footer></div></article>`;
   }
   function sectionNavigation(section, index) {
     const destinations = [
@@ -611,6 +619,11 @@
     if (restoreFocus) trigger.focus({ preventScroll: true });
   }
   function renderSettings() {
+    const summary = state.response_summary || {};
+    const eligible = fields().filter((field) => !["HEADING", "INFORMATION", "IMAGE", "FILE", "DOCUMENT", "GRID_SINGLE", "GRID_MULTIPLE"].includes(field.field_type));
+    const choices = [["", "Automático"], ...eligible.map((field) => [field.stable_key, field.label])];
+    const summaryOptions = (selected, empty) => options([["", empty], ...choices.slice(1), ...(selected && !eligible.some((field) => field.stable_key === selected) ? [[selected, "Campo eliminado — elige otro"]] : [])], selected || "");
+    document.getElementById("response-summary-fields").innerHTML = `<label>Título de la respuesta<select data-summary-title>${summaryOptions(summary.title, "Automático: nombre del respondiente")}</select></label>${[0, 1, 2].map((i) => `<div class="response-summary-setting"><label>Dato ${i + 1}<select data-summary-field="${i}">${summaryOptions(summary.fields?.[i]?.key, "Sin seleccionar")}</select></label><label class="summary-mask"><input type="checkbox" data-summary-mask="${i}" ${summary.fields?.[i]?.masked ? "checked" : ""} ${summary.fields?.[i]?.key ? "" : "disabled"}> Ocultar parte del dato (•••• 4521)</label></div>`).join("")}`;
     root.querySelectorAll("[data-form-setting]").forEach((input) => {
       input.value = state[input.dataset.formSetting] || "";
     });
@@ -684,6 +697,28 @@
       )
       ?.scrollIntoView({ behavior: "instant", block: "start" });
   }
+  root.addEventListener("builder:import-catalog", (event) => {
+    const request = event.detail;
+    if (busy || root.dataset.archived === "true") { request.error = "No se puede importar en este momento."; return; }
+    if (fields().length + request.fields.length > 200) { request.error = "El formulario admite hasta 200 componentes."; return; }
+    let section = selectedSection();
+    if (!section) { section = newSection(); state.sections.push(section); }
+    const imported = structuredClone(request.fields);
+    // Every application gets fresh stable keys, including repeated imports of one file.
+    const keys = new Map(imported.map((field) => [field.stable_key, `q_${uid().replaceAll("-", "_")}`]));
+    for (const field of imported) {
+      field.id = uid();
+      field.stable_key = keys.get(field.stable_key);
+      if (field.configuration.option_filter) field.configuration.option_filter.source = keys.get(field.configuration.option_filter.source);
+    }
+    const index = section.fields.findIndex((field) => field.id === active);
+    section.fields.splice(index < 0 ? section.fields.length : index + 1, 0, ...imported);
+    active = imported[0].id;
+    changed();
+    render();
+    focusCard(active);
+    notify(`Se añadieron ${imported.length} campos relacionados. Guarda para conservarlos.`);
+  });
   root.addEventListener("builder:navigate", (event) => {
     if (busy) return;
     const id = event.detail;
@@ -721,6 +756,13 @@
       if (section === destination) items.splice(index, 0, field);
       return { ...section, fields: items };
     });
+    const ordered = proposed.flatMap((section) => section.fields);
+    const invalidRelation = ordered.find((item, index) => item.configuration.option_filter
+      && ordered.findIndex((source) => source.stable_key === item.configuration.option_filter.source) >= index);
+    if (invalidRelation) {
+      request.error = `El agrupador debe aparecer antes de «${invalidRelation.label}».`;
+      return;
+    }
     // Moving a source into its own conditional section can create a dependency cycle.
     const graph = new Map(fields().map((item) => [item.id, new Set()]));
     for (const rule of state.rules) {
@@ -881,6 +923,16 @@
   root.addEventListener("focusout", () => { lastEdit = null; });
   root.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.matches("[data-summary-title],[data-summary-field],[data-summary-mask]")) {
+      const container = document.getElementById("response-summary-fields");
+      state.response_summary = {
+        title: container.querySelector("[data-summary-title]").value,
+        fields: [...container.querySelectorAll("[data-summary-field]")].map((select, i) => ({ key: select.value, masked: container.querySelector(`[data-summary-mask="${i}"]`).checked })).filter((entry) => entry.key),
+      };
+      changed();
+      renderSettings();
+      return;
+    }
     if (el.dataset.theme) { updateTheme(el); return; }
     if (el.hasAttribute("data-additional-trigger")) {
       const field = findField(el.closest("[data-field]").dataset.field);
@@ -932,6 +984,11 @@
     else if (prop === "field_type") {
       const dropdown = ["DROPDOWN", "DROPDOWN_SEARCH", "DROPDOWN_EXTRA"].includes(el.value);
       const kind = dropdown ? "SINGLE_CHOICE" : el.value;
+      if ((field.configuration.option_filter && !dropdown) || (catalogChildren(field).length && kind !== "SINGLE_CHOICE")) {
+        notify("Este campo forma parte de una lista relacionada. Conserva un tipo de selección compatible.", true);
+        render();
+        return;
+      }
       if (kind === "SINGLE_CHOICE" && field.field_type === kind) {
         field.configuration.widget = dropdown ? "select" : "radio";
         field.configuration.searchable = el.value === "DROPDOWN_SEARCH";
@@ -1056,6 +1113,7 @@
     }
   }
   root.addEventListener("click", async (e) => {
+    if (e.target.closest("[data-open-catalog]")) return;
     const button = e.target.closest("button[data-action]");
     if (!button && !busy) {
       const card = e.target.closest(".question-card");
@@ -1244,6 +1302,11 @@
       );
       active = f.id;
     } else if (action === "remove-section") {
+      const removedKeys = new Set(section.fields.map((item) => item.stable_key));
+      if (fields().some((item) => !removedKeys.has(item.stable_key) && removedKeys.has(item.configuration.option_filter?.source))) {
+        notify("Esta sección contiene el agrupador de otro campo. Elimina primero el campo dependiente o muévelo a esta sección.", true);
+        return;
+      }
       if (
         section.fields.length &&
         !confirm("¿Eliminar esta sección, sus preguntas y sus condiciones?")
@@ -1267,6 +1330,7 @@
         state.sections[index],
       ];
     } else if (action === "remove-question") {
+      if (catalogChildren(field).length) { notify("Elimina primero los campos que dependen de este agrupador.", true); return; }
       pruneRules([field.id]);
       section.fields = section.fields.filter((f) => f !== field);
       active = section.id;
@@ -1337,15 +1401,13 @@
       target?.focus({ preventScroll: true });
       return;
     } else if (action === "toggle-additional-settings") {
-      const expanded = expandedAdditional.get(field.id) !== true;
+      const expanded = !(expandedAdditional.get(field.id) ?? true);
       expandedAdditional.set(field.id, expanded);
       closeTypeMenu();
       const settings = document.getElementById(`additional-settings-${field.id}`);
       settings.hidden = !expanded;
-      card.querySelector('.question-more-menu [data-action="toggle-additional-settings"]').setAttribute("aria-checked", String(expanded));
-      const target = expanded ? settings.querySelector('[data-action="toggle-type-menu"]')
-        : card.querySelector('.question-more-picker > [data-action="toggle-type-menu"]');
-      target?.focus({ preventScroll: true });
+      button.setAttribute("aria-expanded", String(expanded));
+      button.focus({ preventScroll: true });
       return;
     } else if (action === "toggle-branches") {
       const open =
@@ -1353,7 +1415,10 @@
         state.rules.some((r) => simpleBranch(r, field));
       expandedBranches.set(field.id, !open);
       render();
-      container.querySelector(`[data-field="${CSS.escape(field.id)}"] [data-action="toggle-branches"]`)?.focus({ preventScroll: true });
+      const updatedCard = container.querySelector(`[data-field="${CSS.escape(field.id)}"]`);
+      const target = open ? updatedCard.querySelector('.question-more-picker > [data-action="toggle-type-menu"]')
+        : updatedCard.querySelector('[data-branch-answer]');
+      target?.focus({ preventScroll: true });
       return;
     } else if (action === "add-branch") {
       const draft = { id: uid(), answer: "any" };

@@ -208,8 +208,8 @@ def editor_view(model_admin, request, object_id, operation="edit"):
                     }[operation],
                 )
                 return JsonResponse(document(current_version(form)))
-            if len(request.body) > 1_000_000:
-                raise ValidationError("El formulario supera el tamaño permitido.")
+            if len(request.body) > 8 * 1024 * 1024:
+                raise ValidationError("El formulario supera el tamaño permitido (8 MB).")
             data = json.loads(request.body)
             if not isinstance(data, dict):
                 raise ValidationError("Formato de formulario inválido.")

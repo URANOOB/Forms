@@ -1,11 +1,11 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/builder.css' %}?v=welcome-theme-4"><link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7"><link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=welcome-theme-2"><link rel="stylesheet" href="{% static 'forms/builder-sections.css' %}?v=branch-rules-8"><link rel="stylesheet" href="{% static 'forms/builder-navigation.css' %}?v=floating-nav-4"><link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=1"><link rel="stylesheet" href="{% static 'forms/builder-move.css' %}?v=1">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/builder-navigation.js' %}?v=floating-nav-4" defer></script><script src="{% static 'forms/builder-move.js' %}?v=question-menu-3" defer></script><script src="{% static 'forms/builder.js' %}?v=branch-rules-6" defer></script><script src="{% static 'forms/builder-responses.js' %}?v=documents-1" defer></script><script src="{% static 'forms/response-documents.js' %}?v=1" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/builder.css' %}?v=welcome-theme-4"><link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7"><link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=welcome-theme-2"><link rel="stylesheet" href="{% static 'forms/builder-sections.css' %}?v=response-summary-1"><link rel="stylesheet" href="{% static 'forms/builder-navigation.css' %}?v=floating-nav-4"><link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/builder-move.css' %}?v=1"><link rel="stylesheet" href="{% static 'forms/catalog-import.css' %}?v=5">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/builder-navigation.js' %}?v=floating-nav-4" defer></script><script src="{% static 'forms/builder-move.js' %}?v=question-menu-3" defer></script><script src="{% static 'forms/builder.js' %}?v=response-summary-1" defer></script><script src="{% static 'forms/builder-responses.js' %}?v=documents-1" defer></script><script src="{% static 'forms/response-detail.js' %}?v=1" defer></script><script src="{% static 'forms/response-documents.js' %}?v=1" defer></script><script src="{% static 'forms/catalog-import.js' %}?v=5" defer></script>{% endblock %}
 {% block header %}{% endblock %}
 {% block is_fullwidth %}1{% endblock %}
 {% block content %}
-<div id="builder" class="builder" data-base="{% if form %}{% url 'admin:forms_form_builder_edit' form.pk %}{% endif %}" data-create-url="{% url 'admin:forms_form_add' %}" data-creation-token="{{ creation_token }}" data-archived="{% if form.status == 'ARCHIVED' %}true{% endif %}">
+<div id="builder" class="builder" data-base="{% if form %}{% url 'admin:forms_form_builder_edit' form.pk %}{% endif %}" data-create-url="{% url 'admin:forms_form_add' %}" data-catalog-url="{% url 'admin:forms_form_import_catalog' %}" data-creation-token="{{ creation_token }}" data-archived="{% if form.status == 'ARCHIVED' %}true{% endif %}">
     {% csrf_token %}
     <div class="builder-main-toolbar">
     <header class="builder-top">
@@ -72,6 +72,7 @@
     </section>
     {% include "admin/forms/builder_settings.html" %}
     {% include "admin/forms/theme_panel.html" %}
+    {% include "admin/forms/catalog_import.html" %}
     {# Unfold expects a path input in the file widget's enclosing container. #}
     <div hidden><div><div><input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></div></div><input type="text" readonly aria-label="Archivo seleccionado"></div>
 </div>

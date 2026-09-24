@@ -1,11 +1,10 @@
 import hashlib
 import json
 
-from django import forms
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.http import HttpResponseNotAllowed
+from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
@@ -13,18 +12,25 @@ from apps.forms.conditions import FormSchema
 from apps.forms.question_fields import FILE_TYPES
 
 from .models import Submission, SubmissionAnswer, SubmissionFile
+from .presentation import render_response_details, response_sections
+from .review import STATUS_HELP, AttentionForm, ReviewForm, record_review
 from .runtime import PublicResponseForm
+from .summary import load_summary_data, summary_for
 
 
 def fingerprint(submission):
     data = {
         "status": submission.status,
+        "review_revision": submission.review_revision,
         "answers": list(submission.answers.order_by("field_id").values("field_id", "value")),
     }
     return hashlib.sha256(json.dumps(data, sort_keys=True, default=str).encode()).hexdigest()
 
 
 def page_context(model_admin, request, submission, title):
+    load_summary_data([submission])
+    sections = response_sections(submission)
+    version_admin = model_admin.admin_site._registry.get(type(submission.form_version))
     return {
         **model_admin.admin_site.each_context(request),
         "opts": model_admin.model._meta,
@@ -32,7 +38,23 @@ def page_context(model_admin, request, submission, title):
         "title": title,
         "can_edit": model_admin.has_change_permission(request, submission),
         "can_delete": model_admin.has_delete_permission(request, submission),
-        "details": model_admin.answer_details(submission),
+        "details": render_response_details(sections, compact_heading=True),
+        "response_sections": sections,
+        "version_url": reverse("admin:forms_formversion_change", args=[submission.form_version_id])
+        if version_admin and version_admin.has_view_permission(request, submission.form_version)
+        else "",
+        "response_form_title": submission.form_version.title or submission.form.name,
+        "review_form": ReviewForm(submission),
+        "reviews": submission.reviews.select_related("actor"),
+        "status_help": STATUS_HELP[submission.status],
+        "response_summary": summary_for(submission),
+        "attention_form": AttentionForm(
+            initial={
+                "attention": submission.attention,
+                "attention_note": submission.attention_note,
+                "revision": submission.review_revision,
+            }
+        ),
     }
 
 
@@ -49,12 +71,86 @@ def response_detail(model_admin, request, object_id):
     )
 
 
-class EditResponseForm(PublicResponseForm):
-    response_status = forms.ChoiceField(label="Estado", choices=Submission.Status.choices)
+def response_review(model_admin, request, object_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    wants_json = request.headers.get("Accept") == "application/json"
+    with transaction.atomic():
+        submission = get_object_or_404(
+            model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
+        )
+        if not model_admin.has_change_permission(request, submission):
+            raise PermissionDenied
+        form = ReviewForm(submission, request.POST)
+        valid = form.is_valid()
+        conflict = form.cleaned_data.get("revision") != submission.review_revision
+        if conflict:
+            form.add_error(
+                None, "El estado cambió desde que abriste esta página. Recarga para continuar."
+            )
+        if valid and not conflict:
+            review = record_review(
+                submission, form.cleaned_data["status"], form.cleaned_data["note"], request.user
+            )
+            model_admin.log_change(
+                request,
+                submission,
+                f"Estado: {review.get_previous_status_display()} → {review.get_status_display()}.",
+            )
+            if wants_json:
+                return JsonResponse({"status": submission.status})
+            messages.success(request, f"Respuesta: {submission.get_status_display().lower()}.")
+            return redirect("admin:submissions_submission_detail", object_id=submission.pk)
+        status_code = 409 if conflict else 422
+        if wants_json:
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=status_code)
+        context = page_context(model_admin, request, submission, "Revisar respuesta")
+        context["review_form"] = form
+        return render(request, "admin/submissions/detail.html", context, status=status_code)
 
+
+def response_attention(model_admin, request, object_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    with transaction.atomic():
+        submission = get_object_or_404(
+            model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
+        )
+        if not model_admin.has_change_permission(request, submission):
+            raise PermissionDenied
+        form = AttentionForm(request.POST)
+        valid = form.is_valid()
+        conflict = form.cleaned_data.get("revision") != submission.review_revision
+        if conflict:
+            form.add_error(None, "La respuesta cambió. Recarga antes de guardar la incidencia.")
+        if valid and not conflict:
+            attention = form.cleaned_data["attention"]
+            note = form.cleaned_data["attention_note"] if attention else ""
+            if (attention, note) != (submission.attention, submission.attention_note):
+                submission.attention, submission.attention_note = attention, note
+                submission.review_revision += 1
+                submission.save(update_fields=["attention", "attention_note", "review_revision"])
+                description = f"Señal de revisión: {submission.get_attention_display()}."
+                submission.reviews.create(
+                    previous_status=submission.status,
+                    status=submission.status,
+                    actor=request.user,
+                    note=f"{description} {note}".strip(),
+                )
+                model_admin.log_change(request, submission, description)
+            messages.success(request, "Señal de revisión actualizada.")
+            return redirect("admin:submissions_submission_detail", object_id=submission.pk)
+        context = page_context(model_admin, request, submission, "Revisar incidencia")
+        context["attention_form"] = form
+        return render(
+            request, "admin/submissions/detail.html", context, status=409 if conflict else 422
+        )
+
+
+class EditResponseForm(PublicResponseForm):
     def __init__(self, schema, submission, *args, **kwargs):
         answers = list(submission.answers.prefetch_related("files").select_related("field"))
-        initial = {"response_status": submission.status}
+        initial = {}
         self.attachments = {}
         for answer in answers:
             name = f"answer_{answer.field.stable_key}"
@@ -131,6 +227,7 @@ def response_edit(model_admin, request, object_id):
                     )
                 elif valid:
                     # Preserve the original form version and submission date.
+                    answers_changed = False
                     for field in schema.fields:
                         if schema.inputs[str(field.pk)] is None:
                             continue
@@ -164,10 +261,23 @@ def response_edit(model_admin, request, object_id):
                                     }
                                 )
                             value = {"files": metadata}
+                        answers_changed = answers_changed or answer.value != value
                         answer.value = value
                         answer.save(update_fields=["value"])
-                    submission.status = response_form.cleaned_data["response_status"]
-                    submission.save(update_fields=["status"])
+                    if answers_changed:
+                        if submission.status in {
+                            Submission.Status.VALIDATED,
+                            Submission.Status.REJECTED,
+                        }:
+                            record_review(
+                                submission,
+                                Submission.Status.UNDER_REVIEW,
+                                "Revisión reabierta por cambios en los datos de la respuesta.",
+                                request.user,
+                            )
+                        else:
+                            submission.review_revision += 1
+                            submission.save(update_fields=["review_revision"])
                     model_admin.log_change(request, submission, "Editó los datos de la respuesta.")
                     for file in removed:
                         transaction.on_commit(
@@ -194,6 +304,7 @@ def response_edit(model_admin, request, object_id):
                         "admin:submissions_submission_detail", args=[submission.pk]
                     ),
                     "revision": request.POST.get("revision", revision),
+                    "response_status": submission.get_status_display(),
                 },
                 status=422 if response_form.errors else 200,
             )

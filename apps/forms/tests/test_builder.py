@@ -51,7 +51,7 @@ class BuilderTests(TestCase):
         self.assertEqual(self.client.post(self.url("preview"), {}).status_code, 405)
         self.assertEqual(self.client.get(self.url("save")).status_code, 405)
 
-    def test_edit_published_creates_draft_and_preserves_answers_and_public_schema(self):
+    def test_edit_published_creates_new_published_version_and_preserves_historical_answers(self):
         form = publish_form(self.form.pk)
         old_field = form.active_version.fields.get(stable_key="nombre")
         submission = save_response(
@@ -62,19 +62,16 @@ class BuilderTests(TestCase):
         data["sections"][0]["fields"][0]["label"] = "Nuevo nombre"
         result = save_document(form.pk, data)
         form.refresh_from_db()
-        self.assertEqual(form.active_version_id, self.version.pk)
-        self.assertEqual(form.name, "Contacto original")
-        self.assertEqual(result["number"], 2)
+        self.assertNotEqual(form.active_version_id, self.version.pk)
+        self.assertEqual(form.name, "Nuevo título")
+        self.assertEqual(form.active_version.version_number, 2)
+        self.assertEqual(result["status"], "PUBLISHED")
+        self.assertEqual(submission.form_version_id, self.version.pk)
         self.assertEqual(submission.answers.get().field.label, old_field.label)
         self.assertEqual(submission.answers.get().value, "Ana")
-        self.assertContains(self.client.get(form.get_absolute_url()), "Contacto original")
-        self.assertNotContains(self.client.get(form.get_absolute_url()), "Nuevo título")
-        result = save_document(form.pk, result, publish=True)
-        form.refresh_from_db()
-        self.assertEqual(form.active_version.version_number, 2)
-        self.assertEqual(form.name, "Nuevo título")
-        self.assertEqual(result["status"], "PUBLISHED")
-        self.assertEqual(submission.answers.get().value, "Ana")
+        self.assertContains(self.client.get(form.get_absolute_url()), "Nuevo título")
+        self.version.refresh_from_db()
+        self.assertEqual(self.version.title, "Contacto original")
 
     def test_stale_save_and_technical_edits_are_rejected(self):
         data = document(self.version)
@@ -193,17 +190,18 @@ class BuilderTests(TestCase):
         self.version.refresh_from_db()
         self.assertEqual(document(self.version), original)
 
-    def test_editor_requires_workspace_change_permission_and_csrf(self):
+    def test_editor_shares_legacy_workspaces_but_requires_change_permission_and_csrf(self):
         other = Workspace.objects.create(name="Otro", slug="otro")
         foreign = Form.objects.create(
             name="Ajeno", slug="ajeno", workspace=other, created_by=self.user
         )
-        self.assertEqual(self.client.get(self.url(form=foreign)).status_code, 404)
+        FormVersion.objects.create(form=foreign, version_number=1)
+        self.assertEqual(self.client.get(self.url(form=foreign)).status_code, 200)
         self.assertEqual(
             self.client.post(
                 self.url("save", foreign), {}, content_type="application/json"
             ).status_code,
-            404,
+            409,
         )
         csrf_client = Client(enforce_csrf_checks=True)
         csrf_client.force_login(self.user)

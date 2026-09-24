@@ -1,0 +1,5 @@
+<div class="response-badges">
+    {% if item.status == 'SUBMITTED' %}<span class="response-badge response-badge-new"><i aria-hidden="true"></i>Nueva</span>{% endif %}
+    {% if card.files %}<span class="response-badge"><span class="material-symbols-outlined" aria-hidden="true">attach_file</span>{{ card.files }} archivo{{ card.files|pluralize:"s" }}</span>{% endif %}
+    {% if item.attention %}<span class="response-badge response-badge-attention" title="{{ item.attention_note }}"><span class="material-symbols-outlined" aria-hidden="true">warning</span>{{ item.get_attention_display }}</span>{% endif %}
+</div>

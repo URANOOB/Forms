@@ -3,6 +3,7 @@ from graphlib import CycleError, TopologicalSorter
 from django.core.exceptions import ValidationError
 
 from .additional_choices import additional_text_config
+from .dependent_choices import option_filters
 from .public_fields import CHOICE_TYPES, DISPLAY_TYPES, TEXT_TYPES, empty, json_value, public_field
 from .question_fields import FILE_TYPES, GRID_TYPES, SCALE_TYPES
 
@@ -40,6 +41,7 @@ class FormSchema:
         if any(field.section.form_version_id != version.pk for field in self.fields):
             raise ValidationError("Todos los campos deben pertenecer a secciones de esta versión.")
         self.inputs = {str(field.pk): public_field(field) for field in self.fields}
+        self.option_filters = option_filters(self.fields)
         self.groups = []
         grouped = {}
         for rule in version.rules.order_by("order", "id"):
@@ -88,6 +90,8 @@ class FormSchema:
                 {"source": str(source.pk), "operator": rule.operator, "expected": expected}
             )
         dependencies = {key: set() for key in self.by_id}
+        for key, config in self.option_filters.items():
+            dependencies[key].add(config["source"])
         # A section whose every card can be hidden may also take its fallback edge.
         for section_id, navigation in self.navigation.items():
             keys = [key for key, field in self.by_id.items() if str(field.section_id) == section_id]
@@ -149,6 +153,7 @@ class FormSchema:
             ) from error
 
     def states(self, values, allowed_sections=None):
+        values = dict(values)
         states = {}
         for key in self.order:
             groups = [group for group in self.groups if key in group["targets"]]
@@ -183,7 +188,19 @@ class FormSchema:
             visible = all(visibility.values())
             if allowed_sections is not None:
                 visible = visible and str(self.by_id[key].section_id) in allowed_sections
-            states[key] = {"visible": visible, "required": visible and required}
+            available = True
+            if config := self.option_filters.get(key):
+                source = config["source"]
+                parent = values.get(source)
+                available = states[source]["visible"] and not empty(parent)
+                selected = values.get(key)
+                if not available or parent not in config["values"].get(selected, []):
+                    values[key] = None
+            states[key] = {
+                "visible": visible,
+                "required": visible and available and required,
+                "available": available,
+            }
         return states
 
     def journey(self, values):
@@ -212,6 +229,7 @@ class FormSchema:
                     "required": field.required,
                     "section": str(field.section_id),
                     "additional_text": additional_text_config(field),
+                    "option_filter": self.option_filters.get(key),
                 }
                 for key, field in self.by_id.items()
             },

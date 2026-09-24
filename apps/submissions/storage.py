@@ -1,13 +1,12 @@
 import uuid
 from pathlib import Path
 
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
+from django.core.files.storage import storages
 
 
 def response_file_storage():
-    # Deliberately outside MEDIA_ROOT: downloads pass through the permission-checked view.
-    return FileSystemStorage(location=settings.BASE_DIR / "private_uploads")
+    # Both local and R2 downloads pass through the permission-checked view.
+    return storages["responses"]
 
 
 def response_file_path(instance, filename):

@@ -1,0 +1,14 @@
+{% spaceless %}
+    {# Omit the application level; keep the list and any selected record. #}
+    {% for part in parts %}
+        {% if not forloop.first or parts|length == 1 %}
+            <{% if part.link %}a href="{{ part.link }}"{% else %}span{% endif %} class="align-middle inline-block leading-5 min-w-0 truncate tracking-tight">
+                {{ part.title|capfirst }}
+            </{% if part.link %}a{% else %}span{% endif %}>
+
+            {% if not forloop.last %}
+                <span class="material-symbols-outlined inline-block align-middle leading-5 mx-2 text-base-400 dark:text-base-500">chevron_right</span>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+{% endspaceless %}

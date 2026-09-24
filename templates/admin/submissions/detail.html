@@ -1,21 +1,54 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=1">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/response-documents.js' %}?v=1" defer></script>{% endblock %}
-{% block content %}
-<div class="flex flex-wrap gap-4 items-center mb-6">
-    <a href="{% url 'admin:submissions_submission_changelist' %}" class="inline-flex items-center gap-2"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>Respuestas</a>
-    {% if can_edit %}<a href="{% url 'admin:submissions_submission_edit' original.pk %}" class="inline-flex items-center gap-2 rounded-default px-4 py-2" style="background:#6941c6;color:white"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar respuesta</a>{% endif %}
-    {% if can_delete %}<a href="{% url 'admin:submissions_submission_remove' original.pk %}" class="inline-flex items-center gap-2" style="color:#b42318"><span class="material-symbols-outlined" aria-hidden="true">delete</span>Eliminar</a>{% endif %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=4">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/response-documents.js' %}?v=1" defer></script><script src="{% static 'forms/response-review.js' %}?v=3" defer></script><script src="{% static 'forms/response-detail.js' %}?v=1" defer></script>{% endblock %}
+{% block header %}
+<div class="response-detail-topbar">
+    {% if is_nav_sidebar_enabled and not is_popup %}<button type="button" x-on:click="sidebarToggle()" aria-label="Abrir o cerrar navegación"><span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span></button>{% endif %}
+    <a href="{% url 'admin:submissions_submission_changelist' %}"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>Respuestas</a>
+    <div class="response-detail-usertools">{% include "unfold/helpers/userlinks.html" %}</div>
 </div>
-<section class="response-summary">
-    <h1 class="text-xl font-semibold mb-4">{{ original.form.name }}</h1>
-    <dl class="flex flex-wrap gap-6">
-        <div><dt class="text-sm">Respuesta</dt><dd>{{ original }}</dd></div>
-        <div><dt class="text-sm">Versión</dt><dd>{{ original.form_version.version_number }}</dd></div>
-        <div><dt class="text-sm">Fecha de envío</dt><dd>{{ original.submitted_at }}</dd></div>
-        <div><dt class="text-sm">Estado</dt><dd><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span></dd></div>
-    </dl>
+{% endblock %}
+{% block content %}
+<header class="response-summary response-detail-summary">
+    <div class="response-detail-title"><div><h1>{{ response_form_title }}</h1>{% if response_summary.title != "Respuesta sin identificación" %}<p class="response-detail-person">{{ response_summary.title }}</p>{% endif %}</div>
+        <div class="response-detail-actions">
+            {% if can_edit %}<a href="{% url 'admin:submissions_submission_edit' original.pk %}" class="response-edit"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar</a>{% endif %}
+            <button type="button" class="response-more" popovertarget="response-detail-menu" aria-label="Más acciones" title="Más acciones"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></button>
+            <div id="response-detail-menu" class="response-action-menu" popover>
+                <a href="{% url 'admin:submissions_submission_download' original.pk %}">Descargar respuesta (CSV)</a>
+                {% if version_url %}<a href="{{ version_url }}">Ver versión {{ original.form_version.version_number }}</a>{% endif %}
+                {% if can_delete %}<a class="response-delete" href="{% url 'admin:submissions_submission_remove' original.pk %}">Eliminar respuesta</a>{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="response-detail-meta"><span>Respuesta #{{ original.pk|stringformat:"s"|slice:":8" }}</span><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span><time datetime="{{ original.submitted_at|date:'c' }}">{{ original.submitted_at|date:"j M Y, H:i" }}</time><span>Versión {{ original.form_version.version_number }}</span></div>
+</header>
+<div class="response-review-layout">
+<div>{{ details }}</div>
+<aside class="response-detail-sidebar">
+<section id="response-review" class="response-workflow" aria-labelledby="review-heading">
+    <div class="review-heading"><div><span class="response-eyebrow">SEGUIMIENTO</span><h2 id="review-heading">Revisión de la respuesta</h2><p>{{ status_help }}</p></div><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span></div>
+    <details class="review-history" id="response-history" ><summary>Historial · {{ reviews|length }} cambio{{ reviews|length|pluralize }}</summary>
+        <ol>{% for review in reviews %}<li><div><strong>{% if review.previous_status == review.status %}Señal de revisión{% else %}{{ review.get_previous_status_display }} → {{ review.get_status_display }}{% endif %}</strong><time datetime="{{ review.created_at|date:'c' }}">{{ review.created_at|date:"d/m/Y H:i" }}</time></div><p class="review-author">{% if review.actor %}{{ review.actor.get_full_name|default:review.actor.get_username }}{% else %}Usuario eliminado{% endif %}</p>{% if review.note %}<p class="review-note">{{ review.note }}</p>{% endif %}</li>{% endfor %}
+        <li><div><strong>Respuesta recibida</strong><time datetime="{{ original.submitted_at|date:'c' }}">{{ original.submitted_at|date:"d/m/Y H:i" }}</time></div><p class="review-author">Envío del formulario</p></li></ol>
+    </details>
+    {% if can_edit %}
+    <form method="post" action="{% url 'admin:submissions_submission_review' original.pk %}" class="review-form" data-review-form>
+        {% csrf_token %}{{ review_form.revision }}
+        {% if review_form.errors %}<div class="review-errors" role="alert">{{ review_form.non_field_errors }}{{ review_form.status.errors }}{{ review_form.note.errors }}{{ review_form.revision.errors }}</div>{% endif %}
+        <label for="{{ review_form.status.id_for_label }}">{{ review_form.status.label }}{{ review_form.status }}</label>
+        <label for="{{ review_form.note.id_for_label }}"><span data-note-label>Comentario</span>{{ review_form.note }}</label>
+        <p class="review-hint">{{ review_form.note.help_text }}</p>
+        <button type="submit" class="review-primary{% if review_form.is_rejection %} review-danger{% endif %}">{{ review_form.action_label }}</button>
+    </form>
+    {% endif %}
+    <details class="response-flags" id="response-flags" {% if original.attention or attention_form.errors %}open{% endif %}><summary>Señales de revisión{% if original.attention %} · {{ original.get_attention_display }}{% endif %}</summary>
+        {% if can_edit %}<form method="post" class="review-form" action="{% url 'admin:submissions_submission_attention' original.pk %}">{% csrf_token %}{{ attention_form.revision }}{% if attention_form.errors %}<div class="review-errors" role="alert">{{ attention_form.errors }}</div>{% endif %}<label for="{{ attention_form.attention.id_for_label }}">Señal{{ attention_form.attention }}</label><label for="{{ attention_form.attention_note.id_for_label }}">Detalle de la incidencia{{ attention_form.attention_note }}</label><p class="review-hint">Marca solo incidencias comprobadas. Puedes retirarlas al resolverlas.</p><button type="submit" class="review-primary">Guardar señal</button></form>{% elif original.attention %}<p class="review-note">{{ original.attention_note }}</p>{% else %}<p class="review-hint">Sin incidencias registradas.</p>{% endif %}
+    </details>
+
 </section>
-{{ details }}
+{% if response_sections %}<nav class="response-contents" aria-label="Contenido de la respuesta"><h2>CONTENIDO</h2><ol>{% for section in response_sections %}<li><a href="#{{ section.id }}" data-response-section-link><span>{{ forloop.counter|stringformat:"02d" }}</span>{{ section.title }}</a></li>{% endfor %}</ol></nav>{% endif %}
+</aside>
+</div>
 {% endblock %}

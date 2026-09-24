@@ -10,6 +10,24 @@
     });
   };
   if (!gallery) return;
+  const filters = document.querySelector(".gallery-filter-menu");
+  document.addEventListener("click", (event) => {
+    if (filters.open && !filters.contains(event.target)) filters.open = false;
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && filters.open) {
+      filters.open = false;
+      filters.querySelector("summary").focus();
+    }
+  });
+  // Enter works even when the filter panel (and its submit button) is closed.
+  const search = document.querySelector('.gallery-search input');
+  search.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.isComposing) {
+      event.preventDefault();
+      search.form.requestSubmit();
+    }
+  });
   try {
     setView(localStorage.getItem("forms-gallery-view"));
   } catch {

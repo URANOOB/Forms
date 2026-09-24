@@ -79,6 +79,14 @@ class PublicResponseForm(forms.Form):
                 and not self.fields[name].complete(values[key])
             ):
                 self.add_error(name, "Responda todas las filas de la cuadrícula.")
+            if (config := self.schema.option_filters.get(key)) and not empty(values[key]):
+                source = config["source"]
+                if (
+                    not states[source]["visible"]
+                    or not states[source]["available"]
+                    or values[source] not in config["values"].get(values[key], [])
+                ):
+                    self.add_error(name, "Seleccione una opción del agrupador elegido.")
             self.answers[field.pk] = values[key]
             if key in self.additional_text:
                 if values[key] in self.additional_text[key]["values"]:

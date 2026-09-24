@@ -1,6 +1,8 @@
 # Editor compacto de condiciones
 
-«Mostrar según respuesta» presenta únicamente las reglas configuradas y los borradores que se añadan con **＋ Añadir regla**. Un campo sin reglas empieza con una fila vacía; ya no se dibuja una fila por cada respuesta posible.
+«Mostrar según respuesta» se abre desde el menú de tres puntos de las preguntas de selección y Sí/No. El panel se puede cerrar desde ese menú o desde su botón de cierre, sin eliminar las condiciones. Las preguntas con reglas existentes lo muestran abierto inicialmente y el menú indica cuántas condiciones tienen.
+
+El panel presenta únicamente las reglas configuradas y los borradores que se añadan con **＋ Añadir regla**. Un campo sin reglas empieza con una fila vacía; ya no se dibuja una fila por cada respuesta posible.
 
 - **Si selecciona:** cualquier opción o una respuesta concreta de la pregunta actual.
 - **Entonces mostrar:** selector de destino con búsqueda por nombre, número o sección. La búsqueda ignora tildes y mayúsculas. También permite seleccionar una sección completa, excepto la que contiene la pregunta de origen.
