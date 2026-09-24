@@ -71,7 +71,10 @@
 .public-form-page .help,
 .public-form-page .field fieldset label { font-family: var(--form-text-font, Inter, sans-serif); font-size: var(--form-text-size, 14px); }
 .public-form-page button { font-family: var(--form-text-font, Inter, sans-serif); }
+.builder-canvas .welcome-preview-card > span { font-family: var(--form-text-font, Inter, sans-serif); }
+.builder-canvas .welcome-preview-card > span,
 .public-form-page .section-navigation button:not(.secondary),
 .public-form-page .welcome-card button { background: color-mix(in srgb, var(--form-color, #5943e9) 20%, white); color: #000; }
+.builder-canvas .welcome-preview-card > span:hover,
 .public-form-page .section-navigation button:not(.secondary):hover,
 .public-form-page .welcome-card button:hover { background: color-mix(in srgb, var(--form-color, #5943e9) 30%, white); }

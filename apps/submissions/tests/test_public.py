@@ -3,9 +3,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from unittest.mock import patch
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
-from django.core.management import call_command
 from django.db import close_old_connections
 from django.test import Client, TestCase, TransactionTestCase
 from django.urls import reverse
@@ -96,7 +95,7 @@ class PublicTests(TestCase):
         self.assertNotContains(response, "/admin/")
         self.assertIn("no-store", response.headers["Cache-Control"])
         response = self.client.post(self.url, self.payload(), follow=True)
-        self.assertContains(response, "Gracias por responder")
+        self.assertContains(response, "Respuesta registrada")
         submission = Submission.objects.get()
         self.assertEqual(submission.form_version_id, self.version.pk)
         self.assertEqual(submission.answers.get(field=self.name).value, "Persona de prueba")
@@ -151,15 +150,20 @@ class PublicTests(TestCase):
             self.assertEqual(self.client.post(self.url, data).status_code, 302)
         self.assertEqual(Submission.objects.count(), 1)
 
-    def test_paused_archived_draft_and_inactive_workspace_are_not_public(self):
-        for status in ("PAUSED", "ARCHIVED", "DRAFT"):
+    def test_closed_forms_block_submissions_and_legacy_workspace_is_not_an_access_boundary(self):
+        Form.objects.filter(pk=self.form.pk).update(status="PAUSED")
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "public/closed.html")
+        self.assertEqual(self.client.post(self.url, self.payload()).status_code, 409)
+        for status in ("ARCHIVED", "DRAFT"):
             Form.objects.filter(pk=self.form.pk).update(status=status)
             with self.subTest(status=status):
                 self.assertEqual(self.client.get(self.url).status_code, 404)
                 self.assertEqual(self.client.post(self.url, self.payload()).status_code, 404)
         Form.objects.filter(pk=self.form.pk).update(status="PUBLISHED")
         Workspace.objects.filter(pk=self.form.workspace_id).update(is_active=False)
-        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
         self.assertFalse(Submission.objects.exists())
 
     def test_two_workspaces_same_slug_and_token_cannot_cross_forms(self):
@@ -194,7 +198,8 @@ class PublicTests(TestCase):
         with self.assertRaises(ValidationError):
             self.name.save()
         set_form_status(self.form.pk, "PAUSED")
-        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.assertTemplateUsed(self.client.get(self.url), "public/closed.html")
+        self.assertEqual(self.client.post(self.url, self.payload()).status_code, 409)
         publish_form(self.form.pk)
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
@@ -203,7 +208,7 @@ class PublicationValidationTests(TestCase):
     def setUp(self):
         self.form, self.version, self.name, self.choice, self.email = fixture()
 
-    def test_cycles_unsupported_files_and_invalid_validation_block_publication(self):
+    def test_cycles_unsupported_types_and_invalid_validation_block_publication(self):
         ConditionalRule.objects.create(
             form_version=self.version,
             source_field=self.email,
@@ -214,8 +219,7 @@ class PublicationValidationTests(TestCase):
         with self.assertRaises(ValidationError):
             publish_form(self.form.pk)
         self.version.rules.all().delete()
-        self.name.field_type = "FILE"
-        self.name.save()
+        FormField.objects.filter(pk=self.name.pk).update(field_type="UNSUPPORTED")
         with self.assertRaises(ValidationError):
             publish_form(self.form.pk)
         self.name.field_type = "SHORT_TEXT"
@@ -249,7 +253,7 @@ class PublicationValidationTests(TestCase):
         data = {
             "answer_nombre": "Ejemplo",
             "answer_contactar": "no",
-            "answer_numero": "2.5",
+            "answer_numero": "25",
             "answer_fecha": "2000-02-29",
             "answer_booleano": "false",
             "answer_multiple": ["uno"],
@@ -257,12 +261,14 @@ class PublicationValidationTests(TestCase):
         runtime = PublicResponseForm(schema, data=data)
         self.assertTrue(runtime.is_valid(), runtime.errors)
         by_key = {field.stable_key: runtime.answers.get(field.pk) for field in schema.fields}
-        self.assertEqual(by_key["numero"], 2.5)
+        self.assertEqual(by_key["numero"], 25)
         self.assertIs(by_key["booleano"], False)
         self.assertEqual(by_key["fecha"], "2000-02-29")
         self.assertEqual(by_key["multiple"], ["uno"])
         for key, value in [
             ("numero", "NaN"),
+            ("numero", "2.5"),
+            ("numero", "-1"),
             ("numero", "0"),
             ("fecha", "2001-02-29"),
             ("booleano", "perhaps"),
@@ -394,7 +400,6 @@ class PublicationValidationTests(TestCase):
 
 class ResponseAdminTests(TestCase):
     def setUp(self):
-        call_command("setup_roles", verbosity=0)
         self.form, self.version, name, *_ = fixture()
         self.form = publish_form(self.form.pk)
         self.submission = save_response(
@@ -404,10 +409,10 @@ class ResponseAdminTests(TestCase):
             {name.pk: "<script>alert('sensitive')</script>"},
         )
         self.user = self.form.created_by
-        self.user.groups.add(Group.objects.get(name="Viewer"))
+        self.user.user_permissions.add(Permission.objects.get(codename="view_submission"))
         self.url = reverse("admin:submissions_submission_change", args=[self.submission.pk])
 
-    def test_responses_private_and_scoped_including_search_filters(self):
+    def test_responses_require_permission_and_share_legacy_workspaces(self):
         self.assertEqual(self.client.get(self.url).status_code, 302)
         self.client.force_login(self.user)
         response = self.client.get(self.url)
@@ -420,22 +425,25 @@ class ResponseAdminTests(TestCase):
         foreign, *_ = fixture("foreign")
         self.user.workspace = foreign.workspace
         self.user.save()
-        self.assertEqual(self.client.get(self.url).status_code, 302)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
         response = self.client.get(listing, {"q": "sensitive"})
-        self.assertEqual(list(response.context["cl"].queryset), [])
+        self.assertEqual(list(response.context["cl"].queryset), [self.submission])
         response = self.client.get(listing, {"form": self.form.pk})
-        self.assertEqual(list(response.context["cl"].queryset), [])
+        self.assertEqual(list(response.context["cl"].queryset), [self.submission])
 
-    def test_viewer_cannot_edit_but_reviewer_can_change_status_without_changing_answers(self):
+    def test_read_only_user_cannot_review_and_editor_cannot_forge_response_metadata(self):
         self.client.force_login(self.user)
-        self.assertEqual(self.client.post(self.url, {"status": "VALIDATED"}).status_code, 403)
-        self.user.groups.add(Group.objects.get(name="Reviewer"))
-        response = self.client.post(self.url, {"status": "VALIDATED", "form": uuid.uuid4()})
+        review_url = reverse("admin:submissions_submission_review", args=[self.submission.pk])
+        data = {"status": "UNDER_REVIEW", "revision": 0}
+        self.assertEqual(self.client.post(review_url, data).status_code, 403)
+        self.user.user_permissions.add(Permission.objects.get(codename="change_submission"))
+        response = self.client.post(review_url, {**data, "form": uuid.uuid4()})
         self.assertEqual(response.status_code, 302)
         self.submission.refresh_from_db()
-        self.assertEqual(self.submission.status, "VALIDATED")
+        self.assertEqual(self.submission.status, "UNDER_REVIEW")
         self.assertEqual(self.submission.form_id, self.form.pk)
         self.assertEqual(self.submission.answers.count(), 1)
+        self.assertEqual(self.submission.reviews.get().actor, self.user)
         self.assertEqual(
             self.client.post(
                 reverse("admin:submissions_submission_delete", args=[self.submission.pk]),

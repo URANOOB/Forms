@@ -1,14 +1,39 @@
-<div class="flex flex-col gap-6">
-{% for section in sections %}
-    <section class="border border-base-200 rounded-default p-4 dark:border-base-800">
-        <h3 class="font-semibold mb-4">{{ section.title }}</h3>
-        <dl class="flex flex-col gap-4">
+<div class="response-details">
+    <div class="response-details-heading">
+        {% if not compact_heading %}<div><span class="response-eyebrow">DATOS RECIBIDOS</span><h2>Detalle de la respuesta</h2></div>{% endif %}
+        <span class="response-section-count">{{ sections|length }} secci{{ sections|length|pluralize:"ón,ones" }}</span>
+        {% if sections %}<div class="response-section-controls"><button type="button" data-response-expand="true">Expandir todo</button><span aria-hidden="true">·</span><button type="button" data-response-expand="false">Contraer todo</button></div>{% endif %}
+    </div>
+    {% for section in sections %}
+    <details class="response-section" id="{{ section.id }}" open>
+        <summary class="response-section-heading">
+            <span class="response-section-number" aria-hidden="true">{{ forloop.counter|stringformat:"02d" }}</span>
+            <h3>{% if section.title and section.title != "Sección sin título" %}{{ section.title }}{% else %}Sección {{ forloop.counter }}{% endif %}</h3>
+            <span class="response-section-meta">{% if section.files_only %}{{ section.file_count }} archivo{{ section.file_count|pluralize }}{% else %}{{ section.answers|length }} campo{{ section.answers|length|pluralize }}{% endif %}</span>
+            <span class="response-section-chevron material-symbols-outlined" aria-hidden="true">expand_more</span>
+        </summary>
+        <dl class="response-answer-grid">
         {% for answer in section.answers %}
-            <div><dt class="font-medium">{{ answer.label }}</dt>
-                <dd class="mt-1 whitespace-pre-wrap">{{ answer.value }}</dd>
-                {% for file in answer.files %}<dd class="mt-2"><a class="text-primary-600 underline" href="{{ file.url }}">Descargar {{ file.name }}</a></dd>{% endfor %}</div>
+            <div class="response-answer{% if answer.wide %} response-answer-wide{% endif %}">
+                <dt>{{ answer.label }}</dt>
+                {% if answer.value %}<dd class="response-answer-value{% if answer.empty %} response-answer-empty{% endif %}">{% if answer.kind == "boolean" %}<span class="response-answer-boolean"><span class="material-symbols-outlined" aria-hidden="true">{% if answer.boolean_yes %}check{% else %}close{% endif %}</span>{{ answer.value }}</span>{% elif answer.kind == "status" %}<span class="response-answer-status">{{ answer.value }}</span>{% else %}{{ answer.value }}{% endif %}</dd>{% endif %}
+                {% if answer.files %}
+                <dd class="response-files">
+                    {% for file in answer.files %}
+                    <div class="response-file">
+                        <span class="response-file-icon material-symbols-outlined" aria-hidden="true">{% if file.preview == "image" %}image{% elif file.preview == "pdf" %}picture_as_pdf{% else %}description{% endif %}</span>
+                        <div class="response-file-info"><strong>{{ file.name }}</strong><span>{{ file.extension }} · {{ file.size|filesizeformat }}</span></div>
+                        <div class="response-file-actions">
+                            <button type="button" class="response-file-preview" data-document-url="{{ file.url }}" data-document-name="{{ file.name }}" data-document-kind="{{ file.preview }}" data-document-extension="{{ file.extension }}" aria-label="Vista previa de {{ file.name }}"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>Ver archivo</button>
+                            <a href="{{ file.url }}" class="response-file-download" aria-label="Descargar {{ file.name }}" title="Descargar"><span class="material-symbols-outlined" aria-hidden="true">download</span></a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </dd>
+                {% endif %}
+            </div>
         {% endfor %}
         </dl>
-    </section>
-{% empty %}<p>No hay datos registrados.</p>{% endfor %}
+    </details>
+    {% empty %}<p class="response-empty">No hay datos registrados.</p>{% endfor %}
 </div>

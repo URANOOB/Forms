@@ -3,8 +3,11 @@ from pathlib import Path
 
 import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
+from django.templatetags.static import static
 from django.urls import reverse_lazy
 from dotenv import load_dotenv
+
+from config.storage import storage_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -42,6 +45,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "config.middleware.DevelopmentNotFoundMiddleware",
 ]
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [
@@ -85,19 +89,40 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_ROOT = BASE_DIR / "media"
+STORAGES = storage_settings(BASE_DIR, os.environ)
+
+
+def env_capacity(name):
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return None
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ImproperlyConfigured(f"{name} debe ser una capacidad positiva en bytes.") from None
+    if value <= 0:
+        raise ImproperlyConfigured(f"{name} debe ser una capacidad positiva en bytes.")
+    return value
+
+
+DATABASE_CAPACITY_BYTES = env_capacity("DATABASE_CAPACITY_BYTES")
+R2_FREE_STORAGE_REFERENCE_BYTES = env_capacity("R2_FREE_STORAGE_REFERENCE_BYTES")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# JSON drafts can include imported catalogs; multipart files retain their own 5 MB limit.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
 ENABLE_DEMO_SEED = False
 
 UNFOLD = {
     "DASHBOARD_CALLBACK": "apps.accounts.dashboard.dashboard_callback",
     "SITE_TITLE": "Formularios institucionales",
-    "SITE_HEADER": "Formularios",
+    "SITE_HEADER": "LogicForms",
+    "SITE_LOGO": lambda request: static("forms/brand/logicforms-logo.png") + "?v=2",
     "SITE_SUBHEADER": "Gestión institucional",
     "SITE_SYMBOL": "assignment",
     "SHOW_HISTORY": True,
@@ -125,13 +150,9 @@ UNFOLD = {
                         "title": "Usuarios",
                         "icon": "group",
                         "link": reverse_lazy("admin:accounts_user_changelist"),
-                        "permission": lambda r: r.user.is_superuser,
-                    },
-                    {
-                        "title": "Grupos y permisos",
-                        "icon": "admin_panel_settings",
-                        "link": reverse_lazy("admin:auth_group_changelist"),
-                        "permission": lambda r: r.user.is_superuser,
+                        "permission": lambda r: (
+                            r.user.is_active and r.user.is_staff and r.user.is_superuser
+                        ),
                     },
                 ],
             }

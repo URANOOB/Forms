@@ -28,6 +28,17 @@ uv run python manage.py runserver
 ```
 
 Abrir <http://127.0.0.1:8000/admin/>. En macOS/Linux, usar `cp .env.example .env`.
+
+Para ejecutar con la base Supabase y los archivos R2 ya trasladados, arrancar
+explícitamente con su configuración (este es el entorno activo del servidor local):
+
+```powershell
+uv run --env-file .env.supabase python manage.py runserver 127.0.0.1:8000
+```
+
+Los cambios realizados en ese entorno se guardan en Supabase/R2. Mantener los
+comandos de pruebas sobre `.env` local, sin `--env-file .env.supabase`.
+
 El puerto PostgreSQL local es **55432**, limitado a localhost. La contraseña del
 Compose es exclusivamente de desarrollo. `docker compose stop` detiene la base
 conservando los datos. No ejecutar `down -v` si se desea conservarlos.
@@ -120,11 +131,11 @@ session pooler, usando TLS (`?sslmode=require`). No se utiliza el SDK, Auth ni
 Storage de Supabase. El rol de producción debe tener privilegios mínimos;
 ejecutar tests sólo contra una base dedicada con permiso de crear la base de tests.
 
-Las variables R2 y correo están documentadas en `.env.example` para fases futuras;
-no hay proveedores implementados todavía. No se envían correos. Las imágenes de diseño
-se guardan en `media/` con Django Storage; sólo son públicas al estar referenciadas en
-la versión activa publicada. Los adjuntos recibidos se guardan en `private_uploads/`,
-fuera de `MEDIA_ROOT`, y se descargan desde Respuestas con permisos de personal.
+El proveedor de archivos se elige con `FILE_STORAGE=local` (predeterminado) o `r2`.
+R2 almacena imágenes y adjuntos en un bucket privado; Django conserva el control de
+acceso. En local se usan `media/` y `private_uploads/`, respectivamente. No se envían
+correos. Consultar [setup y traslado a Supabase + R2](docs/supabase-r2.md) antes de
+cambiar la conexión o el proveedor; incluye el comando de copia con verificación.
 
 ## Verificación
 
@@ -142,14 +153,13 @@ exactas están en `uv.lock`. Todas las modificaciones de esquema requieren migra
 
 ## Pendiente
 
-Los campos de una versión publicada son inmutables. Los adjuntos usan almacenamiento
-local privado; el proveedor R2 todavía no está integrado.
-R2, correo, exportaciones, auditoría de lecturas y despliegue
-Cloudflare permanecen pendientes.
+Los campos de una versión publicada son inmutables. El proveedor R2 está integrado;
+su activación y el traslado requieren configurar las credenciales del destino.
+Correo, auditoría de lecturas y despliegue Cloudflare permanecen pendientes.
+La conexión de GitHub no despliega por sí sola este servidor Django: ver
+[compatibilidad con Cloudflare gratuito](docs/cloudflare-deployment.md).
 
 Consultar [decisiones de arquitectura](docs/architecture.md) y
 [contexto original](docs/project-brief.md). La ampliación de formularios públicos y
 respuestas fue solicitada después de Foundation; ver [runtime público](docs/public-forms.md).
 El uso y los límites del editor están en [constructor visual](docs/form-builder.md).
-#   F o r m s  
- 

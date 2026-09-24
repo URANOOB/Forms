@@ -17,21 +17,43 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from apps.accounts.models import legacy_form_container
 from apps.submissions.runtime import PublicResponseForm
 
+from .appearance import theme_context
 from .builder import StaleDraft, current_version, document, save_document, text_value
 from .conditions import FormSchema
 from .models import Form, FormField, FormImage, FormVersion
 from .presets import PRESETS
 from .welcome import welcome_data
-from .appearance import theme_context
 
 
 def editor_field_types():
     labels = dict(FormField.Type.choices)
+    labels["NUMBER"] = "Numérico"
+    labels["PHONE"] = "Número de teléfono"
     labels["DROPDOWN"] = "Desplegable"
+    labels["DROPDOWN_EXTRA"] = "Desplegable con opción adicional"
+    labels["DROPDOWN_SEARCH"] = "Desplegable con búsqueda"
     order = [
-        "SHORT_TEXT", "LONG_TEXT", "SINGLE_CHOICE", "MULTIPLE_CHOICE", "DROPDOWN",
-        "FILE", "LINEAR_SCALE", "RATING", "GRID_SINGLE", "GRID_MULTIPLE", "DATE", "TIME",
-        "EMAIL", "PHONE", "NUMBER", "BOOLEAN", "HEADING", "INFORMATION", "IMAGE",
+        "SHORT_TEXT",
+        "LONG_TEXT",
+        "NUMBER",
+        "EMAIL",
+        "PHONE",
+        "SINGLE_CHOICE",
+        "MULTIPLE_CHOICE",
+        "DROPDOWN",
+        "DROPDOWN_SEARCH",
+        "DROPDOWN_EXTRA",
+        "FILE",
+        "LINEAR_SCALE",
+        "RATING",
+        "GRID_SINGLE",
+        "GRID_MULTIPLE",
+        "DATE",
+        "TIME",
+        "BOOLEAN",
+        "HEADING",
+        "INFORMATION",
+        "IMAGE",
     ]
     return [(key, labels[key]) for key in order]
 
@@ -112,7 +134,12 @@ def new_editor_view(model_admin, request):
                     model_admin.log_addition(request, form, "Creó borrador en constructor")
                 else:
                     version = current_version(form)
-                    if form.deleted_at or not version or version.status != "DRAFT" or version.fields.exists():
+                    if (
+                        form.deleted_at
+                        or not version
+                        or version.status != "DRAFT"
+                        or version.fields.exists()
+                    ):
                         raise StaleDraft("Este formulario ya se guardó. Ábrelo desde Formularios.")
                 result = document(version)
                 result.update(
@@ -171,14 +198,18 @@ def editor_view(model_admin, request, object_id, operation="edit"):
                 from .publication import set_form_access
 
                 form = set_form_access(form.pk, operation)
-                model_admin.log_change(request, form, {
-                    "pause": "Pausó la recepción de respuestas",
-                    "resume": "Activó la recepción de respuestas",
-                    "unpublish": "Desactivó el acceso público",
-                }[operation])
+                model_admin.log_change(
+                    request,
+                    form,
+                    {
+                        "pause": "Pausó la recepción de respuestas",
+                        "resume": "Activó la recepción de respuestas",
+                        "unpublish": "Desactivó el acceso público",
+                    }[operation],
+                )
                 return JsonResponse(document(current_version(form)))
-            if len(request.body) > 1_000_000:
-                raise ValidationError("El formulario supera el tamaño permitido.")
+            if len(request.body) > 8 * 1024 * 1024:
+                raise ValidationError("El formulario supera el tamaño permitido (8 MB).")
             data = json.loads(request.body)
             if not isinstance(data, dict):
                 raise ValidationError("Formato de formulario inválido.")
@@ -190,7 +221,15 @@ def editor_view(model_admin, request, object_id, operation="edit"):
         except StaleDraft as error:
             return JsonResponse({"error": " ".join(error.messages)}, status=409)
         except IntegrityError:
-            return JsonResponse({"error": "No se pudo guardar por un conflicto con los datos actuales. Recarga la página e inténtalo de nuevo."}, status=409)
+            return JsonResponse(
+                {
+                    "error": (
+                        "No se pudo guardar por un conflicto con los datos actuales. "
+                        "Recarga la página e inténtalo de nuevo."
+                    )
+                },
+                status=409,
+            )
         except (ValidationError, json.JSONDecodeError, TypeError, ValueError) as error:
             message = (
                 " ".join(error.messages)
@@ -297,14 +336,13 @@ def form_image(request, image_id):
             form.active_version.welcome_image_id == asset.pk
             or form.active_version.appearance.get("header_image") == str(asset.pk)
             or form.active_version.fields.filter(image=asset).exists()
+            or form.active_version.fields.filter(
+                options__image=asset, options__is_active=True
+            ).exists()
         )
     )
     user = request.user
-    private = (
-        user.is_active
-        and user.is_staff
-        and user.has_perm("forms.change_form")
-    )
+    private = user.is_active and user.is_staff and user.has_perm("forms.change_form")
     if not public and not private:
         raise Http404
     try:

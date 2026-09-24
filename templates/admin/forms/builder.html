@@ -1,12 +1,13 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/builder.css' %}?v=theme-presets-1"><link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7"><link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=theme-presets-1">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/builder.js' %}?v=theme-presets-1" defer></script><script src="{% static 'forms/builder-responses.js' %}?v=theme-presets-1" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/builder.css' %}?v=welcome-theme-4"><link rel="stylesheet" href="{% static 'forms/patterns.css' %}?v=patterns-7"><link rel="stylesheet" href="{% static 'forms/theme.css' %}?v=welcome-theme-2"><link rel="stylesheet" href="{% static 'forms/builder-sections.css' %}?v=response-summary-1"><link rel="stylesheet" href="{% static 'forms/builder-navigation.css' %}?v=floating-nav-4"><link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/builder-move.css' %}?v=1"><link rel="stylesheet" href="{% static 'forms/catalog-import.css' %}?v=5">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/builder-navigation.js' %}?v=floating-nav-4" defer></script><script src="{% static 'forms/builder-move.js' %}?v=question-menu-3" defer></script><script src="{% static 'forms/builder.js' %}?v=response-summary-1" defer></script><script src="{% static 'forms/builder-responses.js' %}?v=documents-1" defer></script><script src="{% static 'forms/response-detail.js' %}?v=1" defer></script><script src="{% static 'forms/response-documents.js' %}?v=1" defer></script><script src="{% static 'forms/catalog-import.js' %}?v=5" defer></script>{% endblock %}
 {% block header %}{% endblock %}
 {% block is_fullwidth %}1{% endblock %}
 {% block content %}
-<div id="builder" class="builder" data-base="{% if form %}{% url 'admin:forms_form_builder_edit' form.pk %}{% endif %}" data-create-url="{% url 'admin:forms_form_add' %}" data-creation-token="{{ creation_token }}" data-archived="{% if form.status == 'ARCHIVED' %}true{% endif %}">
+<div id="builder" class="builder" data-base="{% if form %}{% url 'admin:forms_form_builder_edit' form.pk %}{% endif %}" data-create-url="{% url 'admin:forms_form_add' %}" data-catalog-url="{% url 'admin:forms_form_import_catalog' %}" data-creation-token="{{ creation_token }}" data-archived="{% if form.status == 'ARCHIVED' %}true{% endif %}">
     {% csrf_token %}
+    <div class="builder-main-toolbar">
     <header class="builder-top">
         <div class="builder-identity">
             <button type="button" class="header-icon builder-sidebar-toggle" x-on:click="sidebarToggle()" aria-label="Mostrar u ocultar menú" title="Menú"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
@@ -14,6 +15,8 @@
             <div class="builder-name-group"><label class="sr-only" for="form-title">Nombre del formulario</label><input class="builder-name" id="form-title" maxlength="200" placeholder="Formulario sin título" value="{{ builder_data.title }}"><p id="save-status" role="status" aria-live="polite">{% if is_new %}Formulario sin guardar{% else %}Formulario guardado{% endif %}</p></div>
         </div>
         <div class="builder-actions" aria-label="Acciones del formulario">
+            <button type="button" class="header-icon" data-action="undo" title="Deshacer" aria-label="Deshacer" disabled><span class="material-symbols-outlined" aria-hidden="true">undo</span></button>
+            <button type="button" class="header-icon" data-action="redo" title="Rehacer" aria-label="Rehacer" disabled><span class="material-symbols-outlined" aria-hidden="true">redo</span></button>
             <button type="button" class="header-icon" data-action="toggle-background" aria-controls="builder-backgrounds" aria-expanded="false" title="Personalizar tema" aria-label="Personalizar tema"><span class="material-symbols-outlined" aria-hidden="true">palette</span></button>
             <button type="button" class="header-icon" data-action="preview" title="Vista previa" aria-label="Vista previa"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button>
             <button type="button" class="header-icon" data-action="save" title="Guardar formulario" aria-label="Guardar formulario"><span class="material-symbols-outlined" aria-hidden="true">save</span></button>
@@ -22,10 +25,21 @@
         </div>
     </header>
     <nav class="builder-tabs" aria-label="Formulario"><button type="button" data-builder-tab="questions" aria-pressed="true" aria-controls="builder-questions-panel">Preguntas</button><button type="button" id="builder-responses" data-builder-tab="responses" data-url="{{ responses_url }}" aria-pressed="false" aria-controls="builder-responses-panel" {% if not responses_url %}hidden{% endif %}>Respuestas <span id="builder-response-count"></span></button><button type="button" id="builder-settings" data-builder-tab="settings" aria-pressed="false" aria-controls="builder-settings-panel">Configuración</button></nav>
+    </div>
     <div id="builder-message" role="alert" hidden></div>
     <div class="builder-sharing" id="sharing" hidden><label for="share-url">Enlace para responder</label><div class="settings-link-row"><div class="settings-link-bar"><input id="share-url" readonly aria-label="Enlace público" value="{{ share_url }}"><button type="button" class="settings-copy" data-action="copy-link" title="Copiar enlace" aria-label="Copiar enlace"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button></div><a id="builder-public" href="{{ share_url }}" target="_blank" rel="noopener">Abrir formulario <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span></a></div></div>
     <div id="builder-questions-panel">
-
+    <nav class="builder-navigation" aria-label="Navegación del editor">
+        <button type="button" id="builder-index-toggle" aria-expanded="false" aria-controls="builder-index" aria-label="Abrir índice del formulario" title="Índice del formulario"><span class="material-symbols-outlined" aria-hidden="true">format_list_numbered</span></button>
+        <div class="builder-step-actions"><button type="button" data-editor-step="-1" title="Pregunta anterior" aria-label="Pregunta anterior"><span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span></button><button type="button" data-editor-step="1" title="Pregunta siguiente" aria-label="Pregunta siguiente"><span class="material-symbols-outlined" aria-hidden="true">arrow_downward</span></button></div>
+        <div id="builder-index" class="builder-index" hidden>
+            <div class="builder-index-header"><div><strong>Contenido del formulario</strong><p id="builder-index-count"></p></div><button type="button" id="builder-index-close" aria-label="Cerrar índice"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></div>
+            <div class="builder-location"><span id="builder-location-section">Estructura del formulario</span><strong id="builder-location-question">Selecciona una pregunta para editar</strong></div>
+            <label class="sr-only" for="builder-index-search">Buscar pregunta o sección</label><input type="search" id="builder-index-search" placeholder="Buscar pregunta o sección…" autocomplete="off">
+            <div id="builder-index-list"></div>
+            <p id="builder-index-empty" role="status" hidden>No se encontraron preguntas o secciones.</p>
+        </div>
+    </nav>
     <div class="builder-canvas" data-form-background="{{ builder_data.appearance.background|default:'plain' }}">
         <main class="builder-paper" id="builder-paper"><img id="builder-header-image" class="form-header-image" alt="Encabezado del formulario" hidden>
             <section class="welcome-editor" aria-labelledby="welcome-editor-title">
@@ -58,6 +72,7 @@
     </section>
     {% include "admin/forms/builder_settings.html" %}
     {% include "admin/forms/theme_panel.html" %}
+    {% include "admin/forms/catalog_import.html" %}
     {# Unfold expects a path input in the file widget's enclosing container. #}
     <div hidden><div><div><input type="file" id="image-upload" accept="image/png,image/jpeg,image/webp"></div></div><input type="text" readonly aria-label="Archivo seleccionado"></div>
 </div>

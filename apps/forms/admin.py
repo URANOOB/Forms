@@ -11,7 +11,8 @@ from unfold.admin import ModelAdmin, TabularInline
 from apps.accounts.models import legacy_form_container
 
 from .builder_views import editor_view, new_editor_view
-from .gallery import GalleryChangeList, gallery_context
+from .catalog_views import import_catalog_view
+from .gallery import GalleryChangeList, filter_updated, gallery_context
 from .models import (
     ConditionalRule,
     FieldOption,
@@ -75,8 +76,24 @@ class FormAdmin(PlatformAdmin):
     actions = ["publish_forms", "pause_forms", "archive_forms", "delete_forms"]
 
     def get_urls(self):
-        urls = []
-        for operation in ("edit", "save", "publish", "pause", "resume", "unpublish", "preview", "image", "responses"):
+        urls = [
+            path(
+                "import-catalog/",
+                self.admin_site.admin_view(lambda request: import_catalog_view(request, self)),
+                name="forms_form_import_catalog",
+            )
+        ]
+        for operation in (
+            "edit",
+            "save",
+            "publish",
+            "pause",
+            "resume",
+            "unpublish",
+            "preview",
+            "image",
+            "responses",
+        ):
 
             def view(request, object_id, operation=operation):
                 return editor_view(self, request, object_id, operation)
@@ -103,7 +120,7 @@ class FormAdmin(PlatformAdmin):
         queryset = super().get_queryset(request).filter(deleted_at__isnull=True)
         if request.GET.get("owner") == "mine":
             queryset = queryset.filter(created_by=request.user)
-        return queryset
+        return filter_updated(queryset, request.GET.get("updated"))
 
     def get_ordering(self, request):
         return {"name": ["name", "id"], "oldest": ["updated_at", "id"]}.get(
@@ -125,9 +142,7 @@ class FormAdmin(PlatformAdmin):
         initial = super().get_changeform_initial_data(request)
         preset = PRESETS.get(request.GET.get("template"))
         if preset:
-            initial.update(
-                name=preset["name"], description=preset["description"]
-            )
+            initial.update(name=preset["name"], description=preset["description"])
         return initial
 
     def add_view(self, request, form_url="", extra_context=None):
@@ -186,16 +201,24 @@ class FormAdmin(PlatformAdmin):
         if not forms:
             return None
         if request.POST.get("confirm_form_delete") != "yes":
-            return TemplateResponse(request, "admin/forms/confirm_delete.html", {
-                **self.admin_site.each_context(request),
-                "opts": self.model._meta,
-                "title": "Eliminar formulario",
-                "forms_to_delete": forms,
-            })
+            return TemplateResponse(
+                request,
+                "admin/forms/confirm_delete.html",
+                {
+                    **self.admin_site.each_context(request),
+                    "opts": self.model._meta,
+                    "title": "Eliminar formulario",
+                    "forms_to_delete": forms,
+                },
+            )
         for form in forms:
             deleted = delete_form(form.pk)
             self.log_change(request, deleted, "Eliminó el formulario; respuestas conservadas.")
-        self.message_user(request, "Formulario eliminado. Sus respuestas se conservan en Respuestas.", messages.SUCCESS)
+        self.message_user(
+            request,
+            "Formulario eliminado. Sus respuestas se conservan en Respuestas.",
+            messages.SUCCESS,
+        )
         return None
 
     @admin.action(description="Publicar y habilitar enlace público", permissions=["change"])

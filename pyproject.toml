@@ -10,6 +10,9 @@ dependencies = [
   "psycopg[binary]>=3.2,<4",
   "python-dotenv>=1.1,<2",
   "pillow>=11,<13",
+  "openpyxl>=3.1.5,<4",
+  "defusedxml>=0.7.1,<1",
+  "django-storages[s3]>=1.14.6,<2",
 ]
 
 [dependency-groups]

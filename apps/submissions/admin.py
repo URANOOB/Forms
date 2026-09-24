@@ -1,7 +1,5 @@
 from django.contrib import admin
 from django.db.models import Exists, OuterRef, Q
-from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
 from django.urls import path, reverse
 from django.utils.html import format_html_join
 
@@ -30,6 +28,8 @@ class FormFilter(admin.SimpleListFilter):
 
 @admin.register(Submission)
 class SubmissionAdmin(PlatformAdmin):
+    change_list_template = "admin/submissions/board.html"
+    list_fullwidth = True
     list_display = ["__str__", "form", "form_version", "submitted_at", "status"]
     list_filter = [FormFilter, "status", ("submitted_at", admin.DateFieldListFilter)]
     list_select_related = ["form", "form_version__form", "form__workspace"]
@@ -39,6 +39,19 @@ class SubmissionAdmin(PlatformAdmin):
     fields = ["id", "form", "form_version", "submitted_at", "status", "answer_details"]
     actions = None
 
+    def get_changelist(self, request, **kwargs):
+        from .board import ResponseChangeList
+
+        return ResponseChangeList
+
+    def changelist_view(self, request, extra_context=None):
+        from .board import board_context
+
+        response = super().changelist_view(request, extra_context)
+        if getattr(response, "context_data", None) and "cl" in response.context_data:
+            response.context_data.update(board_context(request, response.context_data["cl"], self))
+        return response
+
     def has_add_permission(self, request):
         return False
 
@@ -46,16 +59,41 @@ class SubmissionAdmin(PlatformAdmin):
         return request.user.has_perm("submissions.delete_submission")
 
     def get_urls(self):
-        from .admin_views import response_detail, response_edit, response_delete
+        from .admin_views import (
+            response_attention,
+            response_delete,
+            response_detail,
+            response_edit,
+            response_review,
+        )
+        from .export import response_download, responses_download
 
-        urls = []
-        for operation, handler in (("detail", response_detail), ("edit", response_edit), ("remove", response_delete)):
+        urls = [
+            path(
+                "download/",
+                self.admin_site.admin_view(lambda request: responses_download(self, request)),
+                name="submissions_submission_download_selected",
+            )
+        ]
+        for operation, handler in (
+            ("detail", response_detail),
+            ("edit", response_edit),
+            ("remove", response_delete),
+            ("review", response_review),
+            ("attention", response_attention),
+            ("download", response_download),
+        ):
+
             def view(request, object_id, handler=handler):
                 return handler(self, request, object_id)
-            urls.append(path(
-                f"<uuid:object_id>/{operation}/", self.admin_site.admin_view(view),
-                name=f"submissions_submission_{operation}",
-            ))
+
+            urls.append(
+                path(
+                    f"<uuid:object_id>/{operation}/",
+                    self.admin_site.admin_view(view),
+                    name=f"submissions_submission_{operation}",
+                )
+            )
         return urls + super().get_urls()
 
     def get_list_display(self, request):
@@ -68,18 +106,32 @@ class SubmissionAdmin(PlatformAdmin):
                 actions.append(("remove", "delete", "Eliminar respuesta", "#b42318"))
             return format_html_join(
                 " ",
-                '<a href="{}" title="{}" aria-label="{}" style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:6px;color:{}"><span class="material-symbols-outlined" aria-hidden="true">{}</span></a>',
-                [(reverse(f"admin:submissions_submission_{operation}", args=[obj.pk]), label, label, color, icon)
-                 for operation, icon, label, color in actions],
+                '<a href="{}" title="{}" aria-label="{}" '
+                'style="display:inline-flex;align-items:center;justify-content:center;'
+                'width:36px;height:36px;border-radius:6px;color:{}">'
+                '<span class="material-symbols-outlined" aria-hidden="true">{}</span></a>',
+                [
+                    (
+                        reverse(f"admin:submissions_submission_{operation}", args=[obj.pk]),
+                        label,
+                        label,
+                        color,
+                        icon,
+                    )
+                    for operation, icon, label, color in actions
+                ],
             )
+
         return [*self.list_display, response_actions]
 
     def change_view(self, request, object_id, form_url="", extra_context=None):
         from .admin_views import response_detail
+
         return response_detail(self, request, object_id)
 
     def delete_view(self, request, object_id, extra_context=None):
         from .admin_views import response_delete
+
         return response_delete(self, request, object_id)
 
     def get_search_results(self, request, queryset, search_term):
@@ -92,44 +144,6 @@ class SubmissionAdmin(PlatformAdmin):
 
     @admin.display(description="Datos recibidos")
     def answer_details(self, obj):
-        sections = {}
-        answers = (
-            obj.answers.select_related("field__section")
-            .prefetch_related("field__options", "files")
-            .order_by("field__section__order", "field__section_id", "field__order", "field_id")
-        )
-        for answer in answers:
-            section = answer.field.section
-            bucket = sections.setdefault(section.pk, {"title": section.title, "answers": []})
-            value = answer.value
-            options = {option.value: option.label for option in answer.field.options.all()}
-            attachments = []
-            if answer.field.field_type in {"FILE", "DOCUMENT"}:
-                attachments = [{"name": file.original_name, "url": file.get_absolute_url()}
-                               for file in answer.files.all()]
-                text = "" if attachments else "Sin archivos"
-            elif answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
-                config = answer.field.configuration
-                columns = {column["id"]: column["label"] for column in config.get("columns", [])}
-                value = value if isinstance(value, dict) else {}
-                lines = []
-                for row in config.get("rows", []):
-                    selected = value.get(row["id"], [])
-                    selected = selected if isinstance(selected, list) else [selected]
-                    result = ", ".join(columns.get(item, item) for item in selected) or "Sin respuesta"
-                    lines.append(f"{row['label']}: {result}")
-                text = "\n".join(lines)
-            elif answer.field.field_type in {"LINEAR_SCALE", "RATING"} and value is not None:
-                text = f"{value} de {answer.field.configuration.get('max', 5)}"
-            elif isinstance(value, bool):
-                text = "Sí" if value else "No"
-            elif isinstance(value, list):
-                text = ", ".join(options.get(item, item) for item in value) or "Sin respuesta"
-            elif value is None or value == "":
-                text = "Sin respuesta"
-            else:
-                text = options.get(str(value), str(value))
-            bucket["answers"].append({"label": answer.field.label, "value": text, "files": attachments})
-        return mark_safe(
-            render_to_string("admin/submissions/answers.html", {"sections": sections.values()})
-        )
+        from .presentation import render_response_details, response_sections
+
+        return render_response_details(response_sections(obj))

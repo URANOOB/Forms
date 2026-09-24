@@ -1,34 +1,31 @@
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from apps.accounts.roles import (
+    ADMINISTRATOR,
+    LEGACY_ROLES,
+    VIEWER,
+    assign_role,
+    setup_role_groups,
+    visible_users,
+)
+
 
 class Command(BaseCommand):
-    help = "Crea grupos Django y añade permisos base sin eliminar asignaciones personalizadas."
+    help = "Configura los roles Administrador y Visor y sustituye los roles anteriores."
 
     @transaction.atomic
     def handle(self, *args, **options):
-        for name in ("Administrator", "Manager", "Reviewer", "Viewer"):
-            group, _ = Group.objects.get_or_create(name=name)
-            actions = ["view"]
-            if name in {"Administrator", "Manager"}:
-                actions += ["add", "change"]
-            permissions = Permission.objects.filter(content_type__app_label="forms")
-            group.permissions.add(
-                *[
-                    permission
-                    for permission in permissions
-                    if permission.codename.split("_", 1)[0] in actions
-                ]
+        setup_role_groups()
+        for user in visible_users(get_user_model().objects.all()).iterator():
+            user.is_superuser = (
+                user.is_superuser
+                or user.groups.filter(name__in=(ADMINISTRATOR, "ADMIN", "Administrator")).exists()
             )
-            codenames = ["view_submission"]
-            if name in {"Administrator", "Manager", "Reviewer"}:
-                codenames.append("change_submission")
-            if name in {"Administrator", "Manager"}:
-                codenames.append("delete_submission")
-            group.permissions.add(
-                *Permission.objects.filter(
-                    content_type__app_label="submissions", codename__in=codenames
-                )
-            )
-        self.stdout.write(self.style.SUCCESS("Grupos y permisos base disponibles."))
+            user.is_staff = True
+            user.save(update_fields=("is_superuser", "is_staff"))
+            assign_role(user, ADMINISTRATOR if user.is_superuser else VIEWER)
+        Group.objects.filter(name__in=LEGACY_ROLES).delete()
+        self.stdout.write(self.style.SUCCESS("Roles Administrador y Visor configurados."))

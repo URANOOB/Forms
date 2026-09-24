@@ -54,7 +54,9 @@ class ScaleWidget(forms.RadioSelect):
 def grid_axis(config, key, limit):
     items = config.get(key, [])
     if not isinstance(items, list) or not 1 <= len(items) <= limit:
-        raise ValidationError(f"La cuadrícula necesita entre 1 y {limit} {key == 'rows' and 'filas' or 'columnas'}.")
+        raise ValidationError(
+            f"La cuadrícula necesita entre 1 y {limit} {key == 'rows' and 'filas' or 'columnas'}."
+        )
     seen = set()
     for item in items:
         if not isinstance(item, dict):
@@ -68,7 +70,9 @@ def grid_axis(config, key, limit):
             or not label.strip()
             or len(label) > 150
         ):
-            raise ValidationError("Cada fila y columna necesita un identificador único y un título.")
+            raise ValidationError(
+                "Cada fila y columna necesita un identificador único y un título."
+            )
         seen.add(key_value)
     return items
 
@@ -92,18 +96,28 @@ class GridWidget(forms.Widget):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         value = value if isinstance(value, dict) else {}
-        context["widget"].update({
-            "columns": self.columns,
-            "input_type": "checkbox" if self.multiple else "radio",
-            "rows": [
-                {**row, "name": f"{name}__{row['id']}", "cells": [
-                    {**column, "selected": column["id"] in value.get(row["id"], [])
-                     if self.multiple else column["id"] == value.get(row["id"])}
-                    for column in self.columns
-                ]}
-                for row in self.rows
-            ],
-        })
+        context["widget"].update(
+            {
+                "columns": self.columns,
+                "input_type": "checkbox" if self.multiple else "radio",
+                "rows": [
+                    {
+                        **row,
+                        "name": f"{name}__{row['id']}",
+                        "cells": [
+                            {
+                                **column,
+                                "selected": column["id"] in value.get(row["id"], [])
+                                if self.multiple
+                                else column["id"] == value.get(row["id"]),
+                            }
+                            for column in self.columns
+                        ],
+                    }
+                    for row in self.rows
+                ],
+            }
+        )
         return context
 
 
@@ -122,7 +136,9 @@ class GridField(forms.Field):
         allowed = {column["id"] for column in self.columns}
         for selected in value.values():
             if self.multiple:
-                if not isinstance(selected, list) or any(not isinstance(v, str) or v not in allowed for v in selected):
+                if not isinstance(selected, list) or any(
+                    not isinstance(v, str) or v not in allowed for v in selected
+                ):
                     raise ValidationError("Selecciona opciones válidas en la cuadrícula.")
             elif not isinstance(selected, str) or selected not in allowed:
                 raise ValidationError("Selecciona una opción válida por fila.")
@@ -142,16 +158,26 @@ class AttachmentField(forms.FileField):
         self.max_files = integer_setting(config, "max_files", 1, 1, 5)
         self.max_mb = integer_setting(config, "max_mb", 5, 1, 10)
         extensions = config.get("extensions", sorted(UPLOAD_EXTENSIONS))
-        if not isinstance(extensions, list) or not extensions or any(
-            not isinstance(extension, str) or extension not in UPLOAD_EXTENSIONS for extension in extensions
+        if (
+            not isinstance(extensions, list)
+            or not extensions
+            or any(
+                not isinstance(extension, str) or extension not in UPLOAD_EXTENSIONS
+                for extension in extensions
+            )
         ):
             raise ValidationError("Selecciona los tipos de archivo permitidos.")
         self.extensions = extensions
-        super().__init__(widget=MultipleFileInput(attrs={
-            "accept": ",".join(f".{extension}" for extension in extensions),
-            "data-max-files": self.max_files,
-            "data-max-bytes": self.max_mb * 1024 * 1024,
-        }), **kwargs)
+        super().__init__(
+            widget=MultipleFileInput(
+                attrs={
+                    "accept": ",".join(f".{extension}" for extension in extensions),
+                    "data-max-files": self.max_files,
+                    "data-max-bytes": self.max_mb * 1024 * 1024,
+                }
+            ),
+            **kwargs,
+        )
 
     def clean(self, data, initial=None):
         if not data:

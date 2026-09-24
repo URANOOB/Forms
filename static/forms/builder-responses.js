@@ -87,6 +87,6 @@
     loadResponses(1);
   });
   window.addEventListener("focus", () => {
-    if (!panel.hidden) loadResponses(currentPage);
+    if (!panel.hidden && !document.querySelector(".response-document-dialog[open]") && !list.querySelector('[data-response-action="detail"][aria-expanded="true"]')) loadResponses(currentPage);
   });
 })();

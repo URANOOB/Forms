@@ -2,14 +2,11 @@
 
 ## Límites de esta fase
 
-Foundation creó `accounts` y `forms`; la ampliación solicitada después incorpora
-`submissions` para formularios públicos y respuestas privadas. Workspace vive en
-accounts. documents, notifications, exports, analytics y audit aparecerán al requerirse.
-No existe constructor propio todavía. La publicación está disponible desde FormAdmin.
-Los modelos técnicos sí tienen ModelAdmin para edición básica de borradores, conforme
-al alcance detallado de Fase 1. El tipo y stable_key de campos existentes se mantienen
-de sólo lectura en este admin para no invalidar sus opciones o condiciones.
-`/` devuelve 404; los formularios publicados se abren en `/f/<workspace>/<slug>/`.
+La aplicación incluye constructor visual, formularios públicos, revisión de respuestas,
+catálogos y dashboard operativo. `Workspace` permanece como contenedor de compatibilidad
+de datos anteriores; no representa una frontera de permisos. Ver [roles](users.md).
+La portada pública vive en `/`; los formularios usan `/f/<uuid>/` y se conservan enlaces
+antiguos por workspace/slug. La administración exige sesión y permisos de Django.
 
 ## Esquema versionado
 
@@ -34,30 +31,25 @@ y el servidor reconstruye visibilidad y obligatoriedad antes de guardar.
 
 Las escrituras ordinarias (`save`/`delete`) del contenido publicado/archivado se bloquean;
 no se puede trasladar contenido entre versiones. El admin sólo edita borradores y
-limita las opciones de relaciones a versiones editables del workspace del usuario.
+limita las opciones de relaciones a versiones editables.
 **No usar `QuerySet.update`, `bulk_create`,
 `bulk_update`, `QuerySet.delete` ni SQL directo para editar el esquema**: omiten
 validación de modelos. Las escrituras ordinarias del contenido y la publicación
 comparten bloqueo de FormVersion. Publicación, pausa, archivado y recepción bloquean
-Form dentro de transacciones para decidir sobre su estado actual. La clonación de
-versiones preservando stable_key sigue pendiente del constructor.
+Form dentro de transacciones para decidir sobre su estado actual. El constructor clona versiones
+conservando stable_key y mantiene intactas las referencias de respuestas históricas.
 
 ## Acceso y conservación
 
-Un usuario ordinario pertenece a un workspace; todos los accesos a los admins de forms
-se filtran por workspace activo, incluso URLs directas y acciones masivas. Los
-superusuarios son operadores globales. La membresía en múltiples workspaces se
-pospone hasta que exista una necesidad. Esto no es aislamiento por PostgreSQL RLS;
-cualquier vista nueva debe aplicar el mismo ámbito y permisos Django.
+Formularios y respuestas se comparten en un panel institucional. Cada endpoint exige
+los permisos de Django correspondientes; la gestión de usuarios exige superusuario.
+La eliminación de formularios es lógica y conserva respuestas. Las relaciones PROTECT
+preservan la autoría. La revisión registra actor, estados, fecha y motivo; rechazar
+requiere un motivo. La auditoría de lecturas sigue pendiente.
 
-Se deshabilita hard delete de formularios, usuarios y workspaces en el admin;
-archivar/desactivar es el flujo normal. Las FK PROTECT conservan autoría e historial.
-La auditoría actual es LogEntry nativo del admin. No sustituye los futuros eventos
-de lectura, documentos y exportaciones; no se registran respuestas sensibles.
-
-El slug es único por workspace. La resolución pública siempre usa ambos slugs:
-`/f/<workspace>/<slug>/`. No existe listado público de formularios ni endpoint público
-para consultar respuestas. La confirmación no expone datos ni IDs de respuestas.
+No existe un endpoint público de consulta de respuestas. La confirmación no expone
+datos ni IDs de respuestas. Los adjuntos son privados y se sirven mediante vistas
+autorizadas; R2 no se expone como bucket público.
 
 ## Infraestructura portable
 
@@ -71,7 +63,8 @@ Cloudflare Python Workers sigue siendo el target, **no un despliegue validado**.
 En Fase 10 se debe probar compatibilidad real de Django, psycopg y su transporte
 PostgreSQL, Unfold/static, R2, correo y generación/streaming de exportaciones bajo
 los límites del runtime. El wheel nativo usado localmente no prueba compatibilidad
-con Pyodide. Mantener alternativa WSGI/ASGI convencional si una dependencia falla.
+con Pyodide. El alojamiento solicitado debe ser gratuito y permanecer en Cloudflare. Ver
+[compatibilidad y trabajo pendiente](cloudflare-deployment.md).
 En hosting convencional se debe servir `STATIC_ROOT` después de `collectstatic`.
 No hay secretos, dominios reales ni despliegue configurados en este repositorio.
 

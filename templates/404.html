@@ -1,0 +1,28 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Página no encontrada · Formularios</title>
+    <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'errors/404.css' %}?v=1">
+    <script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script>
+    <script src="{% static 'errors/404.js' %}?v=1" defer></script>
+</head>
+<body>
+    <main class="not-found" aria-labelledby="page-title">
+        <div class="not-found-art" aria-hidden="true">
+            <div id="not-found-animation" data-animation="{% static 'errors/404.json' %}"></div>
+            <span id="not-found-fallback">404</span>
+        </div>
+        <p class="not-found-code">ERROR 404</p>
+        <h1 id="page-title">Esta página no está por aquí</h1>
+        <p class="not-found-description">Puede que el enlace haya cambiado o que la página ya no exista.</p>
+        <a class="not-found-home" href="{% url 'home' %}">Volver al inicio <span aria-hidden="true">→</span></a>
+        <button type="button" id="animation-toggle" class="animation-toggle" hidden>Pausar animación</button>
+    </main>
+    <footer>Formularios institucionales</footer>
+</body>
+</html>

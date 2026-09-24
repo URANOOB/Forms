@@ -27,7 +27,9 @@ def responses_view(model_admin, request, form):
     )
     if duplicates:
         queryset = queryset.distinct()
-    page = Paginator(queryset.select_related("form_version").order_by("-submitted_at", "-pk"), 25).get_page(request.GET.get("page", 1))
+    page = Paginator(
+        queryset.select_related("form_version").order_by("-submitted_at", "-pk"), 25
+    ).get_page(request.GET.get("page", 1))
     rows = [
         {
             "submission": submission,
@@ -37,8 +39,12 @@ def responses_view(model_admin, request, form):
         for submission in page
         if submission_admin.has_view_permission(request, submission)
     ]
-    return JsonResponse({
-        "html": render_to_string("admin/forms/responses.html", {"rows": rows, "page": page}, request=request),
-        "total": total,
-        "count": page.paginator.count,
-    })
+    return JsonResponse(
+        {
+            "html": render_to_string(
+                "admin/forms/responses.html", {"rows": rows, "page": page}, request=request
+            ),
+            "total": total,
+            "count": page.paginator.count,
+        }
+    )

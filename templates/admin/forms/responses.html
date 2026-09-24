@@ -8,7 +8,7 @@
                 <td>{{ row.submission }}</td>
                 <td>v{{ row.submission.form_version.version_number }}</td>
                 <td>{{ row.submission.submitted_at|date:"d/m/Y H:i" }}</td>
-                <td>{{ row.submission.get_status_display }}</td>
+                <td><span class="response-status" data-status="{{ row.submission.status }}">{{ row.submission.get_status_display }}</span></td>
                 <td><div class="builder-response-actions">
                     <button type="button" class="icon-button" data-response-action="detail" data-response-id="{{ row.submission.pk }}" aria-expanded="false" aria-controls="response-{{ row.submission.pk }}" title="Ver respuesta" aria-label="Ver {{ row.submission }}"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button>
                     {% if row.can_edit %}<a class="icon-button" href="{% url 'admin:submissions_submission_edit' row.submission.pk %}" target="_blank" rel="noopener" title="Editar respuesta en otra pestaña" aria-label="Editar {{ row.submission }} en otra pestaña"><span class="material-symbols-outlined" aria-hidden="true">edit</span></a>{% endif %}

@@ -1,0 +1,7 @@
+<button type="button" class="response-more" popovertarget="response-menu-{{ item.pk }}" aria-label="Acciones de {{ card.title }}" title="Más acciones"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></button>
+<div id="response-menu-{{ item.pk }}" class="response-action-menu" popover>
+    <p>{{ item }}</p>
+    {% if card.can_review %}{% for value,label in card.transitions %}<button type="button" data-review-url="{% url 'admin:submissions_submission_review' item.pk %}" data-review-target="{{ value }}" data-status="{{ item.status }}" data-revision="{{ item.review_revision }}" data-title="{{ card.title }} · {{ item.form.name }}" aria-haspopup="dialog">{{ label }}</button>{% endfor %}<a href="{% url 'admin:submissions_submission_detail' item.pk %}#response-flags">Marcar incidencia</a>{% endif %}
+    <a href="{% url 'admin:submissions_submission_download' item.pk %}">Descargar CSV</a>
+    <a href="{% url 'admin:submissions_submission_detail' item.pk %}#response-history">Ver historial</a>
+</div>

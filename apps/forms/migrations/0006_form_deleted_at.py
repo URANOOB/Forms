@@ -8,6 +8,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="form",
             name="deleted_at",
-            field=models.DateTimeField(blank=True, editable=False, null=True, verbose_name="eliminado el"),
+            field=models.DateTimeField(
+                blank=True, editable=False, null=True, verbose_name="eliminado el"
+            ),
         ),
     ]

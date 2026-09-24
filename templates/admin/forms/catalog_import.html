@@ -1,0 +1,36 @@
+<dialog id="catalog-import" class="catalog-dialog" aria-labelledby="catalog-title">
+    <header class="catalog-heading"><div><span class="catalog-eyebrow">DESDE TUS DATOS</span><h2 id="catalog-title">Crear campos desde archivo</h2><p>Crea uno o varios desplegables y elige cómo se relacionan.</p></div><button type="button" class="icon-button" data-catalog-close aria-label="Cerrar importación"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></header>
+    <div class="catalog-body">
+        <div class="catalog-upload">
+            <p>1. Selecciona tu archivo</p>
+            <p class="catalog-hint">CSV, XLSX o XLSM · Hasta 5 MB y 5.000 filas por hoja</p>
+            <button type="button" id="catalog-choose-file" class="catalog-secondary">Seleccionar archivo</button>
+            <span id="catalog-filename" role="status">Ningún archivo seleccionado</span>
+            <div><div><input id="catalog-file" type="file" hidden accept=".csv,.xlsx,.xlsm,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"></div></div>
+            {# Keep Unfold's file-path listener scoped to this upload widget. #}
+            <input type="text" readonly hidden aria-label="Nombre del archivo seleccionado">
+        </div>
+        <p id="catalog-status" role="status" aria-live="polite"></p>
+        <div id="catalog-configuration" hidden>
+            <div class="catalog-source"><label>Hoja<select id="catalog-sheet"></select></label><label>Fila de encabezados<input id="catalog-header" type="number" min="1" max="50" value="1"></label></div>
+            <details class="catalog-sample"><summary>Ver muestra del archivo</summary><div id="catalog-sample"></div></details>
+            <div class="catalog-layout">
+                <section class="catalog-mapping" aria-labelledby="catalog-mapping-title"><h3 id="catalog-mapping-title">2. Ajusta los campos</h3>
+                    <p class="catalog-hint">Añade o quita campos. Puedes combinar varias columnas en el texto de cada opción y filtrar un campo según otro anterior.</p>
+                    <button type="button" id="catalog-add-field" data-add-catalog-field class="catalog-secondary">+ Añadir campo</button>
+                    <button type="button" id="catalog-clear-fields" class="catalog-reset">Empezar desde cero</button>
+                    <p id="catalog-empty" class="catalog-hint" hidden>No hay campos configurados. Pulsa «Añadir campo» para empezar con las columnas de tu archivo.</p>
+                    <div id="catalog-fields"></div>
+                    <p class="catalog-hint">Hasta 20 campos por importación. Las columnas que no selecciones se omiten.</p>
+                    <button type="button" id="catalog-analyze" class="catalog-secondary">Actualizar propuesta</button>
+                </section>
+                <section class="catalog-preview" aria-labelledby="catalog-preview-title"><h3 id="catalog-preview-title">3. Prueba los campos</h3>
+                    <p id="catalog-summary"></p><p id="catalog-explanation"></p>
+                    <ul id="catalog-issues" role="alert" hidden></ul><ul id="catalog-warnings" hidden></ul>
+                    <div id="catalog-preview-controls" hidden></div>
+                </section>
+            </div>
+        </div>
+    </div>
+    <footer class="catalog-footer"><p>Se añadirán a la sección seleccionada. Puedes deshacer la importación.</p><button type="button" class="catalog-secondary" data-catalog-close>Cancelar</button><button type="button" id="catalog-apply" class="catalog-primary" disabled>Añadir campos</button></footer>
+</dialog>
