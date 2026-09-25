@@ -30,6 +30,16 @@ jobs:
       - run: uv run python manage.py makemigrations --check --dry-run
       - run: uv run python manage.py check
       - run: uv run python manage.py test --noinput
+      - run: uv run --with playwright python -m playwright install --with-deps chromium
+      - name: Browser regression checks
+        run: >-
+          uv run --with playwright python manage.py test
+          apps.submissions.tests.browser_public_audit
+          apps.forms.tests.browser_gallery
+          apps.accounts.tests.browser_dashboard
+          apps.submissions.tests.browser_detail
+          apps.submissions.tests.browser_review --noinput
+      - run: uv run --with playwright python apps/forms/tests/browser_catalog_import.py
       - run: uv run python manage.py collectstatic --noinput
   worker-build:
     runs-on: ubuntu-latest

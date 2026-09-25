@@ -91,7 +91,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
         )
         errors = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1600, "height": 1050})
             context.add_cookies(
                 [
@@ -105,7 +105,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.route(
-                "**" + attachment.get_absolute_url(),
+                "**" + attachment.get_absolute_url() + "*",
                 lambda route: route.fulfill(
                     status=200,
                     content_type="text/plain",

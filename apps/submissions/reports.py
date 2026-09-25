@@ -24,6 +24,7 @@ from django.utils.http import content_disposition_header
 from django.utils.text import slugify
 from openpyxl import Workbook
 from openpyxl.cell import WriteOnlyCell
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
@@ -37,6 +38,9 @@ from .summary import answer_text, load_summary_data, normalized, role
 def safe_cell(value):
     """Keep submitted text as text, including strings that look like formulas."""
     value = "" if value is None else str(value)
+    # XML 1.0 cannot represent these characters; preserve their identity visibly.
+    value = ILLEGAL_CHARACTERS_RE.sub(lambda match: f"\\u{ord(match[0]):04x}", value)
+    value = value.replace("\ufffe", "\\ufffe").replace("\uffff", "\\uffff")
     return "'" + value if value.lstrip().startswith(("=", "+", "-", "@")) else value
 
 

@@ -24,6 +24,12 @@
     value == null || value === "" || (typeof value === "object" && !Object.keys(value).length);
   const grids = new Set(["GRID_SINGLE", "GRID_MULTIPLE"]);
   const uploads = new Set(["FILE", "DOCUMENT"]);
+  const groupsByField = Object.fromEntries(schema.order.map((key) => [key, []]));
+  for (const group of schema.groups) {
+    for (const target of group.targets) groupsByField[target].push(group);
+  }
+  const keysBySection = Object.fromEntries(schema.sections.map((key) => [key, []]));
+  for (const key of schema.order) keysBySection[schema.fields[key].section].push(key);
   const retainedFiles = (container) => [...container.querySelectorAll("[data-stored-file]")].filter((input) => !input.checked);
   const compare = (value, operator, expected) => {
     switch (operator) {
@@ -105,7 +111,7 @@
       if (inputs[0].hasAttribute("max") && Number(value) > Number(inputs[0].max)) return null;
     }
     if (field.type === "NUMBER")
-      return value === "" || !Number.isFinite(Number(value))
+      return value === "" || !Number.isSafeInteger(Number(value))
         ? null
         : Number(value);
     return value;
@@ -126,9 +132,7 @@
     values = { ...values };
     const states = {};
     for (const key of schema.order) {
-      const groups = schema.groups.filter((group) =>
-        group.targets.includes(key),
-      );
+      const groups = groupsByField[key];
       const visibility = Object.fromEntries(
         ["field", "section"].map((scope) => [
           scope,
@@ -179,7 +183,7 @@
     let candidate = schema.sections[0];
     while (candidate) {
       const candidateStates = evaluate(values, new Set([...route, candidate]));
-      const keys = schema.order.filter((key) => schema.fields[key].section === candidate);
+      const keys = keysBySection[candidate];
       const visible = !keys.length || keys.some((key) => candidateStates[key].visible);
       if (visible) route.push(candidate);
       candidate = schema.navigation[candidate][visible ? "next" : "following"];
@@ -247,7 +251,7 @@
           else if (schema.fields[key].type === "PHONE" && !/^[0-9]{6,25}$/.test(input.value)) error = "Ingrese un teléfono de 6 a 25 dígitos.";
           else if (schema.fields[key].type === "NUMBER") {
             const number = Number(input.value);
-            if (!Number.isFinite(number)) error = "Ingrese un número válido.";
+            if (!Number.isSafeInteger(number)) error = "El número máximo admitido es 9007199254740991. Para identificadores más largos, utiliza un campo de texto.";
             else if (input.hasAttribute("min") && number < Number(input.min)) error = `El valor mínimo permitido es ${input.min}.`;
             else if (input.hasAttribute("max") && number > Number(input.max)) error = `El valor máximo permitido es ${input.max}.`;
           }
@@ -288,7 +292,7 @@
     nextButton.hidden = index < 0 || index === route.length - 1;
     button.hidden = !nextButton.hidden;
     progress.hidden = !current;
-    progress.textContent = current ? `Sección ${schema.sections.indexOf(current) + 1} de ${schema.sections.length}` : "";
+    progress.textContent = current ? `Sección ${index + 1} de ${route.length}` : "";
     if (form.dataset.preview) button.textContent = "Finalizar vista previa";
   }
 
@@ -349,6 +353,19 @@
         return;
       }
     }
+    if (schema.max_submission_bytes) {
+      const encoder = new TextEncoder();
+      let size = 0;
+      for (const [name, value] of new FormData(form)) {
+        size += encoder.encode(name).length + 1024 +
+          (value instanceof File ? value.size + encoder.encode(value.name).length : encoder.encode(value).length);
+      }
+      if (size > schema.max_submission_bytes) {
+        event.preventDefault();
+        status.textContent = `La respuesta completa, incluidos los archivos, admite hasta ${schema.max_submission_bytes / 1000000} MB. Reduce el tamaño de los adjuntos.`;
+        return;
+      }
+    }
     if (form.dataset.preview) {
       event.preventDefault();
       status.textContent = "Vista previa completada. No se ha guardado ninguna respuesta.";
@@ -376,7 +393,7 @@
     if (section && route.includes(section.dataset.section)) {
       event.preventDefault();
       goTo(section.dataset.section, false);
-      target.focus();
+      (target.matches("input,select,textarea") ? target : target.querySelector("input,select,textarea") || target).focus();
       target.scrollIntoView({ block: "center" });
     }
   });
