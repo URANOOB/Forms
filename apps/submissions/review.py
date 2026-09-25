@@ -103,7 +103,9 @@ def record_review(submission, status, note, actor):
         submission=submission,
         actor=actor,
         event_type={
-            Submission.Status.UNDER_REVIEW: "review_started" if review.previous_status == Submission.Status.SUBMITTED else "reopened",
+            Submission.Status.UNDER_REVIEW: "review_started"
+            if review.previous_status == Submission.Status.SUBMITTED
+            else "reopened",
             Submission.Status.VALIDATED: "validated",
             Submission.Status.REJECTED: "rejected",
         }[status],

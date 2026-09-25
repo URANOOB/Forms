@@ -1,5 +1,5 @@
-from datetime import date
 import uuid
+from datetime import date
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Exists, OuterRef
@@ -12,7 +12,17 @@ from .review import TRANSITIONS
 from .summary import load_summary_data, summary_for
 
 BOARD_LIMIT = 12
-WORK_PARAMS = {"view", "response_status", "response_form", "response_from", "response_to", "response_assignee", "response_documents", "response_order", "selected"}
+WORK_PARAMS = {
+    "view",
+    "response_status",
+    "response_form",
+    "response_from",
+    "response_to",
+    "response_assignee",
+    "response_documents",
+    "response_order",
+    "selected",
+}
 
 
 def apply_work_filters(queryset, request, *, include_status=True):
@@ -26,7 +36,10 @@ def apply_work_filters(queryset, request, *, include_status=True):
         form_id = None
     if form_id:
         queryset = queryset.filter(form_id=form_id)
-    for keys, lookup in ((("response_from", "submitted_at__gte"), "submitted_at__date__gte"), (("response_to", "submitted_at__lte"), "submitted_at__date__lte")):
+    for keys, lookup in (
+        (("response_from", "submitted_at__gte"), "submitted_at__date__gte"),
+        (("response_to", "submitted_at__lte"), "submitted_at__date__lte"),
+    ):
         try:
             value = date.fromisoformat(params.get(keys[0]) or params.get(keys[1]) or "")
         except ValueError:
@@ -71,7 +84,9 @@ def board_context(request, changelist, model_admin):
     if changelist.query:
         base, _ = model_admin.get_search_results(request, base, changelist.query)
     base = apply_work_filters(base, request, include_status=False)
-    counts = dict(base.order_by().values("status").annotate(total=Count("pk")).values_list("status", "total"))
+    counts = dict(
+        base.order_by().values("status").annotate(total=Count("pk")).values_list("status", "total")
+    )
     columns = []
     rows = []
     if layout == "board":
@@ -91,7 +106,8 @@ def board_context(request, changelist, model_admin):
                     "cards": cards,
                     "has_more": counts.get(status, 0) > len(cards),
                     "all_url": changelist.get_query_string(
-                        {"view": "work", "response_status": status}, ["p", "selected", "status__exact"]
+                        {"view": "work", "response_status": status},
+                        ["p", "selected", "status__exact"],
                     ),
                 }
             )
@@ -124,13 +140,22 @@ def board_context(request, changelist, model_admin):
         rows[0] if rows else None,
     )
     form_choices = list(
-        model_admin.get_queryset(request).order_by("form__name").values_list("form_id", "form__name").distinct()
+        model_admin.get_queryset(request)
+        .order_by("form__name")
+        .values_list("form_id", "form__name")
+        .distinct()
     )
-    assignee_choices = list(get_user_model().objects.filter(is_staff=True).order_by("first_name", "last_name", "pk"))
+    assignee_choices = list(
+        get_user_model().objects.filter(is_staff=True).order_by("first_name", "last_name", "pk")
+    )
     filter_values = {
-        "response_status": request.GET.get("response_status") or request.GET.get("status__exact") or "",
+        "response_status": request.GET.get("response_status")
+        or request.GET.get("status__exact")
+        or "",
         "response_form": request.GET.get("response_form") or request.GET.get("form") or "",
-        "response_from": request.GET.get("response_from") or request.GET.get("submitted_at__gte") or "",
+        "response_from": request.GET.get("response_from")
+        or request.GET.get("submitted_at__gte")
+        or "",
         "response_to": request.GET.get("response_to") or request.GET.get("submitted_at__lte") or "",
         "response_assignee": request.GET.get("response_assignee", ""),
         "response_documents": request.GET.get("response_documents", ""),
@@ -146,8 +171,14 @@ def board_context(request, changelist, model_admin):
     return {
         "response_layout": layout,
         "response_columns": columns,
-        "board_can_drag": any(card["can_review"] and card["transitions"] for column in columns for card in column["cards"]),
-        "board_url": changelist.get_query_string({"view": "board"}, ["p", "response_status", "status__exact", "selected"]),
+        "board_can_drag": any(
+            card["can_review"] and card["transitions"]
+            for column in columns
+            for card in column["cards"]
+        ),
+        "board_url": changelist.get_query_string(
+            {"view": "board"}, ["p", "response_status", "status__exact", "selected"]
+        ),
         "list_url": changelist.get_query_string({"view": "list"}, ["p"]),
         "review_transitions": TRANSITIONS,
         "response_rows": rows,
@@ -156,10 +187,22 @@ def board_context(request, changelist, model_admin):
         "status_cards": [
             {
                 "value": status,
-                "label": {"SUBMITTED": "Pendientes", "UNDER_REVIEW": "En revisión", "VALIDATED": "Validadas", "REJECTED": "Rechazadas"}[status],
-                "help": {"SUBMITTED": "Requieren tu revisión", "UNDER_REVIEW": "En proceso", "VALIDATED": "Aceptadas", "REJECTED": "No aceptadas"}[status],
+                "label": {
+                    "SUBMITTED": "Pendientes",
+                    "UNDER_REVIEW": "En revisión",
+                    "VALIDATED": "Validadas",
+                    "REJECTED": "Rechazadas",
+                }[status],
+                "help": {
+                    "SUBMITTED": "Requieren tu revisión",
+                    "UNDER_REVIEW": "En proceso",
+                    "VALIDATED": "Aceptadas",
+                    "REJECTED": "No aceptadas",
+                }[status],
                 "count": counts.get(status, 0),
-                "url": changelist.get_query_string({"response_status": status, "view": "work"}, ["p", "selected", "status__exact"]),
+                "url": changelist.get_query_string(
+                    {"response_status": status, "view": "work"}, ["p", "selected", "status__exact"]
+                ),
                 "active": filter_values["response_status"] == status,
             }
             for status, _ in Submission.Status.choices
@@ -167,7 +210,10 @@ def board_context(request, changelist, model_admin):
         "total_matching_count": sum(counts.values()),
         "work_url": changelist.get_query_string({"view": "work"}, ["p"]),
         "filter_form_choices": [{"id": str(pk), "name": name} for pk, name in form_choices],
-        "filter_assignee_choices": [{"id": str(user.pk), "name": user.get_full_name() or user.get_username()} for user in assignee_choices],
+        "filter_assignee_choices": [
+            {"id": str(user.pk), "name": user.get_full_name() or user.get_username()}
+            for user in assignee_choices
+        ],
         "work_filter_values": filter_values,
         "response_filters": [
             {"title": spec.title, "choices": list(spec.choices(changelist))}

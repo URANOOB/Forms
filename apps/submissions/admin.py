@@ -117,12 +117,16 @@ class SubmissionAdmin(PlatformAdmin):
             ),
             path(
                 "<uuid:object_id>/panel/",
-                self.admin_site.admin_view(lambda request, object_id: response_panel(self, request, object_id)),
+                self.admin_site.admin_view(
+                    lambda request, object_id: response_panel(self, request, object_id)
+                ),
                 name="submissions_submission_panel",
             ),
             path(
                 "<uuid:object_id>/note/",
-                self.admin_site.admin_view(lambda request, object_id: response_note(self, request, object_id)),
+                self.admin_site.admin_view(
+                    lambda request, object_id: response_note(self, request, object_id)
+                ),
                 name="submissions_submission_note",
             ),
         ]

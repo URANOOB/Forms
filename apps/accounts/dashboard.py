@@ -95,7 +95,10 @@ def trend_context(responses, today, now, days, custom_range=None):
                 {
                     "date": group[0]["date"],
                     "count": sum(point["count"] for point in group),
-                    "label": f"{date.fromisoformat(group[0]['date']):%d/%m}–{date.fromisoformat(group[-1]['date']):%d/%m}",
+                    "label": (
+                        f"{date.fromisoformat(group[0]['date']):%d/%m}–"
+                        f"{date.fromisoformat(group[-1]['date']):%d/%m}"
+                    ),
                 }
             )
     active_days = [point for point in points if point["count"]]
@@ -111,11 +114,15 @@ def trend_context(responses, today, now, days, custom_range=None):
             verb = "Se recibió" if busiest["count"] == 1 else "Se recibieron"
             insight = f"{verb} {busiest['count']} {response_word} el {weekday}."
         else:
-            insight = f"El mayor volumen se registró el {weekday} con {busiest['count']} {response_word}."
+            insight = (
+                f"El mayor volumen se registró el {weekday} con {busiest['count']} {response_word}."
+            )
     label = (
         f"{first:%d/%m/%Y} – {last:%d/%m/%Y}"
         if custom_range
-        else "Hoy" if days == 1 else f"Últimos {days} días"
+        else "Hoy"
+        if days == 1
+        else f"Últimos {days} días"
     )
     return {
         "points": points,
@@ -183,12 +190,14 @@ def daily_summary(current_counts, received_today, recent_form):
     pending = current_counts.get("SUBMITTED", 0)
     reviewing = current_counts.get("UNDER_REVIEW", 0)
     title = (
-        f"Hoy tienes {pending} respuesta{'s' if pending != 1 else ''} pendiente{'s' if pending != 1 else ''} por revisar."
+        f"Hoy tienes {pending} respuesta{'s' if pending != 1 else ''} "
+        f"pendiente{'s' if pending != 1 else ''} por revisar."
         if pending
         else "Todo está al día."
     )
     received_message = (
-        f"Has recibido {received_today} respuesta{'s' if received_today != 1 else ''} nueva{'s' if received_today != 1 else ''} hoy."
+        f"Has recibido {received_today} respuesta{'s' if received_today != 1 else ''} "
+        f"nueva{'s' if received_today != 1 else ''} hoy."
         if received_today
         else "No has recibido nuevas respuestas hoy."
     )
@@ -196,7 +205,9 @@ def daily_summary(current_counts, received_today, recent_form):
         "title": title,
         "state": "attention" if pending else "clear",
         "received": received_message,
-        "reviewing": f"Hay {reviewing} respuesta{'s' if reviewing != 1 else ''} en revisión." if reviewing else "",
+        "reviewing": f"Hay {reviewing} respuesta{'s' if reviewing != 1 else ''} en revisión."
+        if reviewing
+        else "",
         "recent_form": recent_form,
         "pending_url": response_url(status__exact="SUBMITTED", view="list"),
         "responses_url": reverse("admin:submissions_submission_changelist"),
@@ -293,11 +304,11 @@ def dashboard_callback(request, context):
         .annotate(total=Count("pk"))
         .values_list("status", "total")
     )
-    received_today = responses.filter(submitted_at__gte=midnight(today), submitted_at__lte=now).count()
+    received_today = responses.filter(
+        submitted_at__gte=midnight(today), submitted_at__lte=now
+    ).count()
     recent_form = (
-        responses.order_by("-submitted_at", "-pk")
-        .values_list("form__name", flat=True)
-        .first()
+        responses.order_by("-submitted_at", "-pk").values_list("form__name", flat=True).first()
     )
     cards = [
         {
@@ -353,7 +364,9 @@ def dashboard_callback(request, context):
         {
             **row,
             "url": response_url(start, now, form=row["form_id"]),
-            "pending_url": response_url(start, now, form=row["form_id"], status__exact="SUBMITTED", view="list"),
+            "pending_url": response_url(
+                start, now, form=row["form_id"], status__exact="SUBMITTED", view="list"
+            ),
             "relative": relative_time(row["latest"], now),
         }
         for row in page
@@ -366,10 +379,12 @@ def dashboard_callback(request, context):
             "dashboard_reports_url": reverse("admin:submissions_submission_reports"),
             "dashboard_forms": rows,
             "dashboard_page": page,
-            "dashboard_previous": "?" + urlencode({"period": period, "page": page.previous_page_number(), **trend_params})
+            "dashboard_previous": "?"
+            + urlencode({"period": period, "page": page.previous_page_number(), **trend_params})
             if page.has_previous()
             else "",
-            "dashboard_next": "?" + urlencode({"period": period, "page": page.next_page_number(), **trend_params})
+            "dashboard_next": "?"
+            + urlencode({"period": period, "page": page.next_page_number(), **trend_params})
             if page.has_next()
             else "",
             "dashboard_trend": trend_context(responses, today, now, days or 30, trend_range),

@@ -106,13 +106,18 @@ def response_note(model_admin, request, object_id):
         if not content or len(content) > 2000:
             messages.error(request, "La nota debe tener entre 1 y 2.000 caracteres.")
         else:
-            SubmissionNote.objects.create(submission=submission, author=request.user, content=content)
+            SubmissionNote.objects.create(
+                submission=submission, author=request.user, content=content
+            )
             SubmissionActivity.objects.create(
                 submission=submission, actor=request.user, event_type="note_added"
             )
             model_admin.log_change(request, submission, "Añadió una nota interna.")
             messages.success(request, "Nota interna guardada.")
-    fallback = f"{reverse('admin:submissions_submission_changelist')}?view=work&selected={submission.pk}#response-notes"
+    fallback = (
+        f"{reverse('admin:submissions_submission_changelist')}"
+        f"?view=work&selected={submission.pk}#response-notes"
+    )
     next_url = request.POST.get("next", "")
     if next_url and url_has_allowed_host_and_scheme(
         next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
@@ -139,7 +144,18 @@ def response_review(model_admin, request, object_id):
         ):
             if wants_json:
                 return JsonResponse(
-                    {"errors": {"__all__": [{"message": "Esta respuesta ya está asignada a otra persona. Actualiza la página."}]}},
+                    {
+                        "errors": {
+                            "__all__": [
+                                {
+                                    "message": (
+                                        "Esta respuesta ya está asignada a otra persona. "
+                                        "Actualiza la página."
+                                    )
+                                }
+                            ]
+                        }
+                    },
                     status=409,
                 )
             raise PermissionDenied

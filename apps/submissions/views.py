@@ -126,7 +126,9 @@ def response_file(request, file_id):
     SubmissionActivity.objects.create(
         submission_id=attachment.answer.submission_id,
         actor=request.user,
-        event_type="document_viewed" if request.GET.get("preview") == "1" else "document_downloaded",
+        event_type="document_viewed"
+        if request.GET.get("preview") == "1"
+        else "document_downloaded",
         description=attachment.original_name,
     )
     response = FileResponse(

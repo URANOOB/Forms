@@ -16,13 +16,16 @@ def panel_context(submission, request, model_admin):
     ]
     reviews = list(submission.reviews.select_related("actor")[:30])
     activities = list(
-        submission.activity.exclude(event_type__in=["review_started", "reopened", "validated", "rejected"])
-        .select_related("actor")[:30]
+        submission.activity.exclude(
+            event_type__in=["review_started", "reopened", "validated", "rejected"]
+        ).select_related("actor")[:30]
     )
     history = [
         {
             "created_at": review.created_at,
-            "title": "Señal de revisión" if review.previous_status == review.status else f"{review.get_previous_status_display()} → {review.get_status_display()}",
+            "title": "Señal de revisión"
+            if review.previous_status == review.status
+            else f"{review.get_previous_status_display()} → {review.get_status_display()}",
             "actor": review.actor,
             "description": review.note,
         }
@@ -41,12 +44,14 @@ def panel_context(submission, request, model_admin):
         }
         for activity in activities
     )
-    history.append({
-        "created_at": submission.submitted_at,
-        "title": "Respuesta recibida",
-        "actor": None,
-        "description": "Envío del formulario",
-    })
+    history.append(
+        {
+            "created_at": submission.submitted_at,
+            "title": "Respuesta recibida",
+            "actor": None,
+            "description": "Envío del formulario",
+        }
+    )
     history.sort(key=lambda event: event["created_at"], reverse=True)
     return {
         "item": submission,

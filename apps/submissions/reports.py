@@ -316,7 +316,9 @@ def report_preview(model_admin, request):
     forms_count = queryset.order_by().values("form_id").distinct().count()
     attachments = SubmissionFile.objects.filter(answer__submission__in=queryset)
     documents_count = attachments.count()
-    latest_response = queryset.order_by("-submitted_at").values_list("submitted_at", flat=True).first()
+    latest_response = (
+        queryset.order_by("-submitted_at").values_list("submitted_at", flat=True).first()
+    )
     page_size = request.GET.get("por_pagina", "25")
     if page_size not in {"10", "25", "50"}:
         page_size = "25"
@@ -332,31 +334,31 @@ def report_preview(model_admin, request):
         for submission in submissions:
             name, document = identity(submission)
             values = overview_row(submission, columns)
-            rows.append({
-                "id": submission.pk,
-                "number": page.start_index() + len(rows),
-                "received": timezone.localtime(submission.submitted_at),
-                "form": submission.form.name,
-                "name": name,
-                "document": document,
-                "answers": [
-                    {"key": column["key"], "value": value}
-                    for column, value in zip(columns, values[1:])
-                ],
-            })
+            rows.append(
+                {
+                    "id": submission.pk,
+                    "number": page.start_index() + len(rows),
+                    "received": timezone.localtime(submission.submitted_at),
+                    "form": submission.form.name,
+                    "name": name,
+                    "document": document,
+                    "answers": [
+                        {"key": column["key"], "value": value}
+                        for column, value in zip(columns, values[1:])
+                    ],
+                }
+            )
         sheet_headers = columns
     else:
-        attachments = (
-            attachments
-            .select_related("answer__submission__form", "answer__field")
-            .order_by(
-                *related_order(filters[2], "answer__submission__"),
-                "answer__field__section__order",
-                "answer__field__section_id",
-                "answer__field__order",
-                "answer__field_id",
-                "pk",
-            )
+        attachments = attachments.select_related(
+            "answer__submission__form", "answer__field"
+        ).order_by(
+            *related_order(filters[2], "answer__submission__"),
+            "answer__field__section__order",
+            "answer__field__section_id",
+            "answer__field__order",
+            "answer__field_id",
+            "pk",
         )
         page = Paginator(attachments, int(page_size)).get_page(request.GET.get("pagina"))
         files = list(page.object_list)
@@ -369,18 +371,22 @@ def report_preview(model_admin, request):
         for file in files:
             submission = submissions[file.answer.submission_id]
             name, document = identity(submission)
-            rows.append({
-                "number": page.start_index() + len(rows),
-                "name": name,
-                "document": document,
-                "form": submission.form.name,
-                "field": file.answer.field.label,
-                "filename": file.original_name,
-                "type": file.original_name.rsplit(".", 1)[-1].upper() if "." in file.original_name else "Archivo",
-                "size": file.size,
-                "received": timezone.localtime(submission.submitted_at),
-                "url": file.get_absolute_url(),
-            })
+            rows.append(
+                {
+                    "number": page.start_index() + len(rows),
+                    "name": name,
+                    "document": document,
+                    "form": submission.form.name,
+                    "field": file.answer.field.label,
+                    "filename": file.original_name,
+                    "type": file.original_name.rsplit(".", 1)[-1].upper()
+                    if "." in file.original_name
+                    else "Archivo",
+                    "size": file.size,
+                    "received": timezone.localtime(submission.submitted_at),
+                    "url": file.get_absolute_url(),
+                }
+            )
         sheet_headers = []
     choices = list(
         model_admin.get_queryset(request)
