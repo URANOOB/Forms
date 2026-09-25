@@ -71,7 +71,7 @@ class DashboardTests(TestCase):
         self.assertEqual(data["dashboard_forms"][0]["pending"], 2)
         self.assertEqual(self.context("today")["dashboard_cards"][0]["value"], 1)
         self.assertEqual(self.context("30d")["dashboard_trend"]["total"], 6)
-        self.assertEqual(self.context("all")["dashboard_trend"]["total"], 7)
+        self.assertEqual(self.context("all")["dashboard_forms"][0]["total"], 7)
         self.assertEqual(self.context("invalid")["dashboard_period"], "7d")
 
     def test_trend_fills_gaps_compares_previous_period_and_handles_zero(self):
