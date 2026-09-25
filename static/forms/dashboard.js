@@ -4,6 +4,7 @@
   if (!container || !data) return;
   const points = JSON.parse(data.textContent);
   if (!points.length) return;
+  const groupedByWeek = points.some((point) => point.label);
   const ns = "http://www.w3.org/2000/svg";
   const node = (tag, attributes, text) => {
     const element = document.createElementNS(ns, tag);
@@ -11,7 +12,7 @@
     if (text !== undefined) element.textContent = text;
     return element;
   };
-  const svg = node("svg", { viewBox: "0 0 360 180", role: "group", "aria-label": "Tendencia de respuestas recibidas por día" });
+  const svg = node("svg", { viewBox: "0 0 360 180", role: "group", "aria-label": `Tendencia de respuestas recibidas por ${groupedByWeek ? "semana" : "día"}` });
   const max = Math.max(1, ...points.map((point) => point.count));
   const x = (index) => points.length === 1 ? 192 : 32 + index / (points.length - 1) * 318;
   const y = (count) => 144 - count / max * 128;
@@ -26,7 +27,8 @@
   readout.textContent = "Pasa sobre un punto para ver sus respuestas.";
   points.forEach((point, index) => {
     const date = new Date(`${point.date}T12:00:00`);
-    const label = `${date.toLocaleDateString("es-CO", { day: "numeric", month: "short" })}: ${point.count} respuestas`;
+    const period = point.label || date.toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+    const label = `${period}: ${point.count} ${point.count === 1 ? "respuesta" : "respuestas"}`;
     const circle = node("circle", { cx: x(index), cy: y(point.count), r: points.length > 7 ? 3 : 4, tabindex: 0, role: "img", "aria-label": label });
     circle.append(node("title", {}, label));
     circle.addEventListener("mouseenter", () => { readout.textContent = label; });

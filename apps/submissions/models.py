@@ -38,6 +38,15 @@ class Submission(models.Model):
     )
     status = models.CharField("estado", max_length=16, choices=Status, default=Status.SUBMITTED)
     review_revision = models.PositiveIntegerField(default=0, editable=False)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_submissions",
+    )
+    review_started_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     attention = models.CharField(max_length=16, choices=Attention, blank=True, default="")
     attention_note = models.TextField(blank=True, max_length=2000)
     submitted_at = models.DateTimeField("fecha de envío", default=timezone.now, editable=False)
@@ -85,6 +94,27 @@ class SubmissionReview(models.Model):
                 name="rejected_review_has_reason",
             )
         ]
+
+
+class SubmissionActivity(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="activity")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    event_type = models.CharField(max_length=40)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+
+class SubmissionNote(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="notes")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    content = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
 
 
 class SubmissionAnswer(models.Model):

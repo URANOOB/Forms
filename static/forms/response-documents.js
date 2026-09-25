@@ -68,7 +68,9 @@
     const pending = new AbortController();
     controller = pending;
     try {
-      const response = await fetch(url, { signal: pending.signal, credentials: "same-origin", cache: "no-store" });
+      const previewUrl = new URL(url.href);
+      previewUrl.searchParams.set("preview", "1");
+      const response = await fetch(previewUrl, { signal: pending.signal, credentials: "same-origin", cache: "no-store" });
       if (!response.ok || response.redirected || !response.headers.get("content-disposition")?.startsWith("attachment")) {
         throw new Error("No se pudo abrir el documento. Compruebe su sesión y vuelva a intentarlo.");
       }

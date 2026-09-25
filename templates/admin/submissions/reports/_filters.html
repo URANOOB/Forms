@@ -1,0 +1,13 @@
+<section class="reports-filter-card" aria-labelledby="reports-filter-title">
+    <h2 id="reports-filter-title"><span class="material-symbols-outlined" aria-hidden="true">filter_alt</span>Filtros de búsqueda</h2>
+    <form method="get" action="{{ reports_url }}" class="reports-filters" aria-label="Filtros del reporte">
+        <input type="hidden" name="hoja" value="{{ selected_sheet }}"><input type="hidden" name="por_pagina" value="{{ page_size }}">
+        <label>Formulario<select name="form"><option value="">Todos los formularios</option>{% for form in form_choices %}<option value="{{ form.id }}" {% if form.selected %}selected{% endif %}>{{ form.name }}</option>{% endfor %}</select></label>
+        <label>Desde<input type="date" name="desde" value="{{ request.GET.desde }}"></label>
+        <label>Hasta<input type="date" name="hasta" value="{{ request.GET.hasta }}"></label>
+        <label>Ordenar por<select name="orden"><option value="newest" {% if selected_order == 'newest' %}selected{% endif %}>Más recientes primero</option><option value="oldest" {% if selected_order == 'oldest' %}selected{% endif %}>Más antiguas primero</option><option value="form" {% if selected_order == 'form' %}selected{% endif %}>Por formulario</option></select></label>
+        <button type="submit" class="reports-apply"><span class="material-symbols-outlined" aria-hidden="true">search</span>Aplicar filtros</button>
+        <a href="{{ reports_url }}?hoja={{ selected_sheet }}" class="reports-clear"><span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>Limpiar</a>
+    </form>
+    <div class="reports-filter-summary"><div><strong>Filtros aplicados:</strong><span class="reports-chip">{{ selected_form_name }}</span>{% if request.GET.desde or request.GET.hasta %}<span class="reports-chip">{{ period_label }}</span>{% endif %}</div><span>Mostrando {{ response_count }} respuesta{{ response_count|pluralize:"s" }} · {{ selected_form_name }} · {{ period_label }}</span></div>
+</section>

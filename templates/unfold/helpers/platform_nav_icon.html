@@ -1,0 +1,13 @@
+<svg class="platform-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+    {% if item.icon == 'space_dashboard' %}
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    {% elif item.icon == 'dynamic_form' %}
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/>
+    {% elif item.icon == 'inbox' %}
+        <path d="M4 4h16l2 10v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/><path d="M2 14h6l2 3h4l2-3h6"/>
+    {% elif item.icon == 'analytics' %}
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 17v-4M12 17V8M16 17v-6"/>
+    {% elif item.icon == 'manage_accounts' %}
+        <circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M16 5.5a3 3 0 0 1 0 5.8M17 14.5a5.5 5.5 0 0 1 4 5.5"/>
+    {% endif %}
+</svg>

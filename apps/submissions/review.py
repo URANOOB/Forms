@@ -2,8 +2,9 @@
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
-from .models import Submission, SubmissionReview
+from .models import Submission, SubmissionActivity, SubmissionReview
 
 STATUS_HELP = {
     "SUBMITTED": "Nuevas respuestas pendientes de revisar.",
@@ -88,5 +89,24 @@ def record_review(submission, status, note, actor):
     )
     submission.status = status
     submission.review_revision += 1
-    submission.save(update_fields=["status", "review_revision"])
+    fields = ["status", "review_revision"]
+    if status == Submission.Status.UNDER_REVIEW:
+        submission.assigned_to = actor
+        submission.review_started_at = timezone.now()
+        submission.reviewed_at = None
+        fields.extend(["assigned_to", "review_started_at", "reviewed_at"])
+    elif status in {Submission.Status.VALIDATED, Submission.Status.REJECTED}:
+        submission.reviewed_at = timezone.now()
+        fields.append("reviewed_at")
+    submission.save(update_fields=fields)
+    SubmissionActivity.objects.create(
+        submission=submission,
+        actor=actor,
+        event_type={
+            Submission.Status.UNDER_REVIEW: "review_started" if review.previous_status == Submission.Status.SUBMITTED else "reopened",
+            Submission.Status.VALIDATED: "validated",
+            Submission.Status.REJECTED: "rejected",
+        }[status],
+        description=note,
+    )
     return review

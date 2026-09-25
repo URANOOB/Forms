@@ -1,0 +1,47 @@
+<div class="platform-sidebar-footer" x-data="{ openUserLinks: false }">
+    <nav id="platform-sidebar-settings-menu" class="platform-sidebar-user-menu" aria-label="Opciones de cuenta" x-cloak x-show="openUserLinks" x-transition x-on:click.outside="openUserLinks = false">
+        {% if not theme %}
+            <div class="platform-sidebar-theme-switch" aria-label="Tema">
+                <button type="button" x-on:click="switchTheme('light')" x-bind:aria-pressed="(adminTheme === 'light').toString()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+                    <span>Claro</span>
+                </button>
+                <button type="button" x-on:click="switchTheme('dark')" x-bind:aria-pressed="(adminTheme === 'dark').toString()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.5 8.5 0 1 0 20.5 14.5z"/></svg>
+                    <span>Oscuro</span>
+                </button>
+                <button type="button" x-on:click="switchTheme('auto')" x-bind:aria-pressed="(adminTheme === 'auto').toString()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 22h8m-4-4v4"/></svg>
+                    <span>Sistema</span>
+                </button>
+            </div>
+        {% endif %}
+        {% include "unfold/helpers/language_switch.html" %}
+        {% if extra_userlinks %}{{ extra_userlinks }}{% endif %}
+        {% if site_url %}<a href="{{ site_url }}">Ver el sitio</a>{% endif %}
+        {% if account_links %}
+            {% for link in account_links %}<a href="{{ link.link }}">{{ link.title }}</a>{% endfor %}
+        {% elif request.user.has_usable_password %}
+            <a href="{% url 'admin:password_change' %}">Cambiar contraseña</a>
+        {% endif %}
+    </nav>
+
+    <button type="button" class="platform-sidebar-profile" aria-label="Abrir configuración de la cuenta" aria-controls="platform-sidebar-settings-menu" x-bind:aria-expanded="openUserLinks.toString()" x-on:click="openUserLinks = !openUserLinks">
+        <span class="platform-sidebar-avatar" {% if request.user.avatar_url %}style="background-image: url('{{ request.user.avatar_url }}')"{% endif %}>
+            {% if not request.user.avatar_url %}{{ request.user.get_full_name.0|default:request.user.get_username.0|upper }}{% endif %}
+        </span>
+        <span class="platform-sidebar-profile-copy">
+            <strong>{{ request.user.get_full_name|default:request.user.get_username }}</strong>
+            {% if request.user.email %}<span>{{ request.user.email }}</span>{% endif %}
+        </span>
+        <svg class="platform-sidebar-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+
+    <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="platform-sidebar-action platform-sidebar-logout">
+            <svg class="platform-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            <span>Cerrar sesión</span>
+        </button>
+    </form>
+</div>

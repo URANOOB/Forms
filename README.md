@@ -105,6 +105,25 @@ de la versión inicial es automática; la clonación se reserva para el construc
 Todos los grupos pueden consultar respuestas según sus permisos; Administrator, Manager
 y Reviewer pueden cambiar su estado, mientras Viewer sólo lee. Los datos enviados
 no se editan desde el admin. Ejecutar `setup_roles` al actualizar permisos.
+
+La sección **Reportes** del panel permite filtrar por formulario y fechas de recepción
+(ambos días incluidos, zona horaria de Bogotá), y ordenar por fecha o formulario.
+Muestra una vista previa paginada de las dos hojas del Excel: **Respuestas** (una
+fila por envío, con fecha y una columna por campo respondido) y **Documentos** (inventario
+de adjuntos). Las preguntas con el mismo título se reúnen en una columna, incluso
+entre formularios; si una respuesta contiene más de una, sus valores se separan por
+saltos de línea. Las columnas siguen el orden de las preguntas en el formulario.
+Sin fechas, incluye todas
+las respuestas. Las descargas usan los mismos filtros y el mismo orden, sin
+limitarse a la página visible. **Documentos
+ZIP** agrupa los adjuntos por nombre, documento y fecha de recepción, con sufijos
+únicos para evitar que se sobrescriban archivos con el mismo nombre.
+También se puede descargar el ZIP de una sola respuesta desde su menú; los
+adjuntos individuales siguen disponibles en el detalle. Estas descargas requieren
+permiso para ver respuestas.
+Las descargas grandes en Vercel deben verificarse frente a sus límites de tamaño
+y duración antes de depender de ellas en producción.
+
 Administrar usuarios requiere `is_superuser`. Para el personal, asignar `is_staff`
 y los permisos o grupo adecuados. Los espacios históricos no aíslan datos ni permisos.
 

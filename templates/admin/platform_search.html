@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<main class="platform-search-page">
+    <h1>Resultados de búsqueda</h1>
+    {% if query %}<p>Coincidencias para <strong>“{{ query }}”</strong></p>{% else %}<p>Escribe una palabra en la barra superior para buscar formularios, respuestas y usuarios.</p>{% endif %}
+    {% if results %}
+    <div class="platform-search-results">
+        {% for result in results %}<a href="{{ result.url }}" class="platform-search-result"><span class="material-symbols-outlined" aria-hidden="true">{{ result.icon }}</span><span><strong>{{ result.title }}</strong><small>{{ result.type }} · {{ result.detail }}</small></span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>{% endfor %}
+    </div>
+    {% elif query %}<p>No se encontraron coincidencias.</p>{% endif %}
+</main>
+{% endblock %}

@@ -73,6 +73,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.accounts.platform.shell_context",
             ]
         },
     }
@@ -150,28 +151,39 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Administración",
+                "title": "",
                 "items": [
                     {
-                        "title": "Inicio",
-                        "icon": "dashboard",
+                        "title": "Panel general",
+                        "icon": "space_dashboard",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:index"),
                     },
                     {
                         "title": "Formularios",
-                        "icon": "description",
+                        "icon": "dynamic_form",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:forms_form_changelist"),
                         "permission": lambda r: r.user.has_perm("forms.view_form"),
                     },
                     {
-                        "title": "Respuestas",
+                        "title": "Respuestas recibidas",
                         "icon": "inbox",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:submissions_submission_changelist"),
                         "permission": lambda r: r.user.has_perm("submissions.view_submission"),
                     },
                     {
-                        "title": "Usuarios",
-                        "icon": "group",
+                        "title": "Reportes y descargas",
+                        "icon": "analytics",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
+                        "link": lambda request: reverse("admin:submissions_submission_reports"),
+                        "permission": lambda r: r.user.has_perm("submissions.view_submission"),
+                    },
+                    {
+                        "title": "Usuarios y permisos",
+                        "icon": "manage_accounts",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:accounts_user_changelist"),
                         "permission": lambda r: (
                             r.user.is_active and r.user.is_staff and r.user.is_superuser

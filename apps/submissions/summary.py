@@ -10,7 +10,7 @@ from django.utils import timezone
 from apps.forms.models import FieldOption
 from apps.forms.response_summary import SUMMARY_TYPES
 
-from .models import SubmissionAnswer
+from .models import SubmissionAnswer, SubmissionFile
 
 
 def normalized(value):
@@ -74,13 +74,13 @@ def role(answer):
 
 def load_summary_data(submissions):
     answers = (
-        SubmissionAnswer.objects.select_related("field")
+        SubmissionAnswer.objects.select_related("field__section")
         .order_by("field__section__order", "field__section_id", "field__order", "field_id")
         .prefetch_related(
             Prefetch(
                 "field__options", queryset=FieldOption.objects.only("field_id", "value", "label")
             ),
-            "files",
+            Prefetch("files", queryset=SubmissionFile.objects.order_by("pk")),
         )
     )
     prefetch_related_objects(

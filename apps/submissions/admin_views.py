@@ -7,11 +7,13 @@ from django.db import transaction
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.forms.conditions import FormSchema
 from apps.forms.question_fields import FILE_TYPES
 
-from .models import Submission, SubmissionAnswer, SubmissionFile
+from .models import Submission, SubmissionActivity, SubmissionAnswer, SubmissionFile, SubmissionNote
+from .panel import panel_context
 from .presentation import render_response_details, response_sections
 from .review import STATUS_HELP, AttentionForm, ReviewForm, record_review
 from .runtime import PublicResponseForm
@@ -37,6 +39,13 @@ def page_context(model_admin, request, submission, title):
         "original": submission,
         "title": title,
         "can_edit": model_admin.has_change_permission(request, submission),
+        "can_review_action": model_admin.has_change_permission(request, submission)
+        and (
+            submission.status != Submission.Status.UNDER_REVIEW
+            or not submission.assigned_to_id
+            or submission.assigned_to_id == request.user.pk
+            or request.user.is_superuser
+        ),
         "can_delete": model_admin.has_delete_permission(request, submission),
         "details": render_response_details(sections, compact_heading=True),
         "response_sections": sections,
@@ -71,6 +80,47 @@ def response_detail(model_admin, request, object_id):
     )
 
 
+def response_panel(model_admin, request, object_id):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    submission = get_object_or_404(model_admin.get_queryset(request), pk=object_id)
+    if not model_admin.has_view_permission(request, submission):
+        raise PermissionDenied
+    return render(
+        request,
+        "admin/submissions/responses/_detail_panel.html",
+        {**panel_context(submission, request, model_admin), "panel_only": True},
+    )
+
+
+def response_note(model_admin, request, object_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    content = request.POST.get("content", "").strip()
+    with transaction.atomic():
+        submission = get_object_or_404(
+            model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
+        )
+        if not model_admin.has_change_permission(request, submission):
+            raise PermissionDenied
+        if not content or len(content) > 2000:
+            messages.error(request, "La nota debe tener entre 1 y 2.000 caracteres.")
+        else:
+            SubmissionNote.objects.create(submission=submission, author=request.user, content=content)
+            SubmissionActivity.objects.create(
+                submission=submission, actor=request.user, event_type="note_added"
+            )
+            model_admin.log_change(request, submission, "Añadió una nota interna.")
+            messages.success(request, "Nota interna guardada.")
+    fallback = f"{reverse('admin:submissions_submission_changelist')}?view=work&selected={submission.pk}#response-notes"
+    next_url = request.POST.get("next", "")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(next_url)
+    return redirect(fallback)
+
+
 def response_review(model_admin, request, object_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -80,6 +130,18 @@ def response_review(model_admin, request, object_id):
             model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
         )
         if not model_admin.has_change_permission(request, submission):
+            raise PermissionDenied
+        if (
+            submission.status == Submission.Status.UNDER_REVIEW
+            and submission.assigned_to_id
+            and submission.assigned_to_id != request.user.pk
+            and not request.user.is_superuser
+        ):
+            if wants_json:
+                return JsonResponse(
+                    {"errors": {"__all__": [{"message": "Esta respuesta ya está asignada a otra persona. Actualiza la página."}]}},
+                    status=409,
+                )
             raise PermissionDenied
         form = ReviewForm(submission, request.POST)
         valid = form.is_valid()

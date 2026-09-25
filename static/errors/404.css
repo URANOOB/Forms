@@ -81,6 +81,16 @@ h1 {
 .not-found-home:hover { background: #4732cf; }
 .not-found-home span { font-size: 20px; line-height: 1; }
 a:focus-visible, button:focus-visible { outline: 3px solid #ada2ff; outline-offset: 4px; }
+
+/* Match the platform shell while keeping the existing 404 illustration. */
+body { padding: clamp(0px, 2.3vw, 28px); background: linear-gradient(135deg, #7659dc, #4269d8); }
+.not-found { width: min(100%, 1100px); max-width: none; margin: 0 auto; padding: clamp(32px, 5vw, 60px); border-radius: 30px; background: #fff; box-shadow: 0 24px 70px #252a7f39; }
+.not-found-art { width: min(100%, 390px, 46vh); }
+.not-found-code, #not-found-fallback { color: #6355d9; }
+.not-found-home { border-radius: 12px; background: linear-gradient(110deg, #7054db, #4768d6); }
+.not-found-home:hover { background: linear-gradient(110deg, #5f49c4, #395abd); }
+body > footer { color: #fff; }
+@media (max-width: 600px) { body { padding: 0; } .not-found { border-radius: 0; min-height: calc(100svh - 44px); } body > footer { background: #fff; color: #48536f; } }
 .animation-toggle {
   margin-top: 12px;
   padding: 10px 12px;

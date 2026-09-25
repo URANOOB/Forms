@@ -41,7 +41,7 @@
   const updateReason = (form) => {
     const required = form.elements.status.value === "REJECTED";
     form.elements.note.required = required;
-    form.querySelector("[data-note-label]").textContent = required ? "Motivo del rechazo *" : "Comentario";
+    form.querySelector("[data-note-label]").textContent = required ? "Motivo del rechazo *" : "Nota sobre el cambio";
     const submit = form.querySelector('[type="submit"]');
     submit.textContent = form.elements.status.selectedOptions[0]?.textContent || "Selecciona una acción";
     submit.classList.toggle("review-danger", required);
