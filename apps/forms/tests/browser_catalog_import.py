@@ -83,7 +83,7 @@ async def main():
         )
 
     async with async_playwright() as playwright:
-        browser = await playwright.chromium.launch(channel="msedge", headless=True)
+        browser = await playwright.chromium.launch(headless=True)
         page = await browser.new_page()
         page.on("pageerror", lambda error: errors.append(str(error)))
         await page.route(

@@ -39,7 +39,7 @@
         <strong>Revise los campos indicados antes de continuar.</strong>
         {{ response_form.non_field_errors }}
         <ul>{% for input in response_form %}{% for error in input.errors %}
-            <li><a href="#{{ input.id_for_label }}">{{ input.label }}: {{ error }}</a></li>
+            <li><a href="#{{ input.auto_id }}">{{ input.label }}: {{ error }}</a></li>
         {% endfor %}{% endfor %}</ul>
     </div>
     {% endif %}
@@ -96,6 +96,7 @@
     {% endfor %}
     <div class="submit-panel">
         <p class="hint">La información registrada estará disponible únicamente para el personal autorizado.</p>
+        {% if schema.max_submission_bytes %}<p class="hint">El tamaño total de la respuesta, incluidos todos los adjuntos, admite hasta {{ schema.max_submission_bytes|filesizeformat }}.</p>{% endif %}
         <div class="section-navigation">
             <button type="button" id="back-button" class="secondary" hidden>Anterior</button>
             <button type="button" id="next-button" hidden>Siguiente</button>
@@ -108,7 +109,7 @@
 {% endblock %}
 {% block scripts %}
 {{ schema|json_script:"form-schema" }}
-<script src="{% static 'forms/public.js' %}?v=catalog-2" defer></script>
+<script src="{% static 'forms/public.js' %}?v=audit-20260925" defer></script>
 <script src="{% static 'forms/date-picker.js' %}?v=calendar-1" defer></script>
 <script src="{% static 'forms/select-picker.js' %}?v=catalog-3" defer></script>
 <script src="{% static 'forms/file-picker.js' %}?v=upload-1" defer></script>

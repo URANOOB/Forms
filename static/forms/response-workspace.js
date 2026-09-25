@@ -18,12 +18,15 @@
     if (!host || !link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     controller?.abort();
-    controller = new AbortController();
+    const pending = new AbortController();
+    controller = pending;
     host.setAttribute('aria-busy', 'true');
     try {
-      const response = await fetch(link.dataset.panelUrl, { signal: controller.signal, headers: { Accept: 'text/html' } });
-      if (!response.ok) throw new Error('No se pudo cargar la respuesta.');
-      host.innerHTML = await response.text();
+      const response = await fetch(link.dataset.panelUrl, { signal: pending.signal, headers: { Accept: 'text/html' } });
+      if (!response.ok || response.redirected || !response.headers.get('content-type')?.includes('text/html')) throw new Error('No se pudo cargar la respuesta.');
+      const html = await response.text();
+      if (pending.signal.aborted) return;
+      host.innerHTML = html;
       document.querySelectorAll('.response-work-item').forEach((item) => {
         item.classList.toggle('is-selected', item.contains(link));
       });
@@ -32,9 +35,9 @@
       history.replaceState(null, '', url);
       if (matchMedia('(max-width: 900px)').matches) host.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
-      if (error.name !== 'AbortError') location.href = link.href;
+      if (!pending.signal.aborted && error.name !== 'AbortError') location.href = link.href;
     } finally {
-      host.removeAttribute('aria-busy');
+      if (controller === pending) host.removeAttribute('aria-busy');
     }
   });
   document.addEventListener('submit', (event) => {

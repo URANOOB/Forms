@@ -113,7 +113,7 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
         url = self.live_server_url + reverse("admin:index")
         errors = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1800, "height": 1150})
             context.add_cookies(
                 [
@@ -128,7 +128,7 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(url)
             expect(page.locator(".metric-card")).to_have_count(5)
-            expect(page.locator('[data-status="total"] .metric-value')).to_have_text("40")
+            expect(page.locator(".metrics-trend-total strong")).to_have_text("40")
             expect(page.locator('[data-status="SUBMITTED"] .metric-value')).to_have_text("12")
             expect(page.locator(".metrics-table tbody tr")).to_have_count(4)
             expect(page.locator(".infrastructure-card")).to_have_count(2)
@@ -149,22 +149,30 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
                 path=str(Path(tempfile.gettempdir()) / "forms-infrastructure-desktop.png")
             )
             page.locator('[data-status="SUBMITTED"]').click()
-            expect(page.locator(".response-total")).to_have_text("12 respuestas")
+            expect(page.locator(".response-alternate-heading")).to_contain_text("12 respuestas")
             page.goto(url)
-            page.get_by_role("navigation", name="Período del inicio").get_by_role(
+            page.get_by_role("navigation", name="Período de las estadísticas").get_by_role(
                 "link", name="Todo", exact=True
             ).click()
-            expect(page.locator('[data-status="total"] .metric-value')).to_have_text("41")
+            self.assertEqual(
+                sum(
+                    int(value)
+                    for value in page.locator(
+                        '.metrics-table [data-label="Total"]'
+                    ).all_text_contents()
+                ),
+                41,
+            )
             expect(page.locator("#response-trend circle")).to_have_count(30)
-            page.get_by_role("navigation", name="Período del inicio").get_by_role(
+            page.get_by_role("navigation", name="Período de las estadísticas").get_by_role(
                 "link", name="Hoy", exact=True
             ).click()
             expect(page.locator("#response-trend circle")).to_have_count(1)
             expect(page.locator(".metric-card")).to_have_count(5)
-            page.get_by_role("navigation", name="Período del inicio").get_by_role(
+            page.get_by_role("navigation", name="Período de las estadísticas").get_by_role(
                 "link", name="30 días", exact=True
             ).click()
-            expect(page.locator('[data-status="total"] .metric-value')).to_have_text("40")
+            expect(page.locator(".metrics-trend-total strong")).to_have_text("40")
             page.evaluate("document.documentElement.classList.add('dark')")
             page.screenshot(
                 path=str(Path(tempfile.gettempdir()) / "forms-dashboard-dark.png"), full_page=True
@@ -172,9 +180,9 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
             page.evaluate("document.documentElement.classList.remove('dark')")
             page.set_viewport_size({"width": 390, "height": 844})
             self.assertTrue(page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
-            page.locator(".metrics-chart-data summary").click()
-            expect(page.locator(".metrics-chart-data tbody tr")).to_have_count(30)
-            page.locator(".metrics-chart-data summary").click()
+            expect(page.locator("#trend-start")).to_be_visible()
+            expect(page.locator("#trend-end")).to_be_visible()
+            expect(page.locator("#response-trend circle")).to_have_count(30)
             page.screenshot(
                 path=str(Path(tempfile.gettempdir()) / "forms-dashboard-mobile.png"), full_page=True
             )

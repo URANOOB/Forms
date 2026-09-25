@@ -2,7 +2,8 @@
 
 El enlace público permite GET/POST anónimos; el backend exige usuario staff con permisos
 Django. No confundir acceso anónimo con despliegue: una URL localhost
-no es accesible desde Internet. No se ha configurado dominio ni hosting.
+no es accesible desde Internet. El despliegue actual utiliza Vercel, Supabase y R2;
+consulta [despliegue](vercel-deployment.md).
 
 ## Guardado y privacidad
 
@@ -36,6 +37,20 @@ Se almacenan en `private_uploads/` en local o en R2 privado; su descarga requier
 `submissions.view_submission`. No se sirve esa carpeta como contenido público.
 Validaciones configurables: min_length/max_length para textos (máximo 20000),
 min_value/max_value para números. Se rechazan NaN e infinito. Fechas en formato ISO.
+
+Los campos numéricos aceptan enteros entre 0 y 9007199254740991 para mantener la
+misma precisión en Python, JSON y JavaScript. Para documentos más largos o valores
+con ceros iniciales se debe usar texto; los teléfonos se conservan como texto.
+Los valores históricos no se reescriben y un número ya redondeado no puede recuperarse
+sin cotejarlo con su fuente original.
+
+En Vercel, el navegador y el servidor comprueban también un presupuesto total de
+4.000.000 bytes por envío, incluidos campos, archivos y una reserva por parte multipart.
+La configuración por archivo no sustituye este límite agregado. El control del navegador
+evita perder lo escrito por un rechazo del proveedor; para transferencias mayores hace
+falta implementar cargas directas a R2. Los adjuntos DOCX/XLSX deben contener las partes
+Office esperadas, sin macros ni cifrado y con hasta 64 MB declarados al descomprimir.
+Esta comprobación no sustituye un análisis antimalware.
 
 Los grupos AND/OR comparten acción/destino. Las reglas sin group_key son independientes.
 Los grupos se procesan por orden y UUID; ante acciones sucesivas gana la última

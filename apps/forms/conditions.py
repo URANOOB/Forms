@@ -1,10 +1,19 @@
 from graphlib import CycleError, TopologicalSorter
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 
 from .additional_choices import additional_text_config
 from .dependent_choices import option_filters
-from .public_fields import CHOICE_TYPES, DISPLAY_TYPES, TEXT_TYPES, empty, json_value, public_field
+from .public_fields import (
+    CHOICE_TYPES,
+    DISPLAY_TYPES,
+    MAX_SAFE_INTEGER,
+    TEXT_TYPES,
+    empty,
+    json_value,
+    public_field,
+)
 from .question_fields import FILE_TYPES, GRID_TYPES, SCALE_TYPES
 
 
@@ -122,6 +131,13 @@ class FormSchema:
             raise ValidationError(
                 "Las condiciones forman un ciclo; corrígelo antes de publicar."
             ) from error
+        self.groups_by_field = {key: [] for key in self.by_id}
+        for group in self.groups:
+            for target in group["targets"]:
+                self.groups_by_field[target].append(group)
+        self.keys_by_section = {key: [] for key in self.section_ids}
+        for key, field in self.by_id.items():
+            self.keys_by_section[str(field.section_id)].append(key)
 
     def expected_value(self, source, rule):
         operator = rule.operator
@@ -145,6 +161,16 @@ class FormSchema:
             if not isinstance(expected, bool):
                 raise ValidationError("Las condiciones Sí/No deben usar true o false en JSON.")
             return expected
+        # Older published versions could contain thresholds beyond JavaScript's
+        # exact integer range. Keep those versions readable; new drafts must pass
+        # the stricter input validation below.
+        if (
+            source.field_type == "NUMBER"
+            and self.version.status != "DRAFT"
+            and isinstance(expected, (int, float))
+            and expected > MAX_SAFE_INTEGER
+        ):
+            return expected
         try:
             return json_value(self.inputs[str(source.pk)].clean(expected))
         except (ValidationError, TypeError, ValueError) as error:
@@ -156,7 +182,7 @@ class FormSchema:
         values = dict(values)
         states = {}
         for key in self.order:
-            groups = [group for group in self.groups if key in group["targets"]]
+            groups = self.groups_by_field[key]
             visibility = {
                 scope: not any(
                     group["action"] == "SHOW" and group["scope"] == scope for group in groups
@@ -209,7 +235,7 @@ class FormSchema:
         current = self.section_ids[0] if self.section_ids else None
         while current:
             states = self.states(values, {*path, current})
-            keys = [key for key, field in self.by_id.items() if str(field.section_id) == current]
+            keys = self.keys_by_section[current]
             visible = not keys or any(states[key]["visible"] for key in keys)
             if visible:
                 path.append(current)
@@ -218,6 +244,7 @@ class FormSchema:
 
     def browser_spec(self):
         return {
+            "max_submission_bytes": settings.SUBMISSION_MAX_BYTES,
             "sections": self.section_ids,
             "navigation": self.navigation,
             "order": self.order,

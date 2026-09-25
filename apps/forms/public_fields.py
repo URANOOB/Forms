@@ -31,7 +31,10 @@ def finite_number(value):
         raise ValidationError("Introduce un número finito.")
 
 
-class DigitsNumberField(forms.FloatField):
+MAX_SAFE_INTEGER = 2**53 - 1
+
+
+class DigitsNumberField(forms.IntegerField):
     """Reject signs, decimals and exponents before numeric conversion."""
 
     def to_python(self, value):
@@ -41,6 +44,14 @@ class DigitsNumberField(forms.FloatField):
             value = int(value)
         if value not in self.empty_values and not re.fullmatch(r"[0-9]+", str(value)):
             raise ValidationError("Este campo solo admite números del 0 al 9.")
+        if value not in self.empty_values:
+            digits = str(value).lstrip("0") or "0"
+            if len(digits) > 16 or int(digits) > MAX_SAFE_INTEGER:
+                raise ValidationError(
+                    f"El número máximo admitido es {MAX_SAFE_INTEGER}. "
+                    "Para identificadores más largos, utiliza un campo de texto."
+                )
+            value = digits
         return super().to_python(value)
 
     def prepare_value(self, value):

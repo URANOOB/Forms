@@ -59,8 +59,8 @@ técnico está inactivo y no tiene contraseña. Usar `createsuperuser` para acce
 - Crear formularios con versión inicial, editar metadata y archivar desde el panel.
 - Constructor de tarjetas para preguntas, opciones, secciones, imágenes y condiciones
   encadenadas. Duplicación, orden, obligatoriedad y vista previa interactiva.
-- Editar un formulario publicado crea un nuevo borrador; las versiones anteriores
-  y sus respuestas permanecen intactas. Publicar activa la nueva versión.
+- Guardar cambios de un formulario publicado crea y activa una nueva versión,
+  conservando su estado de acceso. Las versiones anteriores y sus respuestas permanecen intactas.
 - Acceso según permisos por rol; administración de usuarios sólo para superusuarios.
 - Restricciones de integridad, protección de versiones publicadas en escrituras
   ordinarias y pruebas sobre PostgreSQL real.
@@ -97,14 +97,13 @@ compartidos. Sin esa variable se utiliza el origen de la petición.
 **localhost sólo funciona en tu propio equipo**.
 No se publica automáticamente un borrador creado por el seed.
 
-`setup_roles` crea **Administrator**, **Manager**, **Reviewer** y **Viewer** sin datos
-demo; también se ejecuta desde el seed. Los dos primeros reciben permisos Django
-`view/add/change` sobre los modelos de forms; los otros, `view`. Ninguno recibe delete.
-El comando añade permisos base sin quitar asignaciones personalizadas. La creación
-de la versión inicial es automática; la clonación se reserva para el constructor.
-Todos los grupos pueden consultar respuestas según sus permisos; Administrator, Manager
-y Reviewer pueden cambiar su estado, mientras Viewer sólo lee. Los datos enviados
-no se editan desde el admin. Ejecutar `setup_roles` al actualizar permisos.
+`setup_roles` configura **Administrador** y **Visor**, sustituye los grupos antiguos
+y normaliza las cuentas existentes, eliminando excepciones individuales de permisos.
+Ambos roles pueden gestionar formularios y respuestas, incluida su edición y eliminación;
+solo Administrador gestiona usuarios y permisos. «Visor» no es un rol de solo lectura.
+La edición de respuestas conserva su versión y fecha; cambiar una respuesta validada
+o rechazada reabre su revisión. Consulta [usuarios y roles](docs/users.md) antes de
+ejecutar el comando sobre cuentas existentes.
 
 La sección **Reportes** del panel permite filtrar por formulario y fechas de recepción
 (ambos días incluidos, zona horaria de Bogotá), y ordenar por fecha o formulario.
@@ -161,6 +160,9 @@ correos. Consultar [setup y traslado a Supabase + R2](docs/supabase-r2.md) antes
 cambiar la conexión o el proveedor; incluye el comando de copia con verificación.
 
 ## Verificación
+
+Consultar la [auditoría del 25 de septiembre de 2026](docs/auditoria-2026-09-25.md)
+para las correcciones verificadas, la cobertura de pruebas y los riesgos pendientes.
 
 ```powershell
 uv run python manage.py check

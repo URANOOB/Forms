@@ -2,6 +2,7 @@
 
 import re
 from pathlib import Path
+from zipfile import BadZipFile, ZipFile
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -205,4 +206,27 @@ class AttachmentField(forms.FileField):
             }
             if extension in signatures and not signatures[extension]:
                 raise ValidationError("El contenido del archivo no coincide con su extensión.")
+            if extension in {"docx", "xlsx"}:
+                try:
+                    with ZipFile(upload) as archive:
+                        entries = archive.infolist()
+                        names = {item.filename for item in entries}
+                        main = "word/document.xml" if extension == "docx" else "xl/workbook.xml"
+                        if (
+                            not {"[Content_Types].xml", "_rels/.rels", main}.issubset(names)
+                            or len(entries) > 2000
+                            or sum(item.file_size for item in entries) > 64 * 1024 * 1024
+                            or any(item.flag_bits & 1 for item in entries)
+                            or any(name.lower().endswith("vbaproject.bin") for name in names)
+                        ):
+                            raise ValidationError(
+                                "Usa un documento Office válido, sin macros ni cifrado, "
+                                "con hasta 64 MB de contenido descomprimido."
+                            )
+                except (BadZipFile, OSError, ValueError) as error:
+                    raise ValidationError(
+                        "El documento Office está dañado o no es válido."
+                    ) from error
+                finally:
+                    upload.seek(0)
         return list(uploads)

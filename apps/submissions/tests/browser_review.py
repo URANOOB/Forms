@@ -66,14 +66,14 @@ class ReviewBrowserTests(StaticLiveServerTestCase):
         list_url = self.live_server_url + reverse("admin:submissions_submission_changelist")
         errors = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1600, "height": 1000})
             context.add_cookies(
                 [{"name": "sessionid", "value": cookie, "url": self.live_server_url}]
             )
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
-            page.goto(list_url)
+            page.goto(list_url + "?view=board")
             expect(page.locator(".response-column")).to_have_count(4)
             expect(page.locator(".response-card")).to_have_count(4)
             expect(page.locator(".response-card").first).to_contain_text("María Rodríguez")
@@ -139,7 +139,7 @@ class ReviewBrowserTests(StaticLiveServerTestCase):
             page.screenshot(
                 path=str(Path(tempfile.gettempdir()) / "forms-response-review-detail.png")
             )
-            page.goto(list_url)
+            page.goto(list_url + "?view=board")
             page.set_viewport_size({"width": 390, "height": 844})
             expect(page.locator(".response-column")).to_have_count(4)
             self.assertTrue(

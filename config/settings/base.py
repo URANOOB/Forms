@@ -135,6 +135,8 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 # JSON drafts can include imported catalogs; multipart files retain their own 5 MB limit.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
+# Leave room for multipart headers below Vercel's 4.5 MB request limit.
+SUBMISSION_MAX_BYTES = 4_000_000 if os.environ.get("VERCEL") == "1" else None
 EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
 ENABLE_DEMO_SEED = False
 

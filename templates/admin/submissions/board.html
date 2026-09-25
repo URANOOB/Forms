@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
 {% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=5">{% endblock %}
-{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-workspace.css' %}?v=6"><script src="{% static 'forms/response-review.js' %}?v=4" defer></script><script src="{% static 'forms/response-documents.js' %}?v=2" defer></script><script src="{% static 'forms/response-workspace.js' %}?v=1" defer></script><script src="{% static 'forms/response-date-picker.js' %}?v=1" defer></script><script src="{% static 'forms/response-selects.js' %}?v=1" defer></script><script src="{% static 'forms/response-board-drag.js' %}?v=1" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-workspace.css' %}?v=6"><script src="{% static 'forms/response-review.js' %}?v=4" defer></script><script src="{% static 'forms/response-documents.js' %}?v=2" defer></script><script src="{% static 'forms/response-workspace.js' %}?v=audit-20260925" defer></script><script src="{% static 'forms/response-date-picker.js' %}?v=1" defer></script><script src="{% static 'forms/response-selects.js' %}?v=1" defer></script><script src="{% static 'forms/response-board-drag.js' %}?v=1" defer></script>{% endblock %}
 {% block content %}
 <main class="responses-workspace response-workspace-new">
     {% include "admin/submissions/responses/_header.html" %}
