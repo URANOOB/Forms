@@ -11,7 +11,8 @@ from unfold.admin import ModelAdmin, TabularInline
 from apps.accounts.models import legacy_form_container
 
 from .builder_views import editor_view, new_editor_view
-from .gallery import GalleryChangeList, gallery_context
+from .catalog_views import import_catalog_view
+from .gallery import GalleryChangeList, filter_updated, gallery_context
 from .models import (
     ConditionalRule,
     FieldOption,
@@ -75,7 +76,13 @@ class FormAdmin(PlatformAdmin):
     actions = ["publish_forms", "pause_forms", "archive_forms", "delete_forms"]
 
     def get_urls(self):
-        urls = []
+        urls = [
+            path(
+                "import-catalog/",
+                self.admin_site.admin_view(lambda request: import_catalog_view(request, self)),
+                name="forms_form_import_catalog",
+            )
+        ]
         for operation in (
             "edit",
             "save",
@@ -113,7 +120,7 @@ class FormAdmin(PlatformAdmin):
         queryset = super().get_queryset(request).filter(deleted_at__isnull=True)
         if request.GET.get("owner") == "mine":
             queryset = queryset.filter(created_by=request.user)
-        return queryset
+        return filter_updated(queryset, request.GET.get("updated"))
 
     def get_ordering(self, request):
         return {"name": ["name", "id"], "oldest": ["updated_at", "id"]}.get(
@@ -158,7 +165,7 @@ class FormAdmin(PlatformAdmin):
         obj = self.get_object(request, object_id)
         extra_context = dict(extra_context or {})
         if obj and self.has_view_permission(request, obj):
-            extra_context["share_url"] = request.build_absolute_uri(obj.get_absolute_url())
+            extra_context["share_url"] = obj.get_public_url(request)
             extra_context["is_published"] = obj.status == Form.Status.PUBLISHED
             extra_context["can_publish"] = obj.status != Form.Status.ARCHIVED
             if request.user.has_perm("submissions.view_submission"):

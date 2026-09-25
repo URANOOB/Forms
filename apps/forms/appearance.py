@@ -13,8 +13,8 @@ FONTS = {
 }
 DEFAULTS = {
     "background": "plain",
-    "color": "#5943e9",
-    "background_color": "#eeecfc",
+    "color": "#6355d9",
+    "background_color": "#f0effc",
     "heading_font": "inter",
     "heading_size": 24,
     "question_font": "inter",
@@ -47,11 +47,14 @@ COLORS = [
     "#607d8b",
     "#9e9e9e",
     "#5943e9",
+    "#6355d9",
+    "#4268d8",
 ]
 BACKGROUND_COLORS = [
     ("#ffffff", "Blanco"),
     ("#f3f4f6", "Gris claro"),
     ("#eeecfc", "Lavanda"),
+    ("#f0effc", "Lavanda suave"),
     ("#e8f0fe", "Azul claro"),
     ("#e0f7fa", "Celeste"),
     ("#e8f5e9", "Verde claro"),

@@ -1,0 +1,33 @@
+{% extends 'unfold/layouts/skeleton.html' %}
+{% load i18n static unfold %}
+
+{% block bodyclass %}{{ block.super }} login auth-workspace{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/platform-auth.css' %}?v=2">{% endblock %}
+{% block title %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block base %}
+<div id="page" class="auth-page">
+    <div class="auth-content">
+        <div class="auth-card">
+            <a class="auth-brand" href="{% url 'home' %}" aria-label="LogicForms, inicio"><img src="{% static 'forms/brand/logicforms-logo.png' %}?v=2" alt="LogicForms" width="2089" height="753"></a>
+            {% block content %}{% endblock %}
+        </div>
+        {% include "unfold/helpers/unauthenticated_header.html" %}
+    </div>
+    <aside class="auth-promo" {% if login_image %}style="background-image: linear-gradient(135deg, #6755d9d9, #4168d8dd), url('{{ login_image }}')"{% endif %}>
+        <div class="auth-promo-content">
+            <span class="auth-promo-icon material-symbols-outlined" aria-hidden="true">dashboard_customize</span>
+            <p class="auth-promo-eyebrow">LOGICFORMS</p>
+            <h2>Todo en un lugar.</h2>
+            <p>Crea formularios, organiza respuestas y descarga reportes desde un mismo espacio.</p>
+            <div class="auth-promo-features" aria-hidden="true">
+                <span><span class="material-symbols-outlined">description</span>Formularios</span>
+                <span><span class="material-symbols-outlined">inbox</span>Respuestas</span>
+                <span><span class="material-symbols-outlined">table_view</span>Reportes</span>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}

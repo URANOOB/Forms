@@ -1,8 +1,8 @@
 from django.contrib.auth.models import Permission
-from django.test import TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 
-from apps.accounts.models import User, Workspace
+from apps.accounts.models import User, Workspace, legacy_form_container
 from apps.forms.models import Form, FormField, FormSection, FormVersion
 
 
@@ -38,6 +38,26 @@ class GalleryTests(TestCase):
     def setUp(self):
         self.client.force_login(self.user)
 
+    @override_settings(PUBLIC_BASE_URL="https://www.logicforms.xyz")
+    def test_shared_links_use_canonical_domain_from_any_admin_host(self):
+        response = self.client.get(self.url)
+        for card in response.context["cards"]:
+            self.assertEqual(
+                card["public_url"],
+                "https://www.logicforms.xyz" + card["form"].get_absolute_url(),
+            )
+        form = response.context["cards"][0]["form"]
+        editor = self.client.get(reverse("admin:forms_form_builder_edit", args=[form.pk]))
+        self.assertEqual(editor.context["share_url"], form.get_public_url(editor.wsgi_request))
+
+    @override_settings(PUBLIC_BASE_URL="")
+    def test_local_shared_links_fall_back_to_request_origin(self):
+        form = Form.objects.first()
+        request = RequestFactory().get("/admin/", secure=True)
+        self.assertEqual(
+            form.get_public_url(request), "https://testserver" + form.get_absolute_url()
+        )
+
     def test_gallery_filter_sort_and_previews_use_real_records(self):
         response = self.client.get(
             self.url, {"status__exact": "", "owner": "", "sort": "name", "q": ""}
@@ -69,7 +89,7 @@ class GalleryTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 302)
-        form = Form.objects.get(slug="mis-contactos")
+        form = Form.objects.get(name="Mis contactos")
         self.assertEqual(form.created_by_id, self.user.pk)
         self.assertEqual(form.status, "DRAFT")
         self.assertEqual(
@@ -104,7 +124,7 @@ class GalleryTests(TestCase):
         )
         self.assertEqual(saved.status_code, 200)
         form = Form.objects.get(name="Mis contactos")
-        self.assertEqual(form.workspace_id, self.workspace.pk)
+        self.assertEqual(form.workspace, legacy_form_container())
         self.assertEqual(form.status, "DRAFT")
         self.assertTrue(form.slug.startswith("formulario-"))
         self.assertEqual(form.versions.get().fields.count(), 4)
@@ -112,25 +132,30 @@ class GalleryTests(TestCase):
             self.client.post(url, create, content_type="application/json").status_code, 409
         )
 
-    def test_new_builder_workspace_and_token_cannot_be_forged(self):
+    def test_new_builder_ignores_legacy_workspace_and_rejects_invalid_or_other_user_tokens(self):
         url = reverse("admin:forms_form_add")
         page = self.client.get(url)
         foreign = Workspace.objects.create(name="Ajeno", slug="ajeno")
         data = {"creation_token": page.context["creation_token"], "workspace": str(foreign.pk)}
+        response = self.client.post(url, data, content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        form = FormVersion.objects.get(pk=response.json()["version"]).form
+        self.assertEqual(form.workspace, legacy_form_container())
+        self.assertEqual(form.created_by, self.user)
+        data["creation_token"] = "invalid"
         self.assertEqual(
             self.client.post(url, data, content_type="application/json").status_code, 400
         )
-        data.update(workspace=str(self.workspace.pk), creation_token="invalid")
+        other = User.objects.create_superuser(username="super", password=None)
+        self.client.force_login(other)
+        data["creation_token"] = page.context["creation_token"]
         self.assertEqual(
-            self.client.post(url, data, content_type="application/json").status_code, 400
+            self.client.post(url, data, content_type="application/json").status_code, 403
         )
-        self.assertEqual(Form.objects.count(), 2)
-        admin = User.objects.create_superuser(username="super", password=None)
-        self.client.force_login(admin)
+        self.assertEqual(Form.objects.count(), 3)
         page = self.client.get(url)
         self.assertContains(page, 'id="builder"')
-        self.assertEqual(page.context["selected_workspace"], "")
-        self.assertEqual(len(page.context["workspaces"]), 2)
+        self.assertNotIn("workspaces", page.context)
 
     def test_viewer_has_no_creation_or_state_change_controls(self):
         self.user.user_permissions.set(

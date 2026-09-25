@@ -2,9 +2,7 @@
 
 Abrir una tarjeta de **Formularios** lleva al constructor cuando el usuario tiene
 permiso de edición. Crear un formulario en blanco o con plantilla abre directamente
-el constructor, sin pasar por el alta administrativa de nombre/slug/metadata. El espacio
-del usuario se selecciona automáticamente; cuando hay varios espacios disponibles para
-un superusuario, puede elegir uno dentro del editor. El slug se genera automáticamente.
+el constructor, sin pasar por el alta administrativa de nombre/slug/metadata. Los espacios legacy ya no se seleccionan en el editor. El slug se genera automáticamente.
 El registro se crea mediante POST al guardar, previsualizar, publicar o subir la primera
 imagen. Abrir/cerrar el editor nuevo sin estas acciones no crea registros.
 Los usuarios de sólo lectura conservan el detalle administrativo.
@@ -41,10 +39,11 @@ flechas; no incluye arrastrar y soltar.
 ## Versionado y validación
 
 GET no crea versiones ni modifica datos. Guardar una versión publicada genera una
-nueva versión en borrador, copia el contenido enviado por el editor y remapea las
+nueva versión, copia el contenido enviado por el editor y remapea las
 relaciones entre preguntas/secciones/reglas. Conserva stable_key y valores de opciones.
 Título y descripción también quedan guardados en cada versión. Las respuestas mantienen
-sus referencias a los campos de la versión que se respondió.
+sus referencias a los campos de la versión que se respondió. Si el formulario ya está
+publicado o pausado, el guardado activa la nueva versión conservando ese estado de acceso.
 
 Guardado y publicación son transacciones con bloqueo de formulario y versión. Un hash
 del contenido detecta cambios realizados desde otra pestaña o desde el admin técnico
@@ -53,8 +52,8 @@ Las condiciones inválidas, destinos ajenos, claves duplicadas y ciclos revierte
 el guardado. El runtime usa el mismo FormSchema en publicación, vista previa y envío.
 
 Los endpoints del constructor están bajo el admin, requieren sesión de personal,
-permiso `forms.change_form`, workspace autorizado y CSRF en POST. Límites por formulario:
-50 secciones, 200 preguntas/bloques, 100 opciones por pregunta, 300 reglas y 1 MB de JSON.
+permiso `forms.change_form`, y CSRF en POST. Límites por formulario:
+50 secciones, 200 preguntas/bloques, 5.000 opciones por pregunta, 300 reglas y 8 MB de JSON.
 
 ## Imágenes
 
@@ -65,15 +64,13 @@ ni a PostgreSQL. La base guarda la referencia FormImage del mismo formulario.
 
 En desarrollo, `MEDIA_ROOT` apunta a `media/`, excluido de Git. La aplicación sirve las
 imágenes mediante una vista autorizada; no publicar esa carpeta directamente en el
-servidor web. Los editores del workspace pueden verlas en borrador. Anónimos sólo pueden
-ver imágenes referenciadas por la versión activa de un formulario publicado y workspace
-activo. Al pausar o archivar, dejan de estar disponibles para anónimos.
+servidor web. Los usuarios con permiso de edición pueden verlas en borrador. Anónimos sólo pueden
+ver imágenes referenciadas por la versión activa de un formulario publicado . Al pausar o archivar, dejan de estar disponibles para anónimos.
 
 Quitar una imagen de una pregunta elimina la referencia del borrador; no borra el archivo
 ni las referencias de versiones anteriores. Limpieza de imágenes huérfanas y proveedor
-de almacenamiento de producción quedan pendientes. En despliegue se necesita almacenamiento
-persistente compatible con Django Storage. Los adjuntos de participantes se guardan
-por separado en `private_uploads/`, con descarga autorizada; R2 continúa pendiente.
+de almacenamiento de producción son independientes. R2 está integrado como proveedor
+privado; en local los adjuntos se guardan en `private_uploads/`. Ver [Supabase y R2](supabase-r2.md).
 
 ## Tipos de preguntas
 

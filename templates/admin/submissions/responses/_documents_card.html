@@ -1,0 +1,14 @@
+<section class="response-case-box response-case-documents-card{% if compact %} is-compact{% endif %}">
+    <h3><span class="material-symbols-outlined" aria-hidden="true">attach_file</span>Documentos adjuntos ({{ documents|length }})</h3>
+    {% for file in documents %}
+    <div class="response-case-file" data-kind="{{ file.preview }}">
+        <span class="response-case-file-icon material-symbols-outlined" aria-hidden="true">{% if file.preview == 'image' %}image{% elif file.preview == 'pdf' %}picture_as_pdf{% else %}description{% endif %}</span>
+        <div><strong>{{ file.name }}</strong><small>{{ file.field }} · {{ file.extension }} · {{ file.size|filesizeformat }}</small></div>
+        <div class="response-case-file-actions">
+            <button type="button" data-document-url="{{ file.url }}" data-document-name="{{ file.name }}" data-document-kind="{{ file.preview }}" data-document-extension="{{ file.extension }}" aria-label="Ver {{ file.name }}"><span class="material-symbols-outlined" aria-hidden="true">visibility</span>Ver</button>
+            <a href="{{ file.url }}" aria-label="Descargar {{ file.name }}" title="Descargar"><span class="material-symbols-outlined" aria-hidden="true">download</span><span class="response-case-download-label">Descargar</span></a>
+        </div>
+    </div>
+    {% empty %}<p class="response-case-empty">Esta respuesta no tiene documentos adjuntos.</p>{% endfor %}
+    {% if documents and not compact %}<a class="response-case-zip" href="{% url 'admin:submissions_submission_documents' item.pk %}">Descargar todos en ZIP</a>{% endif %}
+</section>

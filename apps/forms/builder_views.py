@@ -148,7 +148,7 @@ def new_editor_view(model_admin, request):
                     responses_url=reverse("admin:forms_form_builder_responses", args=[form.pk])
                     if request.user.has_perm("submissions.view_submission")
                     else "",
-                    share_url=request.build_absolute_uri(form.get_absolute_url()),
+                    share_url=form.get_public_url(request),
                 )
             return JsonResponse(result)
         except StaleDraft as error:
@@ -208,8 +208,8 @@ def editor_view(model_admin, request, object_id, operation="edit"):
                     }[operation],
                 )
                 return JsonResponse(document(current_version(form)))
-            if len(request.body) > 1_000_000:
-                raise ValidationError("El formulario supera el tamaño permitido.")
+            if len(request.body) > 8 * 1024 * 1024:
+                raise ValidationError("El formulario supera el tamaño permitido (8 MB).")
             data = json.loads(request.body)
             if not isinstance(data, dict):
                 raise ValidationError("Formato de formulario inválido.")
@@ -275,7 +275,7 @@ def editor_view(model_admin, request, object_id, operation="edit"):
         "form": form,
         "builder_data": document(version),
         "field_types": editor_field_types(),
-        "share_url": request.build_absolute_uri(form.get_absolute_url()),
+        "share_url": form.get_public_url(request),
         "responses_url": reverse("admin:forms_form_builder_responses", args=[form.pk])
         if request.user.has_perm("submissions.view_submission")
         else "",

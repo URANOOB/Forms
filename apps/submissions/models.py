@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
@@ -9,6 +10,13 @@ from .storage import response_file_path, response_file_storage
 
 
 class Submission(models.Model):
+    class Attention(models.TextChoices):
+        NONE = "", "Sin incidencias"
+        ATTENTION = "ATTENTION", "Requiere atención"
+        ILLEGIBLE = "ILLEGIBLE", "Documento ilegible"
+        INCOMPLETE = "INCOMPLETE", "Incompleta"
+        DUPLICATE = "DUPLICATE", "Duplicado"
+
     class Status(models.TextChoices):
         SUBMITTED = "SUBMITTED", "Recibida"
         UNDER_REVIEW = "UNDER_REVIEW", "En revisión"
@@ -29,6 +37,18 @@ class Submission(models.Model):
         verbose_name="versión",
     )
     status = models.CharField("estado", max_length=16, choices=Status, default=Status.SUBMITTED)
+    review_revision = models.PositiveIntegerField(default=0, editable=False)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_submissions",
+    )
+    review_started_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    attention = models.CharField(max_length=16, choices=Attention, blank=True, default="")
+    attention_note = models.TextField(blank=True, max_length=2000)
     submitted_at = models.DateTimeField("fecha de envío", default=timezone.now, editable=False)
     idempotency_key = models.UUIDField(unique=True, editable=False)
 
@@ -56,6 +76,45 @@ class Submission(models.Model):
 
     def __str__(self):
         return f"Respuesta {str(self.pk)[:8]}"
+
+
+class SubmissionReview(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="reviews")
+    previous_status = models.CharField(max_length=16, choices=Submission.Status)
+    status = models.CharField(max_length=16, choices=Submission.Status)
+    note = models.TextField("comentario", blank=True, max_length=2000)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(status="REJECTED") | ~models.Q(note=""),
+                name="rejected_review_has_reason",
+            )
+        ]
+
+
+class SubmissionActivity(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="activity")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    event_type = models.CharField(max_length=40)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+
+class SubmissionNote(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="notes")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    content = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
 
 
 class SubmissionAnswer(models.Model):
@@ -89,6 +148,7 @@ class SubmissionFile(models.Model):
     )
     original_name = models.CharField(max_length=255)
     size = models.PositiveBigIntegerField()
+    uploaded_at = models.DateTimeField(default=timezone.now, null=True, editable=False)
 
     def get_absolute_url(self):
         return reverse("response_file", args=[self.pk])

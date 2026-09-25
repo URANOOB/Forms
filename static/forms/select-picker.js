@@ -4,6 +4,9 @@
   if (!form) return;
   const controls = [...form.querySelectorAll('.field select:not([multiple])')].filter((select) => select.size <= 1);
   let opened = null;
+  form.addEventListener("catalog:options-updated", (event) => {
+    if (opened?.select === event.target) close();
+  });
   const normalize = (text) => text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
 
   function close() {
@@ -195,6 +198,7 @@
       } else selectedImage.removeAttribute("src");
     };
     sync();
+    select.addEventListener("catalog:options-updated", sync);
     select.addEventListener("change", sync);
     select.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || select.disabled) return;

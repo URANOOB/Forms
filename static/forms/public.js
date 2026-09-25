@@ -123,6 +123,7 @@
   let states = {};
 
   function evaluate(values, allowed) {
+    values = { ...values };
     const states = {};
     for (const key of schema.order) {
       const groups = schema.groups.filter((group) =>
@@ -159,7 +160,14 @@
         }
       }
       const visible = visibility.field && visibility.section && allowed.has(schema.fields[key].section);
-      states[key] = { visible, required: visible && required };
+      const relation = schema.fields[key].option_filter;
+      let available = true;
+      if (relation) {
+        const parent = values[relation.source];
+        available = states[relation.source].visible && !empty(parent);
+        if (!available || !relation.values[values[key]]?.includes(parent)) values[key] = null;
+      }
+      states[key] = { visible, required: visible && available && required, available };
     }
     return states;
   }
@@ -182,9 +190,30 @@
       current = previousRoute.slice(0, previousIndex).reverse().find((id) => route.includes(id)) || route[0];
     }
     for (const key of schema.order) {
-      const { visible, required } = states[key];
+      const { visible, required, available } = states[key];
       const container = containers[key];
       container.hidden = !visible;
+      const relation = schema.fields[key].option_filter;
+      if (relation) {
+        const select = container.querySelector("select");
+        const parent = values[relation.source];
+        const signature = JSON.stringify([parent, available]);
+        if (select.dataset.catalogParent !== signature) {
+          select.dataset.catalogParent = signature;
+          for (const option of select.options) {
+            if (!option.value) {
+              option.textContent = available ? "Seleccione una opción" : "Seleccione primero el agrupador";
+              continue;
+            }
+            option.hidden = option.disabled = !available || !relation.values[option.value]?.includes(parent);
+          }
+          if (!available || !relation.values[select.value]?.includes(parent)) {
+            select.value = "";
+            values[key] = "";
+          }
+          select.dispatchEvent(new CustomEvent("catalog:options-updated", { bubbles: true }));
+        }
+      }
       const inputs = [...container.querySelectorAll("input,select,textarea")];
       for (const input of inputs) {
         if (input.hasAttribute("data-additional-text")) {
@@ -207,7 +236,7 @@
           input.setCustomValidity(error);
           continue;
         }
-        input.disabled = !visible;
+        input.disabled = !visible || !available;
         input.required =
           required && !input.hasAttribute("data-stored-file")
           && !(uploads.has(schema.fields[key].type) && retainedFiles(container).length)

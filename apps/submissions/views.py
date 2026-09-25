@@ -14,7 +14,7 @@ from apps.forms.conditions import FormSchema
 from apps.forms.models import Form, FormVersion
 from apps.forms.welcome import welcome_data
 
-from .models import SubmissionFile
+from .models import SubmissionActivity, SubmissionFile
 from .runtime import PublicResponseForm, new_token, read_token, save_response
 
 
@@ -123,6 +123,14 @@ def response_file(request, file_id):
         stream = attachment.file.open("rb")
     except FileNotFoundError:
         raise Http404 from None
+    SubmissionActivity.objects.create(
+        submission_id=attachment.answer.submission_id,
+        actor=request.user,
+        event_type="document_viewed"
+        if request.GET.get("preview") == "1"
+        else "document_downloaded",
+        description=attachment.original_name,
+    )
     response = FileResponse(
         stream,
         as_attachment=True,

@@ -1,7 +1,11 @@
 # Desplegable con opción adicional
 
 En el constructor, el tipo **Desplegable con opción adicional** permite solicitar un
-campo adicional después de seleccionar una respuesta. El ajuste **Mostrar campo adicional**
+campo adicional después de seleccionar una respuesta. **Campo adicional** aparece
+debajo de las opciones de la pregunta, abierto por defecto. Su cabecera permite
+plegar y volver a abrir la configuración sin entrar al menú de tres puntos. Si se
+abre **Mostrar según respuesta**, las condiciones quedan encima de este bloque.
+El ajuste **Mostrar campo adicional**
 lista las opciones activas de la pregunta por su nombre y permite elegir:
 
 - **Al elegir cualquier opción** (valor inicial de la nueva variante).

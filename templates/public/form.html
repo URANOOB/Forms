@@ -32,7 +32,7 @@
     <input type="hidden" name="submission_token" value="{{ token }}">
     {% if staff_edit %}
         <input type="hidden" name="revision" value="{{ revision }}">
-        <div class="section-intro"><label for="{{ response_form.response_status.id_for_label }}">Estado</label>{{ response_form.response_status }}{{ response_form.response_status.errors }}</div>
+        <div class="section-intro"><p>Estado: {{ response_status }}. <a href="{{ back_url }}#response-review">Gestionar revisión</a></p><p class="hint">Si cambias una respuesta validada o rechazada, volverá a «En revisión».</p></div>
     {% endif %}
     {% if response_form.errors %}
     <div class="error-summary" role="alert" tabindex="-1" id="error-summary">
@@ -108,8 +108,8 @@
 {% endblock %}
 {% block scripts %}
 {{ schema|json_script:"form-schema" }}
-<script src="{% static 'forms/public.js' %}?v=upload-1" defer></script>
+<script src="{% static 'forms/public.js' %}?v=catalog-2" defer></script>
 <script src="{% static 'forms/date-picker.js' %}?v=calendar-1" defer></script>
-<script src="{% static 'forms/select-picker.js' %}?v=option-images-2" defer></script>
+<script src="{% static 'forms/select-picker.js' %}?v=catalog-3" defer></script>
 <script src="{% static 'forms/file-picker.js' %}?v=upload-1" defer></script>
 {% endblock %}

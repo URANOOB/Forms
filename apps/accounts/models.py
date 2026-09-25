@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -34,6 +35,24 @@ class User(AbstractUser):
     class Meta(AbstractUser.Meta):
         verbose_name = "usuario"
         verbose_name_plural = "usuarios"
+
+
+class ReportDownload(models.Model):
+    class Kind(models.TextChoices):
+        EXCEL = "EXCEL", "Excel"
+        DOCUMENTS = "DOCUMENTS", "Documentos ZIP"
+
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    kind = models.CharField(max_length=16, choices=Kind)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+
+class ActivityReceipt(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
 
 
 def legacy_form_container():

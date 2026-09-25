@@ -9,12 +9,14 @@
     <link rel="icon" type="image/png" href="{% static 'forms/brand/logicforms-icon.png' %}?v=2">
     <link rel="stylesheet" href="{% static 'unfold/fonts/inter/styles.css' %}">
     <link rel="stylesheet" href="{% static 'forms/home.css' %}?v=6">
+    <link rel="stylesheet" href="{% static 'forms/platform-home.css' %}?v=2">
     <script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script>
     <script src="{% static 'forms/home.js' %}?v=1" defer></script>
     <script src="{% static 'forms/home-raccoon.js' %}?v=1" defer></script>
 </head>
 <body>
     <a class="skip-link" href="#inicio">Ir al contenido</a>
+    <div class="home-shell">
     <header class="home-header">
         <a class="home-brand" href="{% url 'home' %}" aria-label="LogicForms, inicio">
             <img class="home-logo" src="{% static 'forms/brand/logicforms-logo.png' %}?v=2" width="2089" height="753" alt="LogicForms">
@@ -31,7 +33,7 @@
                 <p class="hero-note">Un espacio para crear, compartir y gestionar.</p>
             </div>
             <div class="home-animation" id="home-animation-panel" hidden>
-                <div id="home-animation" data-animation="{% static 'forms/home-animation.json' %}" aria-hidden="true"></div>
+                <div id="home-animation" data-animation="{% static 'forms/platform-hero.json' %}" aria-hidden="true"></div>
                 <button type="button" class="home-animation-toggle" id="home-animation-toggle" aria-controls="home-animation">Pausar animación</button>
             </div>
         </section>
@@ -48,5 +50,6 @@
             </button>
         </div>
     </footer>
+    </div>
 </body>
 </html>

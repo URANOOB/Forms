@@ -1,15 +1,34 @@
-from pathlib import PurePath
-
 from django.contrib import admin
 from django.db.models import Exists, OuterRef, Q
-from django.template.loader import render_to_string
 from django.urls import path, reverse
 from django.utils.html import format_html_join
-from django.utils.safestring import mark_safe
 
 from apps.forms.admin import PlatformAdmin
+from apps.forms.models import FieldOption
 
-from .models import Submission, SubmissionAnswer
+from .models import Submission, SubmissionAnswer, SubmissionFile, SubmissionReview
+
+
+def selected_option_matches(queryset, search_term):
+    """Find responses whose selected choice has a matching display label."""
+    options_by_field = {}
+    for field_id, value in FieldOption.objects.filter(label__icontains=search_term).values_list(
+        "field_id", "value"
+    ):
+        options_by_field.setdefault(field_id, set()).add(value)
+    if not options_by_field:
+        return set()
+
+    matches = set()
+    answers = SubmissionAnswer.objects.filter(
+        submission_id__in=queryset.values("pk"), field_id__in=options_by_field
+    ).values_list("submission_id", "field_id", "value")
+    for submission_id, field_id, value in answers.iterator():
+        selected = value.get("selected") if isinstance(value, dict) else value
+        selected = selected if isinstance(selected, list) else [selected]
+        if any(item in options_by_field[field_id] for item in selected if isinstance(item, str)):
+            matches.add(submission_id)
+    return matches
 
 
 class FormFilter(admin.SimpleListFilter):
@@ -32,14 +51,29 @@ class FormFilter(admin.SimpleListFilter):
 
 @admin.register(Submission)
 class SubmissionAdmin(PlatformAdmin):
+    change_list_template = "admin/submissions/board.html"
+    list_fullwidth = True
     list_display = ["__str__", "form", "form_version", "submitted_at", "status"]
     list_filter = [FormFilter, "status", ("submitted_at", admin.DateFieldListFilter)]
     list_select_related = ["form", "form_version__form", "form__workspace"]
     search_fields = ["form__name"]
-    search_help_text = "Buscar en los datos recibidos o en el nombre del formulario"
+    search_help_text = "Buscar en respuestas, preguntas, opciones, archivos o formularios"
     readonly_fields = ["id", "form", "form_version", "submitted_at", "answer_details"]
     fields = ["id", "form", "form_version", "submitted_at", "status", "answer_details"]
     actions = None
+
+    def get_changelist(self, request, **kwargs):
+        from .board import ResponseChangeList
+
+        return ResponseChangeList
+
+    def changelist_view(self, request, extra_context=None):
+        from .board import board_context
+
+        response = super().changelist_view(request, extra_context)
+        if getattr(response, "context_data", None) and "cl" in response.context_data:
+            response.context_data.update(board_context(request, response.context_data["cl"], self))
+        return response
 
     def has_add_permission(self, request):
         return False
@@ -48,13 +82,62 @@ class SubmissionAdmin(PlatformAdmin):
         return request.user.has_perm("submissions.delete_submission")
 
     def get_urls(self):
-        from .admin_views import response_delete, response_detail, response_edit
+        from .admin_views import (
+            response_attention,
+            response_delete,
+            response_detail,
+            response_edit,
+            response_note,
+            response_panel,
+            response_review,
+        )
+        from .export import response_download, responses_download
+        from .reports import report_documents, report_excel, report_preview
 
-        urls = []
+        urls = [
+            path(
+                "reports/",
+                self.admin_site.admin_view(lambda request: report_preview(self, request)),
+                name="submissions_submission_reports",
+            ),
+            path(
+                "report/excel/",
+                self.admin_site.admin_view(lambda request: report_excel(self, request)),
+                name="submissions_submission_report_excel",
+            ),
+            path(
+                "report/documents/",
+                self.admin_site.admin_view(lambda request: report_documents(self, request)),
+                name="submissions_submission_report_documents",
+            ),
+            path(
+                "download/",
+                self.admin_site.admin_view(lambda request: responses_download(self, request)),
+                name="submissions_submission_download_selected",
+            ),
+            path(
+                "<uuid:object_id>/panel/",
+                self.admin_site.admin_view(
+                    lambda request, object_id: response_panel(self, request, object_id)
+                ),
+                name="submissions_submission_panel",
+            ),
+            path(
+                "<uuid:object_id>/note/",
+                self.admin_site.admin_view(
+                    lambda request, object_id: response_note(self, request, object_id)
+                ),
+                name="submissions_submission_note",
+            ),
+        ]
         for operation, handler in (
             ("detail", response_detail),
             ("edit", response_edit),
             ("remove", response_delete),
+            ("review", response_review),
+            ("attention", response_attention),
+            ("download", response_download),
+            ("documents", report_documents),
         ):
 
             def view(request, object_id, handler=handler):
@@ -108,87 +191,32 @@ class SubmissionAdmin(PlatformAdmin):
         return response_delete(self, request, object_id)
 
     def get_search_results(self, request, queryset, search_term):
+        search_term = search_term.strip()
         if search_term:
-            matches = SubmissionAnswer.objects.filter(
-                submission_id=OuterRef("pk"), value__icontains=search_term
+            matches = SubmissionAnswer.objects.filter(submission_id=OuterRef("pk")).filter(
+                Q(value__icontains=search_term)
+                | Q(field__label__icontains=search_term)
+                | Q(field__section__title__icontains=search_term)
             )
-            queryset = queryset.filter(Exists(matches) | Q(form__name__icontains=search_term))
+            files = SubmissionFile.objects.filter(
+                answer__submission_id=OuterRef("pk"), original_name__icontains=search_term
+            )
+            reviews = SubmissionReview.objects.filter(
+                submission_id=OuterRef("pk"), note__icontains=search_term
+            )
+            option_matches = selected_option_matches(queryset, search_term)
+            queryset = queryset.filter(
+                Q(form__name__icontains=search_term)
+                | Q(attention_note__icontains=search_term)
+                | Q(pk__in=option_matches)
+                | Exists(matches)
+                | Exists(files)
+                | Exists(reviews)
+            )
         return queryset, False
 
     @admin.display(description="Datos recibidos")
     def answer_details(self, obj):
-        sections = {}
-        answers = (
-            obj.answers.select_related("field__section")
-            .prefetch_related("field__options", "files")
-            .order_by("field__section__order", "field__section_id", "field__order", "field_id")
-        )
-        for answer in answers:
-            section = answer.field.section
-            bucket = sections.setdefault(section.pk, {"title": section.title, "answers": []})
-            value = answer.value
-            options = {option.value: option.label for option in answer.field.options.all()}
-            attachments = []
-            if answer.field.field_type in {"FILE", "DOCUMENT"}:
-                preview_types = {
-                    ".pdf": "pdf",
-                    ".png": "image",
-                    ".jpg": "image",
-                    ".jpeg": "image",
-                    ".webp": "image",
-                    ".txt": "text",
-                    ".csv": "text",
-                }
-                for file in answer.files.all():
-                    extension = PurePath(file.original_name).suffix.lower()
-                    attachments.append(
-                        {
-                            "name": file.original_name,
-                            "url": file.get_absolute_url(),
-                            "size": file.size,
-                            "extension": extension.lstrip(".").upper() or "ARCHIVO",
-                            "preview": preview_types.get(extension, "unsupported"),
-                        }
-                    )
-                text = "" if attachments else "Sin archivos"
-            elif answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
-                config = answer.field.configuration
-                columns = {column["id"]: column["label"] for column in config.get("columns", [])}
-                value = value if isinstance(value, dict) else {}
-                lines = []
-                for row in config.get("rows", []):
-                    selected = value.get(row["id"], [])
-                    selected = selected if isinstance(selected, list) else [selected]
-                    result = (
-                        ", ".join(columns.get(item, item) for item in selected) or "Sin respuesta"
-                    )
-                    lines.append(f"{row['label']}: {result}")
-                text = "\n".join(lines)
-            elif answer.field.field_type in {"LINEAR_SCALE", "RATING"} and value is not None:
-                text = f"{value} de {answer.field.configuration.get('max', 5)}"
-            elif answer.field.field_type == "SINGLE_CHOICE" and isinstance(value, dict):
-                selected = value.get("selected", "")
-                label = options.get(selected, selected) or "Sin respuesta"
-                detail = value.get("text", "")
-                text = f"{label}: {detail}" if detail else label
-            elif isinstance(value, bool):
-                text = "Sí" if value else "No"
-            elif isinstance(value, list):
-                text = ", ".join(options.get(item, item) for item in value) or "Sin respuesta"
-            elif value is None or value == "":
-                text = "Sin respuesta"
-            else:
-                text = options.get(str(value), str(value))
-            bucket["answers"].append(
-                {
-                    "label": answer.field.label,
-                    "value": text,
-                    "files": attachments,
-                    "wide": answer.field.field_type
-                    in {"FILE", "DOCUMENT", "LONG_TEXT", "GRID_SINGLE", "GRID_MULTIPLE"},
-                    "empty": not attachments and (value is None or value == "" or value == []),
-                }
-            )
-        return mark_safe(
-            render_to_string("admin/submissions/answers.html", {"sections": sections.values()})
-        )
+        from .presentation import render_response_details, response_sections
+
+        return render_response_details(response_sections(obj))

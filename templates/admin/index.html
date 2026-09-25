@@ -1,22 +1,61 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}">{% endblock %}
+{% load static l10n %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}?v=storage-2">{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard-operational.css' %}?v=2"><script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script><script src="{% static 'forms/dashboard.js' %}?v=trend-dates-1" defer></script><script src="{% static 'forms/dashboard-hero.js' %}?v=8" defer></script>{% endblock %}
 {% block content %}
 <div class="metrics-dashboard">
-    <header class="metrics-heading"><div><p class="metrics-eyebrow">VISTA GENERAL</p><h1>Tu plataforma en números</h1></div><span class="metrics-updated">Actualizado a las {{ dashboard_updated|date:'H:i' }}</span></header>
-    <div class="metrics-grid">
-        {% for card in dashboard_cards %}
-        <article class="metric-card"><div class="metric-top"><span>{{ card.label }}</span><span class="metric-icon {{ card.color }} material-symbols-outlined" aria-hidden="true">{{ card.icon }}</span></div><strong class="metric-value">{{ card.value }}</strong><p class="metric-caption">{{ card.note }}</p>{% if card.percent != None %}<div class="storage-meter" role="meter" aria-label="Porcentaje de disco utilizado" aria-valuenow="{{ card.percent }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ card.percent }}%"></span></div><small class="metric-caption">{{ card.percent }}% del disco utilizado por todos los servicios</small>{% endif %}</article>
-        {% endfor %}
+    <header class="dashboard-intro"><div><h1>Panel general</h1><p>Consulta el estado de tus formularios y respuestas en un solo lugar.</p></div>{% if dashboard_can_responses %}<nav class="metrics-periods" aria-label="Período de las estadísticas">{% for period in dashboard_periods %}<a href="{{ period.url }}" {% if dashboard_period == period.key %}aria-current="page"{% endif %}>{{ period.label }}</a>{% endfor %}</nav>{% endif %}</header>
+    <section class="metrics-heading has-animation" aria-label="Animaciones de LogicForms">
+        <div class="metrics-title"><div class="metrics-heading-track" id="metrics-heading-track" data-animation-1="{% static 'forms/dashboard-motion-1.json' %}" data-animation-2="{% static 'forms/dashboard-motion-2.json' %}" data-animation-3="{% static 'forms/dashboard-motion-3.json' %}" data-animation-4="{% static 'forms/dashboard-motion-4.json' %}" data-animation-5="{% static 'forms/dashboard-motion-5.json' %}"><div class="metrics-heading-visual" id="metrics-heading-visual" aria-hidden="true"><div class="metrics-heading-art" id="metrics-heading-art"><div class="metrics-heading-frame" id="metrics-heading-frame"></div></div></div></div><button type="button" class="metrics-animation-toggle" id="metrics-animation-toggle" aria-label="Pausar animación" title="Pausar animación" hidden><span class="material-symbols-outlined" aria-hidden="true">pause</span></button></div>
+        <div class="metrics-heading-tools"><span class="metrics-updated">Actualizado a las {{ dashboard_updated|date:'H:i' }}</span></div>
+    </section>
+    {% if dashboard_can_responses %}
+    {% include "admin/dashboard/_daily_summary.html" %}
+    <section class="metrics-grid" aria-label="Estado de las respuestas">
+        {% for card in dashboard_cards %}<a href="{{ card.url }}" class="metric-card" data-status="{{ card.status }}"><span class="metric-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">{% if card.status == 'SUBMITTED' %}<path d="M4 4h16l2 10v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/><path d="M2 14h6l2 3h4l2-3h6"/>{% elif card.status == 'received_today' %}<path d="M5 20v-7m5 7V4m5 16v-9m5 9v-5"/>{% elif card.status == 'UNDER_REVIEW' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>{% elif card.status == 'VALIDATED' %}<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>{% else %}<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>{% endif %}</svg></span><span class="metric-label">{{ card.label }}</span><strong class="metric-value">{{ card.value }}</strong><span class="metric-caption">{{ card.note }}</span><svg class="metric-card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>{% endfor %}
+    </section>
+    <div class="metrics-activity-layout">
+        <section class="metrics-activity" aria-labelledby="activity-title"><div class="metrics-section-heading"><div class="metrics-section-title"><span class="metrics-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg></span><div><h2 id="activity-title">Actividad por formulario</h2><p>Resumen de respuestas en el período seleccionado.</p></div></div><a class="metrics-heading-link" href="{% if dashboard_can_forms %}{{ dashboard_all_forms_url }}{% else %}{{ dashboard_summary.responses_url }}{% endif %}">{% if dashboard_can_forms %}Ver formularios{% else %}Ver respuestas{% endif %} <span aria-hidden="true">→</span></a></div>
+            <div class="metrics-table-scroll"><table class="metrics-table"><thead><tr><th scope="col">Formulario</th><th scope="col">Total</th><th scope="col">Pendientes</th><th scope="col">Revisión</th><th scope="col">Validadas</th><th scope="col">Rechazadas</th><th scope="col">Última respuesta</th><th scope="col">Acción</th></tr></thead><tbody>
+            {% for form in dashboard_forms %}<tr><th scope="row"><a href="{{ form.url }}">{{ form.form__name }}</a>{% if form.form__deleted_at %}<small>Formulario eliminado</small>{% endif %}</th><td data-label="Total">{{ form.total }}</td><td class="metrics-pending" data-label="Pendientes">{{ form.pending }}</td><td data-label="Revisión">{{ form.reviewing }}</td><td data-label="Validadas">{{ form.validated }}</td><td data-label="Rechazadas">{{ form.rejected }}</td><td data-label="Última respuesta"><time datetime="{{ form.latest|date:'c' }}" title="{{ form.latest|date:'j M Y, H:i' }}">{{ form.relative }}</time></td><td data-label="Acción"><a class="metrics-review-link" href="{% if form.pending %}{{ form.pending_url }}{% else %}{{ form.url }}{% endif %}">{% if form.pending %}Revisar{% else %}Ver respuestas{% endif %}<span aria-hidden="true">→</span></a></td></tr>
+            {% empty %}<tr><td colspan="8" class="metrics-empty">No se recibieron respuestas en este período.</td></tr>{% endfor %}</tbody></table></div>
+            {% if dashboard_page.has_other_pages %}<nav class="metrics-pagination" aria-label="Páginas de actividad">{% if dashboard_previous %}<a href="{{ dashboard_previous }}">← Anterior</a>{% endif %}<span>{{ dashboard_page.number }} de {{ dashboard_page.paginator.num_pages }}</span>{% if dashboard_next %}<a href="{{ dashboard_next }}">Siguiente →</a>{% endif %}</nav>{% endif %}
+        </section>
+        <section class="metrics-trend" aria-labelledby="trend-title"><div class="metrics-section-heading"><div class="metrics-section-title"><span class="metrics-section-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20v-7m5 7V4m5 16v-9m5 9v-5"/></svg></span><h2 id="trend-title">Tendencia</h2></div><span>{{ dashboard_trend.label }}</span></div><div class="metrics-trend-total"><strong>{{ dashboard_trend.total }}</strong><span>respuestas recibidas</span></div><p class="metrics-trend-comparison">{% if dashboard_trend.change != None %}{% if dashboard_trend.change > 0 %}↑ {% elif dashboard_trend.change < 0 %}↓ {% endif %}{{ dashboard_trend.change|floatformat:1 }} % frente al período anterior{% elif dashboard_trend.total %}Sin base de comparación{% else %}Sin respuestas en el período{% endif %}</p><p class="metrics-trend-insight">{{ dashboard_trend.insight }}</p>
+            <div id="response-trend" class="metrics-chart"></div>{{ dashboard_trend.chart_points|json_script:"response-trend-data" }}
+            <form class="metrics-trend-filter" method="get" action="{% url 'admin:index' %}#trend-title" aria-label="Filtrar tendencia por fechas">
+                <input type="hidden" name="period" value="{{ dashboard_period }}">
+                <div class="metrics-trend-filter-heading"><strong>Filtrar fechas</strong>{% if dashboard_trend_filter.active %}<a href="{{ dashboard_trend_clear_url }}">Restablecer</a>{% endif %}</div>
+                <div class="metrics-trend-dates"><label for="trend-start">Desde<input id="trend-start" type="date" name="trend_start" value="{{ dashboard_trend_filter.start }}" min="{{ dashboard_trend_filter.min }}" max="{{ dashboard_trend_filter.max }}" required></label><label for="trend-end">Hasta<input id="trend-end" type="date" name="trend_end" value="{{ dashboard_trend_filter.end }}" min="{{ dashboard_trend_filter.min }}" max="{{ dashboard_trend_filter.max }}" required></label></div>
+                <button type="submit">Aplicar fechas</button>
+                {% if dashboard_trend_filter.error %}<p class="metrics-trend-filter-error" role="alert">{{ dashboard_trend_filter.error }}</p>{% endif %}
+                <p class="metrics-trend-filter-hint">Hasta 366 días; solo cambia la tendencia.{% if dashboard_trend.chart_grouped %} El gráfico agrupa por semanas.{% endif %}</p>
+            </form>
+        </section>
     </div>
-    {% if dashboard_forms %}
-    <div class="metrics-section-heading"><h2>Actividad por formulario</h2>{% if dashboard_pending != None %}<span class="pending-badge">{{ dashboard_pending }} respuestas pendientes de revisión</span>{% endif %}</div>
-    <div class="workspace-metrics-grid">
-        {% for form in dashboard_forms %}
-        <article class="workspace-metric-card"><div class="workspace-metric-heading"><div class="workspace-symbol material-symbols-outlined" aria-hidden="true">description</div><h3>{{ form.name }}</h3><span class="workspace-status {% if form.status != 'PUBLISHED' %}inactive{% endif %}">{{ form.get_status_display }}</span></div><strong class="metric-value">{{ form.response_count }}</strong><p class="metric-caption">Respuestas recibidas</p></article>
+    {% else %}<p class="metrics-empty">No tienes permiso para consultar las respuestas de la plataforma.</p>{% endif %}
+    {% if dashboard_infrastructure %}
+    <section aria-labelledby="infrastructure-title"><div class="metrics-section-heading"><h2 id="infrastructure-title">Infraestructura</h2><span>Información del almacenamiento</span></div><div class="metrics-infrastructure">
+        {% for item in dashboard_infrastructure %}
+        <article class="infrastructure-card" data-kind="{{ item.kind }}" {% if item.over_capacity %}data-warning="true"{% endif %}>
+            <div class="infrastructure-heading"><h3>{{ item.label }}</h3><span class="metric-caption">{{ item.provider }}</span></div>
+            <p class="infrastructure-scope">{{ item.scope }}</p>
+            <dl class="infrastructure-stats">
+                <div><dt>Usado</dt><dd class="infrastructure-used {% if not item.available %}infrastructure-unknown{% endif %}">{{ item.used_display }}</dd></div>
+                <div><dt>{{ item.remaining_label }}</dt><dd class="{% if item.remaining_bytes == None %}infrastructure-unknown{% endif %}">{{ item.remaining_display }}</dd></div>
+            </dl>
+            <div class="infrastructure-capacity"><span>{{ item.capacity_label }}</span><strong>{% if item.capacity_display %}{{ item.capacity_display }}{% elif item.is_r2 %}Sin límite fijo{% else %}Sin configurar{% endif %}</strong></div>
+            {% if item.percent != None %}
+            <progress max="100" value="{{ item.progress|unlocalize }}" aria-label="Uso de {{ item.label }}: {{ item.percent|floatformat:1 }} % {{ item.percent_label }}"></progress>
+            <p class="infrastructure-percent">{{ item.percent|floatformat:1 }} % {{ item.percent_label }}</p>
+            {% endif %}
+            {% if item.capacity_note %}<p class="infrastructure-note">{{ item.capacity_note }}</p>{% endif %}
+            <div class="infrastructure-footer"><span>{% if item.kind == "database" and item.tables != None %}{{ item.tables }} tablas de la aplicación{% elif item.objects != None %}{{ item.objects }} archivo{{ item.objects|pluralize }}{% endif %}</span><time datetime="{{ item.checked_at|date:'c' }}" title="{{ item.checked_at|date:'d/m/Y H:i T' }}">Consultado {{ item.checked_at|date:'H:i' }}</time></div>
+            <p class="infrastructure-state">{{ item.state }}</p>
+        </article>
         {% endfor %}
-    </div>
+    </div></section>
     {% endif %}
-    <p class="metrics-footnote">Usuarios registrados cuenta las cuentas de la plataforma. Las respuestas públicas son envíos y pueden incluir varias respuestas de una misma persona.</p>
+    {% if dashboard_can_responses %}<section aria-labelledby="recent-title"><div class="metrics-section-heading"><h2 id="recent-title">Actividad reciente</h2><span>Eventos del período</span></div><ol class="metrics-events">{% for event in dashboard_events %}<li><time datetime="{{ event.at|date:'c' }}">{{ event.at|date:'d/m H:i' }}</time><span class="material-symbols-outlined" aria-hidden="true">{{ event.icon }}</span><div><strong>{{ event.label }}</strong><a href="{{ event.url }}">{{ event.detail }}</a></div></li>{% empty %}<li class="metrics-empty">No hay actividad registrada en este período.</li>{% endfor %}</ol></section>{% endif %}
 </div>
 {% endblock %}

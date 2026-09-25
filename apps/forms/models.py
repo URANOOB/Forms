@@ -33,6 +33,7 @@ class Form(UUIDModel):
     name = models.CharField("nombre", max_length=200)
     slug = models.SlugField(max_length=180)
     description = models.TextField("descripción", blank=True)
+    response_summary = models.JSONField(default=dict, blank=True, validators=[validate_object])
     status = models.CharField("estado", max_length=12, choices=Status, default=Status.DRAFT)
     active_version = models.ForeignKey(
         "FormVersion",
@@ -81,6 +82,14 @@ class Form(UUIDModel):
 
     def get_absolute_url(self):
         return reverse("public_form", kwargs={"form_id": self.pk})
+
+    def get_public_url(self, request):
+        path = self.get_absolute_url()
+        return (
+            settings.PUBLIC_BASE_URL + path
+            if settings.PUBLIC_BASE_URL
+            else request.build_absolute_uri(path)
+        )
 
 
 class FormVersion(UUIDModel):
