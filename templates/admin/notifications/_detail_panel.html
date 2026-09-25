@@ -1,0 +1,22 @@
+<aside class="email-detail" id="email-detail" aria-label="Detalle del correo" tabindex="-1">
+    <div class="email-detail-top"><span class="email-badge" data-status="{{ selected.status }}">{{ selected.get_status_display }}</span><a href="{{ close_url }}" class="email-close" aria-label="Cerrar detalle"><span class="material-symbols-outlined" aria-hidden="true">close</span></a></div>
+    <h2>{{ selected.get_event_type_display }}</h2><p class="email-muted">Información del envío y su entrega{% if selected.is_test %} · Prueba{% endif %}</p>
+    <dl>
+        <div><dt>Destinatario</dt><dd>{% if request.user.is_superuser %}{{ selected.recipient_email|default:'Sin destinatario' }}{% else %}{{ selected.masked_email }}{% endif %}</dd></div>
+        <div><dt>Tipo de destinatario</dt><dd>{{ selected.get_recipient_kind_display }}</dd></div>
+        <div><dt>Formulario</dt><dd>{{ selected.form_name }}</dd></div>
+        <div><dt>Respuesta</dt><dd>{% if selected.submission_id %}#{{ selected.submission_id|stringformat:'s'|slice:':8' }}{% else %}Eliminada{% endif %}</dd></div>
+        <div><dt>Creado</dt><dd>{{ selected.created_at|date:'d/m/Y H:i' }}</dd></div>
+        <div><dt>Enviado</dt><dd>{{ selected.sent_at|date:'d/m/Y H:i'|default:'—' }}</dd></div>
+        <div><dt>Entregado</dt><dd>{{ selected.delivered_at|date:'d/m/Y H:i'|default:'—' }}</dd></div>
+        <div><dt>Resend ID</dt><dd>{{ selected.provider_message_id|default:'—' }}</dd></div>
+        <div><dt>Intentos</dt><dd>{{ selected.attempts }}</dd></div>
+        <div><dt>Último estado</dt><dd>{{ selected.last_provider_event|default:selected.get_status_display }}</dd></div>
+        <div><dt>Último error</dt><dd>{{ selected.last_error|default:'—' }}</dd></div>
+    </dl>
+    <div class="email-detail-actions">
+        {% if selected.submission_id and not selected.submission.deleted_at %}<a class="email-button" href="{% url 'admin:submissions_submission_detail' selected.submission_id %}">Ver respuesta</a>{% endif %}
+        {% if can_retry %}<form method="post" action="{% url 'admin:notifications_emailnotification_retry' selected.pk %}">{% csrf_token %}<button type="submit" class="email-button email-primary">Reintentar</button></form>{% endif %}
+    </div>
+    <section class="email-history" aria-label="Historial de entrega"><h3>Historial de entrega</h3><ol>{% for event in timeline %}<li><strong>{{ event.title }}</strong><time datetime="{{ event.at|date:'c' }}">{{ event.at|date:'d/m/Y H:i:s' }}</time>{% if event.detail %}<p>{{ event.detail }}</p>{% endif %}</li>{% endfor %}</ol></section>
+</aside>

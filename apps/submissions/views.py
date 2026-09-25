@@ -118,7 +118,9 @@ def thanks(request):
 def response_file(request, file_id):
     if not request.user.has_perm("submissions.view_submission"):
         raise PermissionDenied
-    attachment = get_object_or_404(SubmissionFile, pk=file_id)
+    attachment = get_object_or_404(
+        SubmissionFile, pk=file_id, answer__submission__deleted_at__isnull=True
+    )
     try:
         stream = attachment.file.open("rb")
     except FileNotFoundError:

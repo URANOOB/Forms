@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<section class="border border-base-200 rounded-default p-6 dark:border-base-800">
+    <h1 class="text-xl font-semibold mb-4">Papelera de respuestas</h1>
+    <p class="mb-4">Las respuestas conservan sus archivos e historial. Solo un administrador puede eliminarlas definitivamente.</p>
+    <a href="{% url 'admin:submissions_submission_changelist' %}">Volver a respuestas</a>
+    <ul class="mt-4">
+    {% for item in page %}
+        <li class="border-b border-base-200 py-4 dark:border-base-800">
+            <p><strong>{{ item }}</strong> · {{ item.form.name }}</p>
+            <p>En papelera desde {{ item.deleted_at }} · {{ item.deleted_by|default:'Usuario eliminado' }}</p>
+            <div class="flex flex-wrap gap-4 items-center mt-2">
+            {% if item.can_restore %}<form method="post" action="{% url 'admin:submissions_submission_restore' item.pk %}">{% csrf_token %}<button class="border rounded-default px-4 py-2" type="submit">Restaurar <span class="sr-only">{{ item }}</span></button></form>{% endif %}
+            {% if request.user.is_superuser %}<a href="{% url 'admin:submissions_submission_purge' item.pk %}">Eliminar definitivamente <span class="sr-only">{{ item }}</span></a>{% endif %}
+            </div>
+        </li>
+    {% empty %}<li class="py-4">La papelera está vacía.</li>{% endfor %}
+    </ul>
+    {% if page.has_other_pages %}<nav class="flex gap-4 mt-4" aria-label="Páginas de la papelera">
+        {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">Anterior</a>{% endif %}
+        <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a href="?page={{ page.next_page_number }}">Siguiente</a>{% endif %}
+    </nav>{% endif %}
+</section>
+{% endblock %}

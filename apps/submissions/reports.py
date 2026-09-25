@@ -3,7 +3,7 @@
 import hashlib
 import tempfile
 import uuid
-from collections import defaultdict
+from collections import Counter
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from itertools import islice
@@ -32,7 +32,7 @@ from apps.accounts.models import ReportDownload
 from apps.forms.response_summary import SUMMARY_TYPES
 
 from .models import SubmissionAnswer, SubmissionFile
-from .summary import answer_text, load_summary_data, normalized, role
+from .summary import answer_text, load_summary_data, role
 
 
 def safe_cell(value):
@@ -234,14 +234,14 @@ def zip_chunks(submissions):
     yield from sink.drain()
 
 
-def answer_key(label):
-    return normalized(label) or "campo sin nombre"
+def answer_key(form_id, stable_key):
+    return f"{form_id}:{stable_key}"
 
 
 def report_columns(queryset):
     answers = (
         SubmissionAnswer.objects.filter(submission__in=queryset)
-        .select_related("field__section")
+        .select_related("field__section", "field__form_version__form")
         .prefetch_related("field__options", "files")
         .order_by(
             "submission__form__name",
@@ -264,21 +264,43 @@ def report_columns(queryset):
         if not report_answer_text(answer):
             continue
         label = answer.field.label
-        key = answer_key(label)
+        form = answer.field.form_version.form
+        key = answer_key(form.pk, answer.field.stable_key)
         title = label.strip() or "Campo sin nombre"
-        columns.setdefault(key, {"key": key, "title": title})
+        columns.setdefault(
+            key,
+            {
+                "key": key,
+                "title": title,
+                "form_name": form.name,
+                "section_title": answer.field.section.title,
+                "stable_key": answer.field.stable_key,
+                "form_id": str(form.pk),
+            },
+        )
+    titles = Counter(column["title"].casefold() for column in columns.values())
+    for column in columns.values():
+        if titles[column["title"].casefold()] > 1:
+            column["title"] += f" · {column['form_name']} / {column['section_title']}"
+    qualified_titles = Counter(column["title"].casefold() for column in columns.values())
+    occurrences = Counter()
+    for column in columns.values():
+        title = column["title"].casefold()
+        if qualified_titles[title] > 1:
+            occurrences[title] += 1
+            column["title"] += f" ({occurrences[title]})"
     return list(columns.values())
 
 
 def overview_row(submission, columns):
-    values = defaultdict(list)
+    values = {}
     for answer in submission.summary_answers:
         value = report_answer_text(answer)
         if value:
-            values[answer_key(answer.field.label)].append(value)
+            values[answer_key(submission.form_id, answer.field.stable_key)] = value
     return [
         timezone.localtime(submission.submitted_at).strftime("%Y-%m-%d %H:%M:%S"),
-        *["\n".join(values[column["key"]]) for column in columns],
+        *[values.get(column["key"], "") for column in columns],
     ]
 
 
@@ -483,10 +505,52 @@ def report_excel(model_admin, request):
         documents.column_dimensions[get_column_letter(index)].width = width
     header(overview, [*REPORT_SHEETS["respuestas"], *(column["title"] for column in columns)])
     header(documents, REPORT_SHEETS["documentos"])
+    overflow = None
+    overflow_count = 0
+
+    def excel_row(sheet, values, submission, keys):
+        nonlocal overflow, overflow_count
+        cells = []
+        for key, value in zip(keys, values, strict=True):
+            text = safe_cell(value)
+            if len(text) > 32767:
+                if overflow is None:
+                    overflow = workbook.create_sheet("Textos extensos")
+                    header(overflow, ["Referencia", "Respuesta", "Columna", "Parte", "Texto"])
+                overflow_count += 1
+                reference = f"Texto {overflow_count}"
+                for index in range(0, len(text), 32000):
+                    parts = [
+                        reference,
+                        str(submission.pk),
+                        str(key),
+                        str(index // 32000 + 1),
+                        text[index : index + 32000],
+                    ]
+                    chunks = []
+                    for part in parts:
+                        cell = WriteOnlyCell(overflow, value=part)
+                        # Continuation chunks can start with '='; force literal strings.
+                        cell.data_type = "s"
+                        chunks.append(cell)
+                    overflow.append(chunks)
+                text = f"{reference}: contenido completo en la hoja «Textos extensos»."
+            cell = WriteOnlyCell(sheet, value=text)
+            cell.data_type = "s"
+            cells.append(cell)
+        return cells
+
     for submission in submissions:
-        overview.append([safe_cell(value) for value in overview_row(submission, columns)])
+        overview.append(
+            excel_row(
+                overview,
+                overview_row(submission, columns),
+                submission,
+                ["fecha", *(column["key"] for column in columns)],
+            )
+        )
         for row in document_rows(submission):
-            documents.append([safe_cell(value) for value in row])
+            documents.append(excel_row(documents, row, submission, REPORT_SHEETS["documentos"]))
     output = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
     workbook.save(output)
     output.seek(0)

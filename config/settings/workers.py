@@ -12,6 +12,13 @@ urllib3.util.ssl_.ssl = ssl
 urllib3.util.ssl_.SSLContext = ssl.SSLContext
 
 for name in (
+    "PUBLIC_BASE_URL",
+    "EMAIL_PROVIDER",
+    "EMAIL_FROM",
+    "EMAIL_API_KEY",
+    "RESEND_WEBHOOK_SECRET",
+    "EMAIL_NOTIFICATIONS_ENABLED",
+    "EMAIL_TEST_RECIPIENT",
     "DATABASE_URL",
     "DJANGO_SECRET_KEY",
     "DJANGO_ALLOWED_HOSTS",
@@ -24,12 +31,19 @@ for name in (
     "R2_ENDPOINT",
     "DATABASE_CAPACITY_BYTES",
     "R2_FREE_STORAGE_REFERENCE_BYTES",
+    "RATE_LIMIT_PUBLIC_READ",
+    "RATE_LIMIT_PUBLIC_POST",
+    "RATE_LIMIT_PUBLIC_HOUR",
+    "RATE_LIMIT_LOGIN_IP",
+    "RATE_LIMIT_LOGIN_ACCOUNT",
 ):
     value = getattr(env, name, None)
     if value is not None:
         os.environ[name] = str(value)
 
 from .production import *  # noqa: E402,F403
+
+RATE_LIMIT_IP_HEADER = "HTTP_CF_CONNECTING_IP"
 
 # The entrypoint serializes complete WSGI response lifetimes on this single thread.
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"

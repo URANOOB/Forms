@@ -55,6 +55,12 @@ class ActivityReceipt(models.Model):
     last_seen_at = models.DateTimeField(null=True, blank=True)
 
 
+class RateLimitBucket(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    count = models.PositiveIntegerField()
+    expires_at = models.DateTimeField(db_index=True)
+
+
 def legacy_form_container():
     """Internal FK compatibility only; no longer a tenancy or permission boundary."""
     workspace, _ = Workspace.objects.get_or_create(

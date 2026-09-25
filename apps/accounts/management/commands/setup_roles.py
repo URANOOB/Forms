@@ -6,7 +6,7 @@ from django.db import transaction
 from apps.accounts.roles import (
     ADMINISTRATOR,
     LEGACY_ROLES,
-    VIEWER,
+    OPERATOR,
     assign_role,
     setup_role_groups,
     visible_users,
@@ -14,7 +14,7 @@ from apps.accounts.roles import (
 
 
 class Command(BaseCommand):
-    help = "Configura los roles Administrador y Visor y sustituye los roles anteriores."
+    help = "Configura los roles Administrador y Operador y sustituye los roles anteriores."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -26,6 +26,6 @@ class Command(BaseCommand):
             )
             user.is_staff = True
             user.save(update_fields=("is_superuser", "is_staff"))
-            assign_role(user, ADMINISTRATOR if user.is_superuser else VIEWER)
+            assign_role(user, ADMINISTRATOR if user.is_superuser else OPERATOR)
         Group.objects.filter(name__in=LEGACY_ROLES).delete()
-        self.stdout.write(self.style.SUCCESS("Roles Administrador y Visor configurados."))
+        self.stdout.write(self.style.SUCCESS("Roles Administrador y Operador configurados."))

@@ -1,0 +1,7 @@
+{% extends "notifications/emails/base.html" %}{% block message %}
+<h1 style="font-size:24px">Nueva respuesta recibida</h1>
+<p>Se recibió una respuesta a <strong>{{ notification.form_name }}</strong>.</p>
+<p>Respuesta #{{ short_id }} · {{ submitted_at|date:"d/m/Y H:i" }}</p>
+<p style="margin:28px 0"><a href="{{ detail_url }}" style="background:#5145cd;color:#fff;padding:14px 22px;border-radius:8px;text-decoration:none;display:inline-block">Ver respuesta</a></p>
+<p>Inicia sesión en LogicForms para consultarla.</p>
+{% endblock %}

@@ -97,10 +97,10 @@ compartidos. Sin esa variable se utiliza el origen de la petición.
 **localhost sólo funciona en tu propio equipo**.
 No se publica automáticamente un borrador creado por el seed.
 
-`setup_roles` configura **Administrador** y **Visor**, sustituye los grupos antiguos
+`setup_roles` configura **Administrador** y **Operador**, sustituye los grupos antiguos
 y normaliza las cuentas existentes, eliminando excepciones individuales de permisos.
 Ambos roles pueden gestionar formularios y respuestas, incluida su edición y eliminación;
-solo Administrador gestiona usuarios y permisos. «Visor» no es un rol de solo lectura.
+solo Administrador gestiona usuarios y permisos. «Operador» no es un rol de solo lectura.
 La edición de respuestas conserva su versión y fecha; cambiar una respuesta validada
 o rechazada reabre su revisión. Consulta [usuarios y roles](docs/users.md) antes de
 ejecutar el comando sobre cuentas existentes.
@@ -153,10 +153,16 @@ session pooler, usando TLS (`?sslmode=require`). No se utiliza el SDK, Auth ni
 Storage de Supabase. El rol de producción debe tener privilegios mínimos;
 ejecutar tests sólo contra una base dedicada con permiso de crear la base de tests.
 
-El proveedor de archivos se elige con `FILE_STORAGE=local` (predeterminado) o `r2`.
+En desarrollo se admite `FILE_STORAGE=local` (predeterminado) o `r2`.
+Producción exige explícitamente `FILE_STORAGE=r2` y credenciales completas; de lo
+contrario se niega a iniciar. Consultar [seguimiento de auditoría](docs/auditoria-seguimiento.md)
+para las migraciones, los límites de solicitudes y las tareas de mantenimiento.
 R2 almacena imágenes y adjuntos en un bucket privado; Django conserva el control de
-acceso. En local se usan `media/` y `private_uploads/`, respectivamente. No se envían
-correos. Consultar [setup y traslado a Supabase + R2](docs/supabase-r2.md) antes de
+acceso. En local se usan `media/` y `private_uploads/`, respectivamente. Los correos
+transaccionales usan Resend y están desactivados por defecto. Consultar
+[notificaciones por correo](docs/email-notifications.md) para configurar remitente,
+destinatarios de prueba, webhook y reintentos. Consultar
+[setup y traslado a Supabase + R2](docs/supabase-r2.md) antes de
 cambiar la conexión o el proveedor; incluye el comando de copia con verificación.
 
 ## Verificación
@@ -181,7 +187,7 @@ exactas están en `uv.lock`. Todas las modificaciones de esquema requieren migra
 Los campos de una versión publicada son inmutables. Supabase y R2 están activos
 en producción; los archivos siguen sujetos al límite de 4,5 MB de Vercel Functions
 hasta adaptar las transferencias grandes.
-Correo y auditoría de lecturas permanecen pendientes.
+La activación del correo en producción y la auditoría general de lecturas permanecen pendientes.
 La integración GitHub/Vercel despliega `main`. La alternativa de Workers gratuito
 permanece experimental: ver [compatibilidad con Cloudflare](docs/cloudflare-deployment.md).
 Para Vercel, consultar la [configuración de arranque y variables](docs/vercel-deployment.md).

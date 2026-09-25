@@ -6,7 +6,7 @@ from unfold.forms import AdminPasswordChangeForm
 
 from .forms import PlatformUserChangeForm, PlatformUserCreationForm
 from .models import User
-from .roles import ADMINISTRATOR, ROLE_CHOICES, VIEWER, visible_users
+from .roles import ADMINISTRATOR, OPERATOR, ROLE_CHOICES, visible_users
 
 
 class RoleFilter(admin.SimpleListFilter):
@@ -17,7 +17,7 @@ class RoleFilter(admin.SimpleListFilter):
         return ROLE_CHOICES
 
     def queryset(self, request, queryset):
-        if self.value() in (ADMINISTRATOR, VIEWER):
+        if self.value() in (ADMINISTRATOR, OPERATOR):
             return queryset.filter(is_superuser=self.value() == ADMINISTRATOR)
         return queryset
 
@@ -75,7 +75,7 @@ class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
 
     @admin.display(description="Rol", ordering="is_superuser")
     def role_label(self, obj):
-        return ADMINISTRATOR if obj.is_superuser else VIEWER
+        return ADMINISTRATOR if obj.is_superuser else OPERATOR
 
     def get_queryset(self, request):
         return visible_users(super().get_queryset(request))

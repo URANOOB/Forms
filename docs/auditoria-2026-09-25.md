@@ -1,5 +1,10 @@
 # Auditoría del proyecto — 25 de septiembre de 2026
 
+> Actualización: el [seguimiento de auditoría](auditoria-seguimiento.md) resuelve la
+> limitación de solicitudes, el almacenamiento obligatorio en producción, la propiedad
+> de revisión, la papelera y la identidad/límite de columnas Excel mencionados aquí.
+> Este documento conserva el estado de la primera auditoría.
+
 Se revisaron la recepción pública, el constructor, las versiones, las condiciones,
 la edición y revisión de respuestas, los adjuntos, los reportes, los permisos,
 la configuración de despliegue y los componentes principales de la interfaz.

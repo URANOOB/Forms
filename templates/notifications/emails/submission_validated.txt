@@ -1,0 +1,6 @@
+{% autoescape off %}{% if notification.is_test %}CORREO DE PRUEBA
+{% endif %}LogicForms — Tu solicitud fue aprobada
+
+Tu solicitud para {{ notification.form_name }} fue revisada y aprobada correctamente.
+Referencia: #{{ short_id }}.
+{% endautoescape %}

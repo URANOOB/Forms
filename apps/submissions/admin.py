@@ -79,7 +79,14 @@ class SubmissionAdmin(PlatformAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return request.user.has_perm("submissions.delete_submission")
+        return request.user.has_perm("submissions.delete_submission") and (
+            obj is None or obj.can_mutate(request.user)
+        )
+
+    def has_change_permission(self, request, obj=None):
+        return super().has_change_permission(request, obj) and (
+            obj is None or obj.can_mutate(request.user)
+        )
 
     def get_urls(self):
         from .admin_views import (
@@ -93,8 +100,14 @@ class SubmissionAdmin(PlatformAdmin):
         )
         from .export import response_download, responses_download
         from .reports import report_documents, report_excel, report_preview
+        from .trash import response_purge, response_restore, response_trash
 
         urls = [
+            path(
+                "trash/",
+                self.admin_site.admin_view(lambda request: response_trash(self, request)),
+                name="submissions_submission_trash",
+            ),
             path(
                 "reports/",
                 self.admin_site.admin_view(lambda request: report_preview(self, request)),
@@ -138,6 +151,8 @@ class SubmissionAdmin(PlatformAdmin):
             ("attention", response_attention),
             ("download", response_download),
             ("documents", report_documents),
+            ("restore", response_restore),
+            ("purge", response_purge),
         ):
 
             def view(request, object_id, handler=handler):

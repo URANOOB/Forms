@@ -1,12 +1,12 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
 <section class="border border-base-200 rounded-default p-6 dark:border-base-800">
-    <h1 class="text-xl font-semibold mb-4">¿Eliminar esta respuesta?</h1>
+    <h1 class="text-xl font-semibold mb-4">¿Enviar esta respuesta a la papelera?</h1>
     <p class="mb-4"><strong>{{ original }}</strong> · {{ original.form.name }} · {{ original.submitted_at }}</p>
-    <p class="mb-6">Se eliminarán permanentemente los datos de esta respuesta y sus archivos adjuntos. Esta acción no se puede deshacer.</p>
+    <p class="mb-6">La respuesta saldrá de las consultas y reportes. Sus datos, archivos e historial se conservarán y podrás restaurarlos desde la papelera.</p>
     <form method="post">{% csrf_token %}
         <div class="flex flex-wrap gap-4 items-center">
-            <button type="submit" name="confirm_delete" value="yes" class="inline-flex gap-2 items-center rounded-default px-4 py-2" style="background:#b42318;color:white"><span class="material-symbols-outlined" aria-hidden="true">delete</span>Eliminar respuesta</button>
+            <button type="submit" name="confirm_delete" value="yes" class="inline-flex gap-2 items-center rounded-default px-4 py-2" style="background:#b42318;color:white"><span class="material-symbols-outlined" aria-hidden="true">delete</span>Enviar a la papelera</button>
             <a href="{% url 'admin:submissions_submission_detail' original.pk %}">Cancelar</a>
         </div>
     </form>

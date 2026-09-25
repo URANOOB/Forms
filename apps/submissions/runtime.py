@@ -191,7 +191,7 @@ def save_response(form_id, version_id, nonce, answers):
                 raise ValidationError(
                     "Este formulario ya no recibe respuestas en esta versión. Recarga la página."
                 )
-            existing = Submission.objects.filter(idempotency_key=nonce).first()
+            existing = Submission.all_objects.filter(idempotency_key=nonce).first()
             if existing:
                 if existing.form_id != form.pk or existing.form_version_id != version_id:
                     raise ValidationError("El envío no corresponde a este formulario.")
@@ -232,6 +232,9 @@ def save_response(form_id, version_id, nonce, answers):
                 answer.value = {"files": metadata}
                 answer.save(update_fields=["value"])
             SubmissionAnswer.objects.bulk_create(scalar_answers)
+            from apps.notifications.services import queue_notification
+
+            queue_notification(submission)
             return submission
     except Exception:
         # File storage is not transactional; remove writes if the database rolls back.
