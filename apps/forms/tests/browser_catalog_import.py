@@ -3,6 +3,7 @@
 import asyncio
 import json
 import re
+from importlib.resources import files
 from pathlib import Path
 
 from playwright.async_api import async_playwright, expect
@@ -54,7 +55,7 @@ async def main():
     css = (ROOT / "static/forms/catalog-import.css").read_text("utf-8")
     script = (ROOT / "static/forms/catalog-import.js").read_text("utf-8")
     # Include the actual theme listener that also processes this file input.
-    unfold = (ROOT / ".venv/Lib/site-packages/unfold/static/unfold/js/app.js").read_text("utf-8")
+    unfold = files("unfold").joinpath("static/unfold/js/app.js").read_text("utf-8")
     unfold = unfold[unfold.index("function fileInputUpdatePath() {") :]
     unfold = unfold[
         : unfold.index("/*************************************************************")
