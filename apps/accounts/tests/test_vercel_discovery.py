@@ -152,6 +152,7 @@ class VercelDiscoveryTests(SimpleTestCase):
                 "/admin/",
                 "/admin/forms/form/",
                 "/admin/submissions/submission/",
+                "/admin/submissions/submission/reports/",
                 "/admin/accounts/user/",
             ],
         )

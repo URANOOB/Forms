@@ -154,7 +154,7 @@ class ReviewTests(TestCase):
                 for _ in range(14)
             ]
         )
-        response = self.client.get(self.list_url)
+        response = self.client.get(self.list_url, {"view": "board"})
         self.assertEqual(response.status_code, 200)
         columns = response.context["response_columns"]
         self.assertEqual([column["total"] for column in columns], [15, 14, 14, 14])

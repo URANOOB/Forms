@@ -56,14 +56,22 @@ class DashboardTests(TestCase):
         data = self.context()
         values = {card["status"]: card["value"] for card in data["dashboard_cards"]}
         self.assertEqual(
-            values, {"total": 5, "SUBMITTED": 2, "UNDER_REVIEW": 1, "VALIDATED": 1, "REJECTED": 1}
+            values,
+            {
+                "SUBMITTED": 2,
+                "received_today": 1,
+                "UNDER_REVIEW": 1,
+                "VALIDATED": 1,
+                "REJECTED": 1,
+            },
         )
+        self.assertEqual(data["dashboard_trend"]["total"], 5)
         self.assertEqual(data["dashboard_cards"][3]["note"], "20,0 % del total")
         self.assertEqual(data["dashboard_forms"][0]["total"], 5)
         self.assertEqual(data["dashboard_forms"][0]["pending"], 2)
         self.assertEqual(self.context("today")["dashboard_cards"][0]["value"], 1)
-        self.assertEqual(self.context("30d")["dashboard_cards"][0]["value"], 6)
-        self.assertEqual(self.context("all")["dashboard_cards"][0]["value"], 7)
+        self.assertEqual(self.context("30d")["dashboard_trend"]["total"], 6)
+        self.assertEqual(self.context("all")["dashboard_trend"]["total"], 7)
         self.assertEqual(self.context("invalid")["dashboard_period"], "7d")
 
     def test_trend_fills_gaps_compares_previous_period_and_handles_zero(self):
@@ -131,7 +139,7 @@ class DashboardTests(TestCase):
         self.submission()
         self.submission("VALIDATED")
         data = self.context()
-        link = data["dashboard_cards"][1]["url"]
+        link = data["dashboard_cards"][0]["url"]
         params = parse_qs(urlparse(link).query)
         self.assertEqual(params["status__exact"], ["SUBMITTED"])
         self.assertIn("submitted_at__gte", params)
