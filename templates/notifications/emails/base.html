@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ notification.subject }}</title></head>
+<body style="margin:0;padding:24px 12px;background:#f6f7ff;color:#1c2542;font-family:Arial,sans-serif;line-height:1.6">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#fff;border:1px solid #dfe3fa;border-radius:12px"><tr><td style="padding:32px">
+<p style="font-size:24px;font-weight:bold;color:#5145cd;margin:0 0 24px">✉ LogicForms</p>
+{% if notification.is_test %}<p style="font-weight:bold">Correo de prueba</p>{% endif %}
+{% block message %}{% endblock %}
+<p style="font-size:12px;color:#5d6887;margin-top:32px">Este es un aviso automático de LogicForms. No adjuntamos documentos ni respuestas del formulario.</p>
+</td></tr></table></td></tr></table></body></html>

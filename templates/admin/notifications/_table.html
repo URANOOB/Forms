@@ -1,0 +1,17 @@
+<section class="email-results" aria-label="Notificaciones">
+    <div class="email-table-scroll" role="region" tabindex="0" aria-label="Correos; desplázate para consultar las columnas">
+        <table><thead><tr><th scope="col">Estado</th><th scope="col">Destinatario</th><th scope="col">Evento</th><th scope="col">Formulario</th><th scope="col">Respuesta</th><th scope="col">Enviado</th></tr></thead>
+        <tbody>{% for item in page %}<tr {% if selected.pk == item.pk %}class="selected"{% endif %}>
+            <td><span class="email-badge" data-status="{{ item.status }}">{{ item.get_status_display }}</span></td>
+            <td><a href="{{ item.select_url }}" aria-label="Ver correo a {{ item.masked_email }}">{{ item.masked_email }}</a>{% if item.is_test %}<small>Prueba</small>{% endif %}</td>
+            <td><a href="{{ item.select_url }}">{{ item.get_event_type_display }}</a></td>
+            <td>{{ item.form_name }}</td><td>{% if item.submission_id and not item.submission.deleted_at %}<a href="{% url 'admin:submissions_submission_detail' item.submission_id %}">#{{ item.submission_id|stringformat:'s'|slice:':8' }}</a>{% else %}—{% endif %}</td>
+            <td>{% if item.sent_at %}<time datetime="{{ item.sent_at|date:'c' }}">{{ item.sent_at|date:'d/m/Y H:i' }}</time>{% else %}—{% endif %}</td>
+        </tr>{% empty %}<tr><td colspan="6" class="email-empty">No hay correos para los filtros seleccionados.</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <nav class="email-pagination" aria-label="Páginas de correos"><span>{{ page.start_index }}–{{ page.end_index }} de {{ page.paginator.count }} resultados</span><div>
+        {% if page.has_previous %}<a class="email-button" href="?{{ page_query }}&page={{ page.previous_page_number }}">Anterior</a>{% endif %}
+        <span>Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+        {% if page.has_next %}<a class="email-button" href="?{{ page_query }}&page={{ page.next_page_number }}">Siguiente</a>{% endif %}
+    </div></nav>
+</section>

@@ -120,13 +120,7 @@ def board_context(request, changelist, model_admin):
         return {
             "submission": submission,
             **summary_for(submission),
-            "can_review": model_admin.has_change_permission(request, submission)
-            and (
-                submission.status != Submission.Status.UNDER_REVIEW
-                or not submission.assigned_to_id
-                or submission.assigned_to_id == request.user.pk
-                or request.user.is_superuser
-            ),
+            "can_review": model_admin.has_change_permission(request, submission),
             "transitions": TRANSITIONS[submission.status],
         }
 

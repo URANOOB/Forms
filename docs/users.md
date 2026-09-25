@@ -4,8 +4,16 @@ La plataforma utiliza dos roles:
 
 - **Administrador:** acceso completo, incluida la creación, edición, desactivación,
   eliminación de usuarios y asignación de roles.
-- **Visor:** puede crear, editar, publicar, archivar y eliminar formularios, así como
-  consultar, editar y eliminar respuestas. No puede administrar usuarios ni permisos.
+- **Operador:** puede crear, editar, publicar, archivar y eliminar formularios, así como
+  consultar y editar respuestas, enviarlas a la papelera y restaurarlas.
+  No puede purgar respuestas ni administrar usuarios o permisos.
+
+Durante la revisión, solo el responsable asignado o un administrador puede editar
+los datos, cambiar el estado, añadir notas, modificar incidencias o enviar la respuesta
+a la papelera/restaurarla. Los demás operadores conservan acceso de lectura.
+El purgado definitivo se realiza desde la papelera, con confirmación, y exige administrador.
+La migración renombra el grupo `Visor` a `Operador` conservando miembros y permisos;
+si ambos existen, los combina.
 
 El administrador asigna el rol desde **Usuarios → Acceso a la plataforma**. El acceso
 a esta administración se comprueba en el servidor, también al abrir una URL directa.
@@ -15,7 +23,7 @@ ejemplo permanecen inactivas y no aparecen en el listado ni en el contador de us
 Ejecuta `python manage.py setup_roles` después de las migraciones al preparar un
 entorno. El comando configura los dos grupos, sustituye los roles anteriores y
 normaliza las cuentas existentes. Los administradores usan `is_superuser`; ambos
-roles usan `is_staff` para acceder a la plataforma. Los permisos de Visor abarcan las
+roles usan `is_staff` para acceder a la plataforma. Los permisos de Operador abarcan las
 aplicaciones de formularios y respuestas. La gestión de usuarios queda reservada a
 superusuarios activos. Los permisos se asignan por rol, sin excepciones individuales.
 

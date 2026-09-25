@@ -619,6 +619,13 @@
     if (restoreFocus) trigger.focus({ preventScroll: true });
   }
   function renderSettings() {
+    const notifications = state.notifications || {};
+    const emailFields = fields().filter((field) => field.field_type === "EMAIL");
+    const emailKey = notifications.respondent_email_stable_key || "";
+    root.querySelectorAll("[data-notification]").forEach((input) => {
+      if (input.type === "checkbox") input.checked = notifications[input.dataset.notification] !== false;
+      else input.innerHTML = options([["", "Automático"], ...emailFields.map((field) => [field.stable_key, field.label]), ...(emailKey && !emailFields.some((field) => field.stable_key === emailKey) ? [[emailKey, "Campo eliminado — elige otro"]] : [])], emailKey);
+    });
     const summary = state.response_summary || {};
     const eligible = fields().filter((field) => !["HEADING", "INFORMATION", "IMAGE", "FILE", "DOCUMENT", "GRID_SINGLE", "GRID_MULTIPLE"].includes(field.field_type));
     const choices = [["", "Automático"], ...eligible.map((field) => [field.stable_key, field.label])];
@@ -923,6 +930,12 @@
   root.addEventListener("focusout", () => { lastEdit = null; });
   root.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.matches("[data-notification]")) {
+      state.notifications = { notify_internal_on_submission: true, notify_respondent_on_validated: true, notify_respondent_on_rejected: true, respondent_email_stable_key: "", ...state.notifications };
+      state.notifications[el.dataset.notification] = el.type === "checkbox" ? el.checked : el.value;
+      changed();
+      return;
+    }
     if (el.matches("[data-summary-title],[data-summary-field],[data-summary-mask]")) {
       const container = document.getElementById("response-summary-fields");
       state.response_summary = {

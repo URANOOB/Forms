@@ -40,7 +40,11 @@ class VercelDiscoveryTests(SimpleTestCase):
             DATABASE_URL="postgresql://build:build@127.0.0.1/build",
             DJANGO_SECRET_KEY="discovery-test-key-not-used-for-runtime-sessions-0123456789",
             DJANGO_ALLOWED_HOSTS="build.invalid",
-            FILE_STORAGE="local",
+            FILE_STORAGE="r2",
+            R2_ACCESS_KEY_ID="build",
+            R2_SECRET_ACCESS_KEY="build",
+            R2_BUCKET_NAME="build",
+            R2_ENDPOINT="https://build.invalid",
         )
         return env
 
@@ -130,6 +134,36 @@ class VercelDiscoveryTests(SimpleTestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("DATABASE_URL es obligatoria", result.stderr)
 
+    def test_production_rejects_missing_local_and_invalid_storage(self):
+        for storage in (None, "", "local", "typo"):
+            with self.subTest(storage=storage):
+                env = self.environment()
+                env["VERCEL"] = "1"
+                if storage is None:
+                    env.pop("FILE_STORAGE")
+                else:
+                    env["FILE_STORAGE"] = storage
+                result = self.discover(env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FILE_STORAGE", result.stderr)
+
+    def test_production_rejects_incomplete_r2_credentials(self):
+        env = self.environment()
+        env["VERCEL"] = "1"
+        env.pop("R2_SECRET_ACCESS_KEY")
+        result = self.discover(env)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("R2_SECRET_ACCESS_KEY", result.stderr)
+
+    def test_invalid_rate_limit_configuration_cannot_disable_protection(self):
+        for limit in ("0", "-1", "invalid", "1000001"):
+            with self.subTest(limit=limit):
+                env = self.environment()
+                env.update(VERCEL="1", RATE_LIMIT_LOGIN_IP=limit)
+                result = self.discover(env)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("RATE_LIMIT_LOGIN_IP", result.stderr)
+
     def test_invalid_public_origins_are_rejected_in_production(self):
         for origin in (
             "http://www.logicforms.xyz",
@@ -153,6 +187,7 @@ class VercelDiscoveryTests(SimpleTestCase):
                 "/admin/forms/form/",
                 "/admin/submissions/submission/",
                 "/admin/submissions/submission/reports/",
+                "/admin/notifications/emailnotification/",
                 "/admin/accounts/user/",
             ],
         )

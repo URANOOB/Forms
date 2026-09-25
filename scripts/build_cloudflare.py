@@ -108,7 +108,12 @@ def main():
         "DJANGO_SECRET_KEY": "build-only-key-not-used-for-any-runtime-session-0123456789",
         "DATABASE_URL": "postgresql://build:build@127.0.0.1/build",
         "DJANGO_ALLOWED_HOSTS": "build.invalid",
-        "FILE_STORAGE": "local",
+        "FILE_STORAGE": "r2",
+        "EMAIL_NOTIFICATIONS_ENABLED": "False",
+        "R2_ACCESS_KEY_ID": "build",
+        "R2_SECRET_ACCESS_KEY": "build",
+        "R2_BUCKET_NAME": "build",
+        "R2_ENDPOINT": "https://build.invalid",
     }
     subprocess.run(
         ["uv", "run", "--locked", "python", "manage.py", "collectstatic", "--noinput"],

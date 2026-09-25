@@ -8,6 +8,8 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Max
 
+from apps.notifications.recipients import save_settings, settings_for
+
 from .appearance import validate_appearance
 from .catalog_import import MAX_OPTIONS
 from .conditions import FormSchema
@@ -77,6 +79,7 @@ def document(version):
         "title": version.title or form.name,
         "description": version.description if version.title else form.description,
         "response_summary": form.response_summary,
+        "notifications": settings_for(form),
         "appearance": version.appearance,
         "welcome": {
             **version.welcome,
@@ -321,6 +324,7 @@ def save_document(form_id, data, publish=False):
     form.response_summary = validate_response_summary(
         data.get("response_summary", form.response_summary), fields.values()
     )
+    save_settings(form, data.get("notifications", settings_for(form)), fields.values())
     form.name, form.description = title, description
     form.save(update_fields=["name", "description", "response_summary", "updated_at"])
     if publish or form.status in {Form.Status.PUBLISHED, Form.Status.PAUSED}:

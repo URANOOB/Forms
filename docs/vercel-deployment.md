@@ -38,6 +38,10 @@ los estáticos mediante `collectstatic`; los documentos privados permanecen en R
 `vercel.json` incluye explícitamente las plantillas, porque el empaquetador de
 Python excluye por defecto cualquier carpeta llamada `public`.
 El build no debe ejecutar migraciones ni crear datos de demostración.
+Producción se niega a iniciar si `FILE_STORAGE` falta o no es `r2`.
+Aplicar las migraciones antes de activar una nueva versión. El
+[seguimiento de auditoría](auditoria-seguimiento.md) detalla los límites de solicitudes
+y los comandos diarios de limpieza de contadores y reintento de archivos purgados.
 
 Usar el preset Django y el directorio raíz del repositorio. Eliminar cualquier
 comando de build o deploy de Wrangler que se haya copiado a los ajustes de Vercel.

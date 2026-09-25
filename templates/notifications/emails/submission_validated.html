@@ -1,0 +1,5 @@
+{% extends "notifications/emails/base.html" %}{% block message %}
+<h1 style="font-size:24px">Tu solicitud fue aprobada</h1>
+<p>Tu solicitud para <strong>{{ notification.form_name }}</strong> fue revisada y aprobada correctamente.</p>
+<p>Referencia: #{{ short_id }}.</p>
+{% endblock %}

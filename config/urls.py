@@ -1,5 +1,5 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from apps.accounts.platform import platform_activity, platform_search
 from apps.forms.builder_views import form_image
@@ -24,6 +24,7 @@ urlpatterns = [
         name="platform_activity",
     ),
     path("admin/", admin.site.urls),
+    path("webhooks/", include("apps.notifications.urls")),
     path("f/enviado/", thanks, name="submission_thanks"),
     path("f/<uuid:form_id>/", public_form, name="public_form"),
     path("f/<slug:workspace_slug>/<slug:slug>/", public_form, name="legacy_public_form"),

@@ -38,7 +38,8 @@ jobs:
           apps.forms.tests.browser_gallery
           apps.accounts.tests.browser_dashboard
           apps.submissions.tests.browser_detail
-          apps.submissions.tests.browser_review --noinput
+          apps.submissions.tests.browser_review
+          apps.notifications.tests.browser_emails --noinput
       - run: uv run --with playwright python apps/forms/tests/browser_catalog_import.py
       - run: uv run python manage.py collectstatic --noinput
   worker-build:

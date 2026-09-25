@@ -153,7 +153,12 @@ def recent_activity(start, now):
             }
         )
     for item in within(
-        SubmissionReview.objects.select_related("submission__form"), "created_at", start, now
+        SubmissionReview.objects.filter(submission__deleted_at__isnull=True).select_related(
+            "submission__form"
+        ),
+        "created_at",
+        start,
+        now,
     ).order_by("-created_at", "-pk")[:12]:
         events.append(
             {
@@ -169,7 +174,12 @@ def recent_activity(start, now):
             }
         )
     for item in within(
-        SubmissionFile.objects.select_related("answer__submission__form"), "uploaded_at", start, now
+        SubmissionFile.objects.filter(answer__submission__deleted_at__isnull=True).select_related(
+            "answer__submission__form"
+        ),
+        "uploaded_at",
+        start,
+        now,
     ).order_by("-uploaded_at", "-pk")[:12]:
         events.append(
             {

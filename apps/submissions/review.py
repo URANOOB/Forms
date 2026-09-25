@@ -111,4 +111,7 @@ def record_review(submission, status, note, actor):
         }[status],
         description=note,
     )
+    from apps.notifications.services import queue_notification
+
+    queue_notification(submission, review)
     return review

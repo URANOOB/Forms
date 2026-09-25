@@ -17,7 +17,9 @@ from .models import ActivityReceipt, ReportDownload, User
 
 def shell_context(request):
     name = getattr(request.resolver_match, "url_name", "") or ""
-    if name == "index":
+    if name.startswith("notifications_emailnotification"):
+        section = "Correos"
+    elif name == "index":
         section = "Panel general"
     elif name.startswith("forms_form_builder") or name == "forms_form_add":
         section = "Editor de formularios"
