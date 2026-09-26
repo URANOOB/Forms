@@ -8,7 +8,7 @@ conserva por error la configuración local o experimental de Workers.
 Se respeta únicamente la configuración temporal `_vercel_collectstatic_settings`
 que genera el builder para publicar los estáticos en su CDN.
 Los dominios exactos que Vercel proporciona en `VERCEL_URL` y
-`VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
+`VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
 conservando los dominios propios configurados sin aceptar `*.vercel.app`.
 
 Los enlaces de Unfold se resuelven durante las peticiones, para que la detección
@@ -38,6 +38,10 @@ los estáticos mediante `collectstatic`; los documentos privados permanecen en R
 `vercel.json` incluye explícitamente las plantillas, porque el empaquetador de
 Python excluye por defecto cualquier carpeta llamada `public`.
 El build no debe ejecutar migraciones ni crear datos de demostración.
+Producción se niega a iniciar si `FILE_STORAGE` falta o no es `r2`.
+Aplicar las migraciones antes de activar una nueva versión. El
+[seguimiento de auditoría](auditoria-seguimiento.md) detalla los límites de solicitudes
+y los comandos diarios de limpieza de contadores y reintento de archivos purgados.
 
 Usar el preset Django y el directorio raíz del repositorio. Eliminar cualquier
 comando de build o deploy de Wrangler que se haya copiado a los ajustes de Vercel.

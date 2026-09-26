@@ -1,14 +1,12 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/gallery.css' %}?v=gallery-polish-3">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/gallery.css' %}?v=blue-palette-20260926-2">{% endblock %}
 {% block extrahead %}{{ block.super }}<script src="{% static 'forms/gallery.js' %}?v=gallery-polish-3" defer></script>{% endblock %}
-{% block header %}{% endblock %}
 {% block content %}
 <div class="forms-gallery">
     <section class="recent-zone gallery-inner" aria-labelledby="recent-heading">
         <header class="gallery-heading">
             <div class="gallery-heading-title">
-                {% if is_nav_sidebar_enabled and not is_popup %}<button type="button" class="gallery-navigation" x-on:click="sidebarToggle()" aria-label="Abrir o cerrar navegación"><span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span></button>{% endif %}
                 <div><h1 id="recent-heading">Formularios</h1><p>Administra, publica y revisa tus formularios.</p></div>
             </div>
             <div class="gallery-heading-actions">{% if has_add_permission %}<a class="create-form-button" href="{% url 'admin:forms_form_add' %}"><span class="material-symbols-outlined" aria-hidden="true">add</span>Crear formulario</a>{% endif %}{% include "unfold/helpers/userlinks.html" %}</div>

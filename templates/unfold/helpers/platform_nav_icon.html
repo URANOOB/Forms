@@ -1,0 +1,17 @@
+<span class="platform-nav-tile" data-nav-icon="{{ item.icon }}" aria-hidden="true">
+<svg class="platform-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+    {% if item.icon == 'space_dashboard' %}
+        <path d="m3 10 9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z" fill="currentColor" stroke="none"/>
+    {% elif item.icon == 'dynamic_form' %}
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="currentColor" stroke="none"/><path d="M14 3v5h5M8 13h8M8 17h5" stroke="white" stroke-width="1.5"/>
+    {% elif item.icon == 'inbox' %}
+        <path d="m5 4-3 10v6h20v-6L19 4z" fill="currentColor" fill-opacity=".15"/><path d="m5 4-3 10v6h20v-6L19 4z"/><path d="M2 13h5l3 4h4l3-4h5v7H2z" fill="currentColor" stroke="none"/>
+    {% elif item.icon == 'analytics' %}
+        <rect x="3" y="12" width="5" height="10" rx="2" fill="currentColor" stroke="none"/><rect x="10" y="7" width="5" height="15" rx="2" fill="currentColor" stroke="none"/><rect x="17" y="2" width="5" height="20" rx="2" fill="currentColor" stroke="none"/>
+    {% elif item.icon == 'mail' %}
+        <rect x="2" y="4" width="20" height="16" rx="3" fill="currentColor" stroke="none"/><path d="m3 6 9 7 9-7" stroke="white" stroke-width="1.7"/>
+    {% elif item.icon == 'manage_accounts' %}
+        <circle cx="9" cy="7" r="4" fill="currentColor" stroke="none"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M17 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 3 5v2" stroke-width="2.8"/>
+    {% endif %}
+</svg>
+</span>

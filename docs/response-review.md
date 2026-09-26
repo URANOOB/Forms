@@ -27,6 +27,9 @@ conservan su estado y no se inventan eventos de revisión anteriores.
 El cambio de estado requiere el permiso existente `submissions.change_submission`.
 Se valida en el servidor, con CSRF y bloqueo de la respuesta dentro de una
 transacción. Una revisión desactualizada devuelve un conflicto y pide recargar.
+Mientras esté **En revisión** y tenga responsable, solo esa persona o un administrador
+puede modificar datos, notas, incidencias, estado o papelera. Los demás operadores
+pueden consultar la respuesta; los controles de edición no se muestran.
 
 La edición de datos se gestiona por separado. Cambiar los datos de una respuesta
 validada o rechazada la devuelve a **En revisión** y registra el motivo automático.

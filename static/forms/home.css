@@ -1,6 +1,6 @@
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #252331;
+  color: #232931;
   background: #fcfbf8;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
@@ -9,7 +9,7 @@
 [hidden] { display: none !important; }
 body { margin: 0; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; }
 a { color: inherit; text-decoration: none; touch-action: manipulation; }
-a:focus-visible, button:focus-visible { outline: 3px solid #9e90fb; outline-offset: 6px; }
+a:focus-visible, button:focus-visible { outline: 3px solid #90bdfb; outline-offset: 6px; }
 .skip-link { position: absolute; top: 12px; left: 12px; z-index: 5; transform: translateY(-180%); padding: 12px; background: #fff; }
 .skip-link:focus { transform: none; }
 .home-header, .home-main { width: min(1180px, calc(100% - 96px)); margin-inline: auto; }
@@ -17,7 +17,7 @@ a:focus-visible, button:focus-visible { outline: 3px solid #9e90fb; outline-offs
 .home-brand { display: inline-flex; align-items: center; width: 280px; max-width: 55%; min-width: 0; }
 .home-logo { display: block; width: 100%; height: auto; }
 .home-login { display: inline-flex; flex-shrink: 0; align-items: center; gap: 18px; padding-block: 12px; font-size: 13px; font-weight: 600; }
-.home-login:hover { color: #5943e9; }
+.home-login:hover { color: #2563eb; }
 .home-login span { font-size: 20px; }
 .home-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .home-hero { padding: 50px 0 76px; text-align: center; }
@@ -27,19 +27,19 @@ a:focus-visible, button:focus-visible { outline: 3px solid #9e90fb; outline-offs
 #home-animation { width: 100%; aspect-ratio: 1; }
 #home-animation svg { display: block; width: 100%; height: 100%; }
 .home-animation-toggle { padding: 10px 12px; margin-top: 4px; border: 0; border-radius: 6px; background: transparent; color: #76717f; font: inherit; font-size: 11px; cursor: pointer; touch-action: manipulation; }
-.home-animation-toggle:hover { background: #f0edfb; color: #5943e9; }
+.home-animation-toggle:hover { background: #edf3fb; color: #2563eb; }
 h1 { margin: 0; font-size: clamp(40px, 4.5vw, 62px); font-weight: 650; line-height: 1.1; letter-spacing: -3px; }
-h1 > span { color: #5943e9; }
+h1 > span { color: #2563eb; }
 .hero-description { max-width: 385px; margin: 25px auto 30px; color: #6f6b79; font-size: 16px; line-height: 1.8; }
-.home-primary { display: inline-flex; align-items: center; justify-content: center; gap: 28px; min-height: 50px; padding: 14px 22px; border-radius: 8px; background: #5943e9; color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 5px 12px #5943e91a; }
-.home-primary:hover { background: #4732cf; }
+.home-primary { display: inline-flex; align-items: center; justify-content: center; gap: 28px; min-height: 50px; padding: 14px 22px; border-radius: 8px; background: #2563eb; color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 5px 12px #2563eb1a; }
+.home-primary:hover { background: #3273cf; }
 .home-primary > span { font-size: 21px; line-height: 1; }
 .hero-note { margin: 16px 0 0; font-size: 11px; line-height: 1.6; color: #76717f; }
 .home-credit { padding: 4px 24px 18px; }
 .raccoon-track { --mascot-width: 236px; --mascot-duration: 26s; position: relative; height: 112px; }
-.raccoon-walker { position: absolute; left: 0; bottom: 0; width: var(--mascot-width); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 5px; border: 0; border-radius: 10px; background: transparent; color: #655d7a; font: inherit; cursor: pointer; touch-action: manipulation; animation: raccoon-stroll var(--mascot-duration) linear infinite; }
-.raccoon-bubble { position: relative; padding: 9px 12px; border: 1px solid #e6e0f2; border-radius: 12px; background: #fff; font-size: 11px; line-height: 1.4; white-space: nowrap; box-shadow: 0 3px 10px #30274405; }
-.raccoon-bubble::after { content: ""; position: absolute; bottom: -5px; left: calc(50% - 4px); width: 8px; height: 8px; border-right: 1px solid #e6e0f2; border-bottom: 1px solid #e6e0f2; background: #fff; transform: rotate(45deg); }
+.raccoon-walker { position: absolute; left: 0; bottom: 0; width: var(--mascot-width); display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 5px; border: 0; border-radius: 10px; background: transparent; color: #5d697a; font: inherit; cursor: pointer; touch-action: manipulation; animation: raccoon-stroll var(--mascot-duration) linear infinite; }
+.raccoon-bubble { position: relative; padding: 9px 12px; border: 1px solid #e0e8f2; border-radius: 12px; background: #fff; font-size: 11px; line-height: 1.4; white-space: nowrap; box-shadow: 0 3px 10px #27334405; }
+.raccoon-bubble::after { content: ""; position: absolute; bottom: -5px; left: calc(50% - 4px); width: 8px; height: 8px; border-right: 1px solid #e0e8f2; border-bottom: 1px solid #e0e8f2; background: #fff; transform: rotate(45deg); }
 .raccoon-sprite { display: block; width: 112px; animation: raccoon-turn var(--mascot-duration) steps(1, end) infinite; }
 .raccoon-sprite img, .raccoon-sprite canvas { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 .raccoon-walker.is-paused, .raccoon-walker.is-paused .raccoon-sprite { animation-play-state: paused; }

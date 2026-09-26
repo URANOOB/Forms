@@ -37,8 +37,8 @@ supuestas. Aplicar con `uv run python manage.py migrate`.
 
 ## Infraestructura
 
-Se mantienen dos tarjetas para superusuarios: **Base de datos** y **Archivos**, con
-proveedor, uso, disponible o margen de referencia, capacidad y hora de consulta.
+Se muestran tres tarjetas para superusuarios: **Base de datos**, **Archivos** y
+**Correos**, con proveedor, uso, disponible o margen de referencia, límites y hora de consulta.
 Se utiliza el entorno conectado: `.env` sigue mostrando almacenamiento local;
 `uv run --env-file .env.supabase python manage.py runserver` usa Supabase y R2.
 El entorno local no se presenta como si fuera la infraestructura remota.
@@ -73,7 +73,32 @@ Las unidades mostradas son decimales (MB = 1.000.000 bytes, GB = 1.000.000.000),
 para coincidir con las capacidades configuradas, sin etiquetar MiB como MB.
 Si no hay capacidad conocida no se inventa un disponible ni un porcentaje.
 
-Las lecturas completas se almacenan en caché cinco minutos, separadas por base,
+La tarjeta **Correos** consulta `GET https://api.resend.com/usage` desde el cliente
+centralizado de Resend. Muestra el consumo, límite, saldo, porcentaje, enviados,
+recibidos y próxima renovación para las cuotas diaria y mensual de toda la cuenta,
+incluidos envíos de otras aplicaciones. Usa `used` del proveedor para calcular el
+saldo; no estima el consumo a partir de las notificaciones locales ni fija las
+cuotas del plan Free. El margen de envío para hoy es el menor saldo entre ambas
+cuotas. Si Resend devuelve `null` en el límite diario, muestra **Sin límite diario**
+y usa el saldo mensual. En planes de pago, ese saldo representa la cuota incluida;
+Resend puede permitir sobreconsumo con cargo. Se avisa al consumir el 80 % o más.
+Los filtros del panel no cambian estos períodos y las fechas de renovación vienen
+del proveedor, mostradas en la zona horaria de la aplicación.
+
+Se utiliza `EMAIL_API_KEY` o, si está definida, `RESEND_USAGE_API_KEY`: una clave de
+la **misma cuenta** con permisos para consultar el consumo. Esto permite mantener
+una clave restringida para enviar. La clave de consulta no modifica la configuración
+global del SDK de envío. No hace falta activar `EMAIL_NOTIFICATIONS_ENABLED` para
+consultar las métricas. Sin clave, con permisos insuficientes, ante fallos de red
+o datos incompletos se muestra **No disponible**, nunca ceros o límites supuestos.
+La consulta tiene timeout de cinco segundos y no envía correos. Se almacena por
+separado durante cinco minutos (30 segundos en errores), aislada por un hash de
+la clave y sin conservar credenciales ni respuestas completas. La caché no se
+reutiliza después de la próxima renovación indicada por Resend.
+
+Fuente: [Resend Retrieve Usage](https://resend.com/docs/api-reference/usage/retrieve-usage).
+
+Las lecturas completas de almacenamiento se almacenan en caché cinco minutos, separadas por base,
 bucket y capacidades. Los errores se guardan solo 30 segundos. Las llamadas a R2
 tienen tiempos de espera acotados y un presupuesto de enumeración de diez segundos;
 si fallan o se interrumpen, no se presenta el total parcial como completo ni como cero.

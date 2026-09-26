@@ -1,0 +1,44 @@
+/* Public responses keep each form's chosen accent, background and typography. */
+.public-form-page { --ink: #1d2239; --muted: #48536f; --line: #e5e5f2; font-family: var(--form-text-font, Inter, sans-serif); }
+.public-form-page .page.form-layout:not(.showing-welcome) { max-width: 1160px; }
+.public-form-page .form-sheet { position: relative; overflow: hidden; border: 1px solid #ffffffd9; border-radius: 26px; box-shadow: 0 24px 65px #30296818; }
+.public-form-page .form-sheet::before { content: ""; position: absolute; inset: 0 0 auto; height: 7px; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #4268d8)); }
+.public-form-page .form-sheet .intro { padding-bottom: 32px; margin-bottom: 32px; }
+.public-form-page .form-sheet h1 { font-weight: 700; letter-spacing: -.035em; }
+.public-form-page .form-sheet .section-intro { margin-bottom: 22px; }
+.public-form-page .form-sheet h2 { color: color-mix(in srgb, var(--accent) 30%, #202124); font-weight: 650; }
+.public-form-page .rating-symbol { color: #596579; }
+.public-form-page .rating-options:has(.scale-option input:checked) .scale-option:has(~ .scale-option input:checked) .rating-symbol,
+.public-form-page .rating-options .scale-option:has(input:checked) .rating-symbol { color: color-mix(in srgb, var(--accent) 30%, #202124); }
+.public-form-page .confirmation-note { color: #48536f; }
+.public-form-page .form-sheet .field { margin-bottom: 16px; padding: clamp(18px, 3vw, 26px); border: 1px solid var(--line); border-radius: 17px; background: #f9f9fe; }
+.public-form-page .form-sheet .field:last-child { margin-bottom: 0; }
+.public-form-page .form-sheet .field > label, .public-form-page .form-sheet .field legend { font-weight: 600; }
+.public-form-page .form-sheet input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), .public-form-page .form-sheet select, .public-form-page .form-sheet textarea { border-color: #dcdfee; border-radius: 11px; background: #fff; }
+.public-form-page .form-sheet :is(input, select, textarea):focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 30%, transparent); outline-offset: 1px; }
+.public-form-page .form-sheet .section-navigation button { min-height: 48px; border-radius: 11px; font-weight: 650; }
+.public-form-page .form-sheet .section-navigation button:not(.secondary), .public-form-page .welcome-card button { background: color-mix(in srgb, var(--accent) 18%, white); color: #1d2239; }
+.public-form-page .form-sheet .section-navigation button:not(.secondary):hover, .public-form-page .welcome-card button:hover { background: color-mix(in srgb, var(--accent) 28%, white); }
+.public-form-page .section-navigation .secondary:hover { background: #f0effc; }
+.public-form-page .section-number, .public-form-page .scale-option:has(input:checked), .public-form-page .information { background: color-mix(in srgb, var(--accent) 9%, white); }
+.public-form-page .answer-grid tbody tr:nth-child(odd) { background: #f8f8fe; }
+.public-form-page .success-icon { background: color-mix(in srgb, var(--accent) 13%, white); }
+.public-form-page :is(button, a):focus-visible { outline-color: var(--accent); }
+.public-form-page .form-sheet .submit-panel { margin-top: 30px; }
+.public-form-page .welcome-screen { border-radius: 26px; box-shadow: 0 24px 65px #30296820; }
+.public-form-page .welcome-screen:not(:has(.welcome-background)) { background: linear-gradient(125deg, #7658dd, #5a5edc 52%, #4268d8); }
+.public-form-page .welcome-card { border-radius: 22px; box-shadow: 0 22px 55px #20247528; }
+.public-form-page .welcome-card h1 { font-weight: 700; }
+.public-form-page .welcome-card button { min-height: 48px; border-radius: 11px; font-weight: 650; }
+.public-form-page .success-card { border-radius: 24px; box-shadow: 0 20px 50px #30296816; }
+.public-form-page .confirmation-card { border-radius: 26px; box-shadow: 0 24px 60px #30296818; }
+.public-form-page .confirmation-home { border-radius: 11px; font-weight: 650; }
+.public-form-page .confirmation-emblem:has(#confirmation-animation:not([hidden])) { width: 170px; height: 145px; border: 0; background: transparent; }
+.public-form-page .confirmation-emblem:has(#confirmation-animation:not([hidden])) .confirmation-fallback { display: none; }
+.public-form-page #confirmation-animation { width: 170px; height: 145px; }
+.public-form-page #confirmation-animation svg { width: 100%; height: 100%; }
+@media (max-width: 640px) {
+  .public-form-page .form-sheet { border-radius: 19px; }
+  .public-form-page .form-sheet .field { padding: 18px; }
+  .public-form-page .welcome-screen, .public-form-page .confirmation-card { border-radius: 19px; }
+}

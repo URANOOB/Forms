@@ -1,0 +1,10 @@
+<div class="grid-scroll" id="{{ widget.attrs.id }}" tabindex="0" role="region" aria-label="Cuadrícula de respuestas; desplázate horizontalmente para ver las columnas">
+<table class="answer-grid">
+    <thead><tr><th scope="col"><span class="visually-hidden">Pregunta</span></th>{% for column in widget.columns %}<th scope="col">{{ column.label }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in widget.rows %}
+        <tr data-grid-row="{{ row.id }}"><th scope="row">{{ row.label }}</th>
+        {% for cell in row.cells %}<td><label><span class="visually-hidden">{{ row.label }}: {{ cell.label }}</span><input id="{{ widget.attrs.id }}_{{ row.id }}_{{ cell.id }}" type="{{ widget.input_type }}" name="{{ row.name }}" value="{{ cell.id }}" {% if cell.selected %}checked{% endif %}{% include "public/widgets/accessibility_attrs.html" %}></label></td>{% endfor %}
+        </tr>
+    {% endfor %}</tbody>
+</table>
+</div>

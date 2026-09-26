@@ -2,6 +2,11 @@ from django.core.exceptions import ImproperlyConfigured
 
 from .base import *  # noqa: F403
 
+if os.environ.get("FILE_STORAGE", "").strip().lower() != "r2":  # noqa: F405
+    raise ImproperlyConfigured(
+        "Producción requiere FILE_STORAGE=r2; no se permite almacenamiento local."
+    )
+
 if os.environ.get("VERCEL") == "1":  # noqa: F405
     ASGI_APPLICATION = None  # Vercel's Django detector prefers ASGI over WSGI.
 

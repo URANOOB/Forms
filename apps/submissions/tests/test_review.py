@@ -154,7 +154,7 @@ class ReviewTests(TestCase):
                 for _ in range(14)
             ]
         )
-        response = self.client.get(self.list_url)
+        response = self.client.get(self.list_url, {"view": "board"})
         self.assertEqual(response.status_code, 200)
         columns = response.context["response_columns"]
         self.assertEqual([column["total"] for column in columns], [15, 14, 14, 14])
@@ -248,14 +248,16 @@ class ReviewTests(TestCase):
         self.submission.reviews.update(actor=None)
         self.assertContains(self.client.get(self.detail_url), "Usuario eliminado")
 
-    def test_deleting_response_cleans_its_review_history(self):
+    def test_trashing_response_preserves_its_review_history(self):
         self.review("UNDER_REVIEW")
         response = self.client.post(
             reverse("admin:submissions_submission_remove", args=[self.submission.pk]),
             {"confirm_delete": "yes"},
         )
         self.assertEqual(response.status_code, 302)
-        self.assertFalse(SubmissionReview.objects.exists())
+        self.assertTrue(SubmissionReview.objects.exists())
+        self.assertFalse(Submission.objects.filter(pk=self.submission.pk).exists())
+        self.assertTrue(Submission.all_objects.filter(pk=self.submission.pk).exists())
 
 
 class ConcurrentReviewTests(TransactionTestCase):

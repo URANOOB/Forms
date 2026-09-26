@@ -4,6 +4,9 @@
   const welcome = document.getElementById("welcome-screen");
   const content = document.getElementById("form-content");
   const page = document.querySelector("main.page");
+  const accessible = document.body.hasAttribute("data-public-accessibility");
+  const scrollBehavior = () => accessible && (window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    || document.body.dataset.publicMotion === "reduce") ? "auto" : "smooth";
   document.getElementById("welcome-start")?.addEventListener("click", () => {
     welcome.hidden = true;
     content.hidden = false;
@@ -11,19 +14,27 @@
     const heading = content.querySelector("h1");
     heading.setAttribute("tabindex", "-1");
     heading.focus({ preventScroll: true });
-    page.scrollIntoView({ behavior: "smooth", block: "start" });
+    page.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+    document.dispatchEvent(new CustomEvent("public:section-change"));
   });
   document.getElementById("welcome-back")?.addEventListener("click", () => {
     content.hidden = true;
     welcome.hidden = false;
     page.classList.add("showing-welcome");
     document.getElementById("welcome-start").focus({ preventScroll: true });
-    page.scrollIntoView({ behavior: "smooth", block: "start" });
+    page.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+    document.dispatchEvent(new CustomEvent("public:section-change"));
   });
   const empty = (value) =>
     value == null || value === "" || (typeof value === "object" && !Object.keys(value).length);
   const grids = new Set(["GRID_SINGLE", "GRID_MULTIPLE"]);
   const uploads = new Set(["FILE", "DOCUMENT"]);
+  const groupsByField = Object.fromEntries(schema.order.map((key) => [key, []]));
+  for (const group of schema.groups) {
+    for (const target of group.targets) groupsByField[target].push(group);
+  }
+  const keysBySection = Object.fromEntries(schema.sections.map((key) => [key, []]));
+  for (const key of schema.order) keysBySection[schema.fields[key].section].push(key);
   const retainedFiles = (container) => [...container.querySelectorAll("[data-stored-file]")].filter((input) => !input.checked);
   const compare = (value, operator, expected) => {
     switch (operator) {
@@ -105,7 +116,7 @@
       if (inputs[0].hasAttribute("max") && Number(value) > Number(inputs[0].max)) return null;
     }
     if (field.type === "NUMBER")
-      return value === "" || !Number.isFinite(Number(value))
+      return value === "" || !Number.isSafeInteger(Number(value))
         ? null
         : Number(value);
     return value;
@@ -121,14 +132,75 @@
   let current = null;
   let route = [];
   let states = {};
+  let visibleSignature = null;
+  const summary = document.getElementById("error-summary");
+  const errorGroups = accessible ? [...form.querySelectorAll("[data-input-errors]")].map((box) => {
+    const name = box.dataset.inputErrors;
+    const field = box.closest("[data-field]");
+    const inputs = [...field.querySelectorAll("input,select,textarea")].filter((input) =>
+      input.name === name || (input.name.startsWith(`${name}__`) && !input.hasAttribute("data-additional-text")));
+    return { box, field, inputs };
+  }) : [];
+
+  function errorLabel(group) {
+    const label = group.inputs[0]?.hasAttribute("data-additional-text")
+      ? group.inputs[0].labels?.[0] : group.field.querySelector("legend, label");
+    return label?.textContent.replace(/\s+/g, " ").trim() || "Respuesta";
+  }
+  function refreshSummary(focus = false) {
+    if (!accessible || !summary) return;
+    const links = summary.querySelector("[data-error-links]");
+    links.replaceChildren();
+    for (const group of errorGroups) {
+      if (group.field.hidden || group.inputs.every((input) => input.disabled)) continue;
+      for (const error of group.box.querySelectorAll("li")) {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = `#${group.inputs[0]?.id || group.field.id}`;
+        link.textContent = `${errorLabel(group)}: ${error.textContent}`;
+        item.append(link);
+        links.append(item);
+      }
+    }
+    summary.hidden = !links.children.length && !summary.querySelector(".errorlist");
+    if (focus && !summary.hidden) summary.focus();
+  }
+  function showErrors(group) {
+    const invalid = group.inputs.filter((input) => !input.disabled && !input.validity.valid);
+    group.box.replaceChildren();
+    for (const input of group.inputs) {
+      if (invalid.length) input.setAttribute("aria-invalid", "true");
+      else input.removeAttribute("aria-invalid");
+    }
+    if (!invalid.length) return;
+    const list = document.createElement("ul");
+    list.className = "errorlist";
+    const messages = new Set(invalid.map((input) => {
+      const validity = input.validity;
+      let message = input.validationMessage;
+      if (!validity.customError) {
+        if (validity.valueMissing) message = "Complete este campo obligatorio.";
+        else if (validity.typeMismatch && input.type === "email") message = "Ingrese un correo electrónico válido, por ejemplo nombre@dominio.com.";
+        else if (validity.tooShort) message = `Ingrese al menos ${input.minLength} caracteres.`;
+        else if (validity.tooLong) message = `Use como máximo ${input.maxLength} caracteres.`;
+        else if (validity.badInput) message = "Ingrese un valor válido.";
+      }
+      const row = input.closest("[data-grid-row]");
+      return row ? `${row.querySelector("th").textContent}: ${message}` : message;
+    }));
+    for (const message of messages) {
+      const item = document.createElement("li");
+      item.textContent = message;
+      list.append(item);
+    }
+    group.box.append(list);
+  }
 
   function evaluate(values, allowed) {
     values = { ...values };
     const states = {};
     for (const key of schema.order) {
-      const groups = schema.groups.filter((group) =>
-        group.targets.includes(key),
-      );
+      const groups = groupsByField[key];
       const visibility = Object.fromEntries(
         ["field", "section"].map((scope) => [
           scope,
@@ -173,13 +245,14 @@
   }
 
   function update() {
+    const previouslyFocused = document.activeElement;
     const values = Object.fromEntries(schema.order.map((key) => [key, valueFor(key)]));
     const previousRoute = route;
     route = [];
     let candidate = schema.sections[0];
     while (candidate) {
       const candidateStates = evaluate(values, new Set([...route, candidate]));
-      const keys = schema.order.filter((key) => schema.fields[key].section === candidate);
+      const keys = keysBySection[candidate];
       const visible = !keys.length || keys.some((key) => candidateStates[key].visible);
       if (visible) route.push(candidate);
       candidate = schema.navigation[candidate][visible ? "next" : "following"];
@@ -247,7 +320,7 @@
           else if (schema.fields[key].type === "PHONE" && !/^[0-9]{6,25}$/.test(input.value)) error = "Ingrese un teléfono de 6 a 25 dígitos.";
           else if (schema.fields[key].type === "NUMBER") {
             const number = Number(input.value);
-            if (!Number.isFinite(number)) error = "Ingrese un número válido.";
+            if (!Number.isSafeInteger(number)) error = "El número máximo admitido es 9007199254740991. Para identificadores más largos, utiliza un campo de texto.";
             else if (input.hasAttribute("min") && number < Number(input.min)) error = `El valor mínimo permitido es ${input.min}.`;
             else if (input.hasAttribute("max") && number > Number(input.max)) error = `El valor máximo permitido es ${input.max}.`;
           }
@@ -279,6 +352,24 @@
       }
       const marker = container.querySelector("[data-required]");
       if (marker) marker.hidden = !required;
+      if (accessible) {
+        for (const input of inputs) {
+          if (input.type === "checkbox" || input.hasAttribute("data-stored-file")) continue;
+          input.setAttribute("aria-required", String(input.required));
+        }
+        // Checkbox groups require a choice, never every individual checkbox.
+        const legend = container.querySelector("legend");
+        if (legend) {
+          let description = legend.querySelector(".public-required-description");
+          if (!description) {
+            description = document.createElement("span");
+            description.className = "visually-hidden public-required-description";
+            legend.append(description);
+          }
+          description.textContent = required ? " (obligatorio)" : "";
+          marker?.setAttribute("aria-hidden", "true");
+        }
+      }
     }
     for (const [id, section] of Object.entries(sectionElements)) {
       section.hidden = id !== current;
@@ -288,21 +379,42 @@
     nextButton.hidden = index < 0 || index === route.length - 1;
     button.hidden = !nextButton.hidden;
     progress.hidden = !current;
-    progress.textContent = current ? `Sección ${schema.sections.indexOf(current) + 1} de ${schema.sections.length}` : "";
+    const progressText = current ? `Sección ${index + 1} de ${route.length}` : "";
+    if (progress.textContent !== progressText) progress.textContent = progressText;
     if (form.dataset.preview) button.textContent = "Finalizar vista previa";
+    if (accessible) {
+      const signature = (keysBySection[current] || []).filter((key) => states[key].visible).join(",");
+      if (visibleSignature !== null && signature !== visibleSignature) {
+        document.getElementById("condition-status").textContent = "Se actualizaron las preguntas disponibles en esta sección.";
+      }
+      visibleSignature = signature;
+      if (form.contains(previouslyFocused) && previouslyFocused.closest("[hidden]")) {
+        (sectionElements[current]?.querySelector("h2") || sectionElements[current])?.focus();
+      }
+      refreshSummary();
+    }
   }
 
   function goTo(id, focus = true) {
     current = id;
     status.textContent = "";
     update();
+    document.dispatchEvent(new CustomEvent("public:section-change"));
     if (!focus) return;
     const heading = sectionElements[current]?.querySelector("h2") || sectionElements[current];
     heading?.focus({ preventScroll: true });
-    (sectionElements[current] || form).scrollIntoView({ behavior: "smooth", block: "start" });
+    (sectionElements[current] || form).scrollIntoView({ behavior: scrollBehavior(), block: "start" });
   }
 
   function validateSection(id) {
+    if (accessible) {
+      const groups = errorGroups.filter((group) => group.field.closest("[data-section]").dataset.section === id);
+      groups.forEach(showErrors);
+      if (!groups.some((group) => group.box.querySelector("li"))) { refreshSummary(); return true; }
+      goTo(id, false);
+      refreshSummary(true);
+      return false;
+    }
     const invalid = [...sectionElements[id].querySelectorAll("input,select,textarea")]
       .find((input) => !input.disabled && !input.checkValidity());
     if (!invalid) return true;
@@ -312,11 +424,11 @@
     return false;
   }
   form.addEventListener("beforeinput", (event) => {
-    if (event.target.hasAttribute("data-digits-only") && event.inputType === "insertText" && event.data && /[^0-9]/.test(event.data)) event.preventDefault();
+    if (!accessible && event.target.hasAttribute("data-digits-only") && event.inputType === "insertText" && event.data && /[^0-9]/.test(event.data)) event.preventDefault();
   });
   form.addEventListener("input", (event) => {
     const input = event.target;
-    if (input.hasAttribute("data-digits-only")) {
+    if (!accessible && input.hasAttribute("data-digits-only")) {
       const original = input.value;
       const cleaned = original.replace(/[^0-9]/g, "");
       if (original !== cleaned) {
@@ -328,6 +440,13 @@
     update();
   });
   form.addEventListener("change", update);
+  for (const eventName of ["input", "change"]) form.addEventListener(eventName, (event) => {
+    if (!accessible) return;
+    for (const group of errorGroups) {
+      if (group.inputs.includes(event.target) && group.box.textContent.trim()) showErrors(group);
+    }
+    refreshSummary();
+  });
   nextButton.addEventListener("click", () => {
     update();
     if (current && validateSection(current)) goTo(route[route.indexOf(current) + 1]);
@@ -337,6 +456,7 @@
     goTo(route[route.indexOf(current) - 1]);
   });
   form.addEventListener("submit", (event) => {
+    if (accessible) summary?.querySelector("[data-client-form-error]")?.remove();
     update();
     if (!nextButton.hidden) {
       event.preventDefault();
@@ -346,6 +466,29 @@
     for (const id of route) {
       if (!validateSection(id)) {
         event.preventDefault();
+        return;
+      }
+    }
+    if (schema.max_submission_bytes) {
+      const encoder = new TextEncoder();
+      let size = 0;
+      for (const [name, value] of new FormData(form)) {
+        size += encoder.encode(name).length + 1024 +
+          (value instanceof File ? value.size + encoder.encode(value.name).length : encoder.encode(value).length);
+      }
+      if (size > schema.max_submission_bytes) {
+        event.preventDefault();
+        const message = `La respuesta completa, incluidos los archivos, admite hasta ${schema.max_submission_bytes / 1000000} MB. Reduce el tamaño de los adjuntos.`;
+        if (accessible && summary) {
+          const errors = document.createElement("ul");
+          errors.className = "errorlist";
+          errors.dataset.clientFormError = "";
+          const item = document.createElement("li");
+          item.textContent = message;
+          errors.append(item);
+          summary.append(errors);
+          refreshSummary(true);
+        } else status.textContent = message;
         return;
       }
     }
@@ -376,9 +519,9 @@
     if (section && route.includes(section.dataset.section)) {
       event.preventDefault();
       goTo(section.dataset.section, false);
-      target.focus();
+      (target.matches("input,select,textarea") ? target : target.querySelector("input,select,textarea") || target).focus();
       target.scrollIntoView({ block: "center" });
     }
   });
-  document.getElementById("error-summary")?.focus();
+  if (summary && !summary.hidden) summary.focus();
 })();

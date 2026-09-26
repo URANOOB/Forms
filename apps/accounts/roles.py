@@ -1,13 +1,14 @@
 from django.contrib.auth.models import Group, Permission
 
 ADMINISTRATOR = "Administrador"
-VIEWER = "Visor"
-ROLE_CHOICES = ((ADMINISTRATOR, ADMINISTRATOR), (VIEWER, VIEWER))
+OPERATOR = "Operador"
+ROLE_CHOICES = ((ADMINISTRATOR, ADMINISTRATOR), (OPERATOR, OPERATOR))
 LEGACY_ROLES = (
     "ADMIN",
     "MANAGER",
     "REVIEWER",
     "VIEWER",
+    "Visor",
     "Administrator",
     "Manager",
     "Reviewer",
@@ -18,12 +19,12 @@ SYSTEM_USERNAMES = ("seed-system", "seed-system-demo")
 
 def setup_role_groups():
     administrator, _ = Group.objects.get_or_create(name=ADMINISTRATOR)
-    viewer, _ = Group.objects.get_or_create(name=VIEWER)
+    operator, _ = Group.objects.get_or_create(name=OPERATOR)
     administrator.permissions.set(Permission.objects.all())
-    viewer.permissions.set(
+    operator.permissions.set(
         Permission.objects.filter(content_type__app_label__in=("forms", "submissions"))
     )
-    return administrator, viewer
+    return administrator, operator
 
 
 def assign_role(user, role):

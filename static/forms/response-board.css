@@ -1,17 +1,20 @@
 .responses-workspace, .response-workflow, .review-dialog, .response-action-menu {
   --review-ink: #202b40; --review-muted: #718096; --review-border: #e7eaf0;
-  --review-surface: #fff; --review-soft: #f8f9fb; --review-accent: #6941c6;
-  --review-accent-soft: #f3efff; color: var(--review-ink);
+  --review-surface: #fff; --review-soft: #f8f9fb; --review-accent: #2563eb;
+  --review-accent-soft: #eff6ff; color: var(--review-ink);
 }
 .dark :is(.responses-workspace, .response-workflow, .review-dialog, .response-action-menu) {
   --review-ink: #e5eaf2; --review-muted: #a1aec0; --review-border: #344155;
-  --review-surface: #182231; --review-soft: #131c29; --review-accent: #b7a4ff;
-  --review-accent-soft: #30274a;
+  --review-surface: #182231; --review-soft: #131c29; --review-accent: #93c5fd;
+  --review-accent-soft: #27364a;
 }
 .responses-workspace { min-width: 0; }
 .response-board-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 28px 0 22px; }
 .response-board-heading h1 { font-size: 25px; font-weight: 650; }
 .response-total { font-size: 13px; color: var(--review-muted); }
+.response-reports-link { display: inline-flex; align-items: center; gap: 7px; min-height: 46px; padding: 0 14px; border: 1px solid var(--review-border); border-radius: 8px; color: var(--review-accent); font-size: 13px; font-weight: 600; }
+.response-reports-link:hover { background: var(--review-accent-soft); }
+.response-reports-link .material-symbols-outlined { font-size: 19px; }
 .response-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding-bottom: 22px; border-bottom: 1px solid var(--review-border); }
 .response-search { display: flex; align-items: center; gap: 8px; min-width: 230px; flex: 1; height: 46px; padding: 0 12px; border: 1px solid var(--review-border); border-radius: 8px; background: var(--review-surface); }
 .response-search input { width: 100%; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--review-ink); font-size: 13px; }

@@ -46,7 +46,7 @@ class GalleryBrowserTests(StaticLiveServerTestCase):
                 slug=f"solicitud-{index}",
             )
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1600, "height": 1000})
             context.add_cookies(
                 [
@@ -125,8 +125,10 @@ class GalleryBrowserTests(StaticLiveServerTestCase):
             page.keyboard.press("Escape")
             expect(card.locator(".card-menu > summary")).to_be_focused()
             card.get_by_role("link", name="18 respuestas").click()
-            expect(page.get_by_role("heading", name="Respuestas", exact=True)).to_have_count(1)
-            expect(page.locator(".response-total")).to_have_text("18 respuestas")
+            expect(
+                page.get_by_role("heading", name="Respuestas recibidas", exact=True)
+            ).to_have_count(1)
+            expect(page.locator(".response-list-heading")).to_contain_text("18 respuestas")
             page.go_back()
             page.set_viewport_size({"width": 390, "height": 844})
             self.assertTrue(page.evaluate("document.documentElement.scrollWidth <= innerWidth"))

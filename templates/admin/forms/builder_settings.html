@@ -6,6 +6,15 @@
         <label for="settings-description">Descripción</label><textarea id="settings-description" data-form-setting="description" rows="4" maxlength="10000" placeholder="Descripción del formulario"></textarea>
         <p class="settings-hint">Guardar actualiza el formulario. Si está publicado, los cambios se muestran en su enlace público.</p>
     </section>
+    <section class="builder-settings-card" id="email-notification-settings">
+        <h3>Notificaciones por correo</h3>
+        <label><input type="checkbox" data-notification="notify_internal_on_submission"> Avisar cuando llegue una nueva respuesta</label>
+        <label><input type="checkbox" data-notification="notify_respondent_on_validated"> Avisar al respondiente cuando sea aprobada</label>
+        <label><input type="checkbox" data-notification="notify_respondent_on_rejected"> Avisar al respondiente cuando sea rechazada</label>
+        <label for="settings-respondent-email">Correo del respondiente</label>
+        <select id="settings-respondent-email" data-notification="respondent_email_stable_key"></select>
+        <p class="settings-hint">Configura quién recibe los avisos de nuevas respuestas en Correos → Destinatarios. Si no hay una lista configurada, se avisa al creador. En modo automático, los avisos al respondiente requieren un único campo de correo con un valor válido.</p>
+    </section>
     <section class="builder-settings-card" id="response-summary-settings">
         <h3>Identificación de respuestas</h3>
         <p class="settings-hint">Elige quién o qué identifica cada respuesta y hasta tres datos para las tarjetas y la tabla. Se aplica también a respuestas anteriores que contengan esos campos. Sin selección, se usan nombre, documento y otros identificadores reconocibles.</p>

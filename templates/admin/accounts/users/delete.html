@@ -1,0 +1,18 @@
+{% extends "admin/accounts/users/base.html" %}
+{% block users_content %}
+<a class="users-back" href="{% url 'admin:accounts_user_changelist' %}">← Volver a usuarios</a>
+<header class="users-heading"><div class="users-heading-title"><span class="material-symbols-outlined users-heading-icon" aria-hidden="true">person_remove</span><div><h1>{% if object %}Eliminar usuario{% else %}Eliminar usuarios{% endif %}</h1><p>Revisa las cuentas y los registros relacionados antes de continuar.</p></div></div></header>
+<section class="users-card users-form-card users-delete-card">
+    {% if perms_lacking %}<h2>No tienes permisos para eliminar estos registros</h2><ul>{{ perms_lacking|unordered_list }}</ul>
+    {% elif protected %}<h2>Esta cuenta tiene registros protegidos</h2><p>Puedes desactivar el usuario para impedir su acceso y conservar los registros asociados.</p><ul>{{ protected|unordered_list }}</ul>
+    {% else %}<h2>{% if object %}Vas a eliminar a {{ object.username }}{% else %}Vas a eliminar las cuentas seleccionadas{% endif %}</h2><p>Esta acción no se puede deshacer. También se eliminarán los registros relacionados que se indican a continuación.</p>
+        <div class="users-delete-summary"><h3>Registros afectados</h3>{% if object %}<ul>{{ deleted_objects|unordered_list }}</ul>{% else %}{% for objects in deletable_objects %}<ul>{{ objects|unordered_list }}</ul>{% endfor %}{% endif %}</div>
+    {% endif %}
+    <div class="users-form-actions"><div>{% if object %}<a class="users-button" href="{% url 'admin:accounts_user_change' object.pk %}">Volver al usuario</a>{% else %}<a class="users-button" href="{% url 'admin:accounts_user_changelist' %}">Cancelar</a>{% endif %}</div>
+    {% if not protected and not perms_lacking %}<form method="post">{% csrf_token %}<input type="hidden" name="post" value="yes">
+        {% if not object %}{% for person in queryset %}<input type="hidden" name="{{ action_checkbox_name }}" value="{{ person.pk }}">{% endfor %}<input type="hidden" name="action" value="delete_selected">{% endif %}
+        {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}{% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+        <button type="submit" class="users-button users-danger">Confirmar eliminación</button>
+    </form>{% endif %}</div>
+</section>
+{% endblock %}

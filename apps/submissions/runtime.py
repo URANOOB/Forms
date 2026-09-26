@@ -1,6 +1,7 @@
 import uuid
 
 from django import forms
+from django.conf import settings
 from django.core import signing
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -13,6 +14,14 @@ from apps.forms.question_fields import FILE_TYPES, AttachmentField, GridField
 from .models import Submission, SubmissionAnswer, SubmissionFile
 
 TOKEN_SALT = "public-form-submission"
+
+
+def multi_items(data):
+    if hasattr(data, "lists"):
+        return data.lists()
+    return (
+        (key, value if isinstance(value, (list, tuple)) else [value]) for key, value in data.items()
+    )
 
 
 def new_token(form):
@@ -53,6 +62,25 @@ class PublicResponseForm(forms.Form):
 
     def clean(self):
         cleaned = super().clean()
+        limit = settings.SUBMISSION_MAX_BYTES
+        if limit:
+            # Count multipart fields too: several individually valid files can exceed
+            # the platform limit together. Retained staff attachments aren't uploaded.
+            size = sum(
+                len(name.encode("utf-8")) + len(str(value).encode("utf-8")) + 1024
+                for name, values in multi_items(self.data)
+                for value in values
+            ) + sum(
+                upload.size + len(name.encode("utf-8")) + len(upload.name.encode("utf-8")) + 1024
+                for name, uploads in multi_items(self.files)
+                for upload in uploads
+            )
+            if size > limit:
+                self.add_error(
+                    None,
+                    f"La respuesta completa, incluidos los archivos, admite hasta "
+                    f"{limit / 1_000_000:g} MB. Reduce el tamaño de los adjuntos.",
+                )
         values = {
             key: json_value(cleaned.get(f"answer_{field.stable_key}"))
             for key, field in self.schema.by_id.items()
@@ -163,7 +191,7 @@ def save_response(form_id, version_id, nonce, answers):
                 raise ValidationError(
                     "Este formulario ya no recibe respuestas en esta versión. Recarga la página."
                 )
-            existing = Submission.objects.filter(idempotency_key=nonce).first()
+            existing = Submission.all_objects.filter(idempotency_key=nonce).first()
             if existing:
                 if existing.form_id != form.pk or existing.form_version_id != version_id:
                     raise ValidationError("El envío no corresponde a este formulario.")
@@ -174,10 +202,11 @@ def save_response(form_id, version_id, nonce, answers):
             submission = Submission.objects.create(
                 form=form, form_version_id=version_id, idempotency_key=nonce
             )
+            scalar_answers = []
             for key, value in answers.items():
                 if allowed[key] not in FILE_TYPES:
-                    SubmissionAnswer.objects.create(
-                        submission=submission, field_id=key, value=value
+                    scalar_answers.append(
+                        SubmissionAnswer(submission=submission, field_id=key, value=value)
                     )
                     continue
                 answer = SubmissionAnswer.objects.create(
@@ -202,6 +231,10 @@ def save_response(form_id, version_id, nonce, answers):
                     )
                 answer.value = {"files": metadata}
                 answer.save(update_fields=["value"])
+            SubmissionAnswer.objects.bulk_create(scalar_answers)
+            from apps.notifications.services import queue_notification
+
+            queue_notification(submission)
             return submission
     except Exception:
         # File storage is not transactional; remove writes if the database rolls back.

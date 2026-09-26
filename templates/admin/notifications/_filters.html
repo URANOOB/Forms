@@ -1,0 +1,5 @@
+<form method="get" class="email-filters" aria-label="Filtros de correos">
+    {% for field in filters %}<div class="email-filter"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<span role="alert">{{ field.errors|striptags }}</span>{% endif %}</div>{% endfor %}
+    <button class="email-button email-primary" type="submit">Aplicar filtros</button>
+    <a class="email-button" href="{% url 'admin:notifications_emailnotification_changelist' %}">Limpiar filtros</a>
+</form>

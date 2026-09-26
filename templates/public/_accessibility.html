@@ -1,0 +1,62 @@
+<div class="public-accessibility-toolbar" hidden id="public-accessibility-toolbar">
+    <button type="button" id="accessibility-open" aria-haspopup="dialog" aria-controls="accessibility-panel">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><path d="M4 9h16m-8-1v7m0 0-4 6m4-6 4 6"/></svg>
+        Accesibilidad
+    </button>
+    <button type="button" id="accessibility-stop-toolbar" hidden>Detener lectura</button>
+</div>
+<dialog id="accessibility-panel" class="public-accessibility-panel" aria-labelledby="accessibility-title" aria-describedby="accessibility-description">
+    <div class="accessibility-panel-heading">
+        <h2 id="accessibility-title">Opciones de accesibilidad</h2>
+        <button type="button" id="accessibility-close" aria-label="Cerrar opciones de accesibilidad" autofocus>×</button>
+    </div>
+    <p id="accessibility-description">Personaliza la lectura y la presentación de este formulario.</p>
+    <fieldset class="accessibility-option">
+        <legend>Tamaño de texto</legend>
+        <p>Ajusta el texto de las vistas públicas de formularios.</p>
+        <div class="accessibility-choices">
+            <label><input type="radio" name="public-text-size" value="normal" checked> Normal</label>
+            <label><input type="radio" name="public-text-size" value="large"> Grande</label>
+            <label><input type="radio" name="public-text-size" value="extra"> Extra grande</label>
+        </div>
+    </fieldset>
+    <fieldset class="accessibility-option">
+        <legend>Contraste</legend>
+        <p>Refuerza la diferencia entre texto y fondo.</p>
+        <div class="accessibility-choices">
+            <label><input type="radio" name="public-contrast" value="normal" checked> Normal</label>
+            <label><input type="radio" name="public-contrast" value="high"> Alto contraste</label>
+        </div>
+    </fieldset>
+    <fieldset class="accessibility-option">
+        <legend>Espaciado</legend>
+        <p>Separa líneas, palabras y preguntas.</p>
+        <div class="accessibility-choices">
+            <label><input type="radio" name="public-spacing" value="normal" checked> Normal</label>
+            <label><input type="radio" name="public-spacing" value="wide"> Mayor espaciado</label>
+        </div>
+    </fieldset>
+    <div class="accessibility-option">
+        <label class="accessibility-toggle"><span>Resaltado de enfoque</span><input type="checkbox" role="switch" id="public-focus"></label>
+        <p>Amplía el contorno del elemento seleccionado.</p>
+    </div>
+    <div class="accessibility-option">
+        <label class="accessibility-toggle"><span>Reducir movimiento</span><input type="checkbox" role="switch" id="public-motion"></label>
+        <p>Evita animaciones y desplazamientos suaves.</p>
+    </div>
+    <section class="accessibility-option" aria-labelledby="accessibility-speech-title">
+        <h3 id="accessibility-speech-title">Lectura en voz alta</h3>
+        <p>Escucha las preguntas e instrucciones de la sección visible. No se leen tus respuestas.</p>
+        <div class="accessibility-speech-actions">
+            <button type="button" id="accessibility-read">Reproducir esta sección</button>
+            <button type="button" id="accessibility-stop" disabled>Detener</button>
+        </div>
+        <p id="accessibility-speech-status" role="status" aria-atomic="true"></p>
+    </section>
+    <section class="accessibility-option" aria-labelledby="accessibility-keyboard-title">
+        <h3 id="accessibility-keyboard-title">Navegación por teclado · Siempre activa</h3>
+        <p>Usa Tab y Mayús + Tab para moverte; Enter o Espacio para activar controles; las flechas para elegir opciones y Escape para cerrar este menú.</p>
+    </section>
+    <button type="button" id="accessibility-reset">Restablecer preferencias</button>
+    <p class="accessibility-panel-note">Las preferencias se guardan en este navegador. <a href="https://www.w3.org/WAI/standards-guidelines/wcag/es">Conocer las pautas WCAG</a></p>
+</dialog>

@@ -1,0 +1,7 @@
+{% extends "notifications/emails/base.html" %}{% block message %}
+<h1 style="font-size:24px">Tu solicitud requiere correcciones</h1>
+<p>Revisamos tu solicitud para <strong>{{ notification.form_name }}</strong>.</p>
+<h2 style="font-size:18px">Motivo</h2><div style="padding:16px;background:#f6f7ff;border-radius:8px">{{ reason|linebreaksbr }}</div>
+<p>Realiza las correcciones indicadas y vuelve a enviar el formulario.</p>
+<p style="margin:28px 0"><a href="{{ form_url }}" style="background:#5145cd;color:#fff;padding:14px 22px;border-radius:8px;text-decoration:none;display:inline-block">Volver al formulario</a></p>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load l10n %}
+<article class="infrastructure-card infrastructure-email" data-kind="email" {% if item.over_capacity %}data-warning="true"{% endif %}>
+    <div class="infrastructure-heading">
+        <h3>{{ item.label }}</h3>
+        <span class="metric-caption">{{ item.provider }}</span>
+    </div>
+    <p class="infrastructure-scope">{{ item.scope }}</p>
+    <div class="infrastructure-email-periods">
+        {% for period in item.periods %}
+        <section class="infrastructure-email-period" aria-labelledby="email-quota-{{ period.key }}" {% if period.warning %}data-warning="true"{% endif %}>
+            <div class="infrastructure-heading">
+                <h4 id="email-quota-{{ period.key }}">{{ period.label }}</h4>
+                {% if period.state %}<span class="infrastructure-email-alert">{{ period.state }}</span>{% endif %}
+            </div>
+            <dl class="infrastructure-stats">
+                <div><dt>Usados</dt><dd class="{% if not item.available %}infrastructure-unknown{% endif %}">{% if item.available %}{{ period.used|floatformat:"0g" }}{% else %}No disponible{% endif %}</dd></div>
+                <div><dt>Disponibles de la cuota</dt><dd class="{% if not item.available or period.limit == None %}infrastructure-unknown{% endif %}">{% if not item.available %}No disponible{% elif period.limit == None %}Sin límite diario{% else %}{{ period.remaining|floatformat:"0g" }}{% endif %}</dd></div>
+            </dl>
+            <div class="infrastructure-capacity"><span>Límite {% if period.key == 'daily' %}diario{% else %}mensual{% endif %}</span><strong>{% if not item.available %}No disponible{% elif period.limit == None %}Sin límite diario{% else %}{{ period.limit|floatformat:"0g" }} correos{% endif %}</strong></div>
+            {% if period.percent != None %}
+            <progress max="100" value="{{ period.progress|unlocalize }}" aria-label="Consumo {{ period.label|lower }} de correos: {{ period.percent|floatformat:1 }} %"></progress>
+            <p class="infrastructure-percent">{{ period.percent|floatformat:1 }} % de la cuota</p>
+            {% endif %}
+        </section>
+        {% endfor %}
+    </div>
+    {% if not item.available %}<p class="infrastructure-state">{{ item.state }}</p>{% endif %}
+</article>

@@ -6,9 +6,11 @@ from pathlib import Path
 
 from django.contrib.auth.models import Permission
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import Client
 from django.urls import reverse
 from playwright.sync_api import expect, sync_playwright
 
+from apps.accounts.models import User
 from apps.forms.models import FieldOption, FormField, FormSection
 from apps.forms.publication import publish_form
 from apps.submissions.models import Submission, SubmissionAnswer, SubmissionFile
@@ -16,6 +18,74 @@ from apps.submissions.tests.test_public import fixture
 
 
 class DetailBrowserTests(StaticLiveServerTestCase):
+    def test_trash_restore_and_admin_purge_on_mobile(self):
+        form, version, name, *_ = fixture()
+        response = Submission.objects.create(
+            form=form, form_version=version, idempotency_key=uuid.uuid4()
+        )
+        SubmissionAnswer.objects.create(submission=response, field=name, value="Prueba papelera")
+        user = form.created_by
+        user.user_permissions.add(
+            *Permission.objects.filter(
+                codename__in=[
+                    "view_submission",
+                    "change_submission",
+                    "delete_submission",
+                ]
+            )
+        )
+        self.client.force_login(user)
+        operator_cookie = self.client.cookies["sessionid"].value
+        administrator = User.objects.create_user(username="admin", is_staff=True, is_superuser=True)
+        admin_client = Client()
+        admin_client.force_login(administrator)
+        admin_cookie = admin_client.cookies["sessionid"].value
+        board_url = self.live_server_url + reverse("admin:submissions_submission_changelist")
+        remove_url = self.live_server_url + reverse(
+            "admin:submissions_submission_remove", args=[response.pk]
+        )
+        trash_url = self.live_server_url + reverse("admin:submissions_submission_trash")
+        errors = []
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            context = browser.new_context(viewport={"width": 390, "height": 844})
+            context.add_cookies(
+                [{"name": "sessionid", "value": operator_cookie, "url": self.live_server_url}]
+            )
+            page = context.new_page()
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(remove_url)
+            expect(
+                page.get_by_role("heading", name="¿Enviar esta respuesta a la papelera?")
+            ).to_be_visible()
+            page.get_by_role("button", name="Enviar a la papelera").click()
+            page.wait_for_url(board_url)
+            page.get_by_role("link", name="Papelera de respuestas").click()
+            expect(page.get_by_role("button", name="Restaurar")).to_be_visible()
+            expect(page.get_by_role("link", name="Eliminar definitivamente")).to_have_count(0)
+            self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 390)
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-trash-mobile.png"), full_page=True
+            )
+            page.get_by_role("button", name="Restaurar").click()
+            expect(page.get_by_text("La papelera está vacía.")).to_be_visible()
+            page.goto(remove_url)
+            page.get_by_role("button", name="Enviar a la papelera").click()
+            page.wait_for_url(board_url)
+            context.add_cookies(
+                [{"name": "sessionid", "value": admin_cookie, "url": self.live_server_url}]
+            )
+            page.goto(trash_url)
+            page.get_by_role("link", name="Eliminar definitivamente").click()
+            expect(
+                page.get_by_text("Esta acción no se puede deshacer.", exact=False)
+            ).to_be_visible()
+            page.get_by_role("button", name="Eliminar definitivamente").click()
+            expect(page.get_by_text("La papelera está vacía.")).to_be_visible()
+            browser.close()
+        self.assertFalse(Submission.all_objects.filter(pk=response.pk).exists())
+        self.assertFalse(errors)
+
     def test_response_reading_navigation_actions_and_mobile(self):
         form, version, name, choice, email = fixture()
         version.title = "Reporte de Casos Incidentes de Cáncer"
@@ -91,7 +161,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
         )
         errors = []
         with sync_playwright() as playwright:
-            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1600, "height": 1050})
             context.add_cookies(
                 [
@@ -105,7 +175,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.route(
-                "**" + attachment.get_absolute_url(),
+                "**" + attachment.get_absolute_url() + "*",
                 lambda route: route.fulfill(
                     status=200,
                     content_type="text/plain",

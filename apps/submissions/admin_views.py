@@ -7,11 +7,14 @@ from django.db import transaction
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from apps.forms.conditions import FormSchema
 from apps.forms.question_fields import FILE_TYPES
 
-from .models import Submission, SubmissionAnswer, SubmissionFile
+from .models import Submission, SubmissionActivity, SubmissionAnswer, SubmissionFile, SubmissionNote
+from .panel import history_for, panel_context
 from .presentation import render_response_details, response_sections
 from .review import STATUS_HELP, AttentionForm, ReviewForm, record_review
 from .runtime import PublicResponseForm
@@ -37,6 +40,7 @@ def page_context(model_admin, request, submission, title):
         "original": submission,
         "title": title,
         "can_edit": model_admin.has_change_permission(request, submission),
+        "can_review_action": model_admin.has_change_permission(request, submission),
         "can_delete": model_admin.has_delete_permission(request, submission),
         "details": render_response_details(sections, compact_heading=True),
         "response_sections": sections,
@@ -46,6 +50,7 @@ def page_context(model_admin, request, submission, title):
         "response_form_title": submission.form_version.title or submission.form.name,
         "review_form": ReviewForm(submission),
         "reviews": submission.reviews.select_related("actor"),
+        "history": history_for(submission),
         "status_help": STATUS_HELP[submission.status],
         "response_summary": summary_for(submission),
         "attention_form": AttentionForm(
@@ -71,6 +76,52 @@ def response_detail(model_admin, request, object_id):
     )
 
 
+def response_panel(model_admin, request, object_id):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    submission = get_object_or_404(model_admin.get_queryset(request), pk=object_id)
+    if not model_admin.has_view_permission(request, submission):
+        raise PermissionDenied
+    return render(
+        request,
+        "admin/submissions/responses/_detail_panel.html",
+        {**panel_context(submission, request, model_admin), "panel_only": True},
+    )
+
+
+def response_note(model_admin, request, object_id):
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+    content = request.POST.get("content", "").strip()
+    with transaction.atomic():
+        submission = get_object_or_404(
+            model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
+        )
+        if not model_admin.has_change_permission(request, submission):
+            raise PermissionDenied
+        if not content or len(content) > 2000:
+            messages.error(request, "La nota debe tener entre 1 y 2.000 caracteres.")
+        else:
+            SubmissionNote.objects.create(
+                submission=submission, author=request.user, content=content
+            )
+            SubmissionActivity.objects.create(
+                submission=submission, actor=request.user, event_type="note_added"
+            )
+            model_admin.log_change(request, submission, "Añadió una nota interna.")
+            messages.success(request, "Nota interna guardada.")
+    fallback = (
+        f"{reverse('admin:submissions_submission_changelist')}"
+        f"?view=work&selected={submission.pk}#response-notes"
+    )
+    next_url = request.POST.get("next", "")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return redirect(next_url)
+    return redirect(fallback)
+
+
 def response_review(model_admin, request, object_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
@@ -79,7 +130,25 @@ def response_review(model_admin, request, object_id):
         submission = get_object_or_404(
             model_admin.get_queryset(request).select_for_update(of=("self",)), pk=object_id
         )
-        if not model_admin.has_change_permission(request, submission):
+        if not model_admin.has_change_permission(request):
+            raise PermissionDenied
+        if not submission.can_mutate(request.user):
+            if wants_json:
+                return JsonResponse(
+                    {
+                        "errors": {
+                            "__all__": [
+                                {
+                                    "message": (
+                                        "Esta respuesta ya está asignada a otra persona. "
+                                        "Actualiza la página."
+                                    )
+                                }
+                            ]
+                        }
+                    },
+                    status=409,
+                )
             raise PermissionDenied
         form = ReviewForm(submission, request.POST)
         valid = form.is_valid()
@@ -325,19 +394,21 @@ def response_delete(model_admin, request, object_id):
         if not model_admin.has_delete_permission(request, submission):
             raise PermissionDenied
         if request.method == "POST" and request.POST.get("confirm_delete") == "yes":
-            files = list(SubmissionFile.objects.filter(answer__submission=submission))
-            model_admin.log_deletions(request, [submission])
-            SubmissionFile.objects.filter(answer__submission=submission).delete()
-            submission.answers.all().delete()
-            submission.delete()
-            for attachment in files:
-                transaction.on_commit(
-                    lambda file=attachment.file: file.delete(save=False), robust=True
-                )
-            messages.success(request, "Respuesta eliminada.")
+            submission.deleted_at = timezone.now()
+            submission.deleted_by = request.user
+            submission.review_revision += 1
+            submission.save(update_fields=["deleted_at", "deleted_by", "review_revision"])
+            SubmissionActivity.objects.create(
+                submission=submission,
+                actor=request.user,
+                event_type="trashed",
+                description="Respuesta enviada a la papelera.",
+            )
+            model_admin.log_change(request, submission, "Envió la respuesta a la papelera.")
+            messages.success(request, "Respuesta enviada a la papelera. Puedes restaurarla allí.")
             return redirect("admin:submissions_submission_changelist")
         return render(
             request,
             "admin/submissions/confirm_delete.html",
-            page_context(model_admin, request, submission, "Eliminar respuesta"),
+            page_context(model_admin, request, submission, "Enviar respuesta a la papelera"),
         )

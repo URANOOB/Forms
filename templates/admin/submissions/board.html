@@ -1,58 +1,21 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=4">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/response-review.js' %}?v=3" defer></script>{% endblock %}
-{% block header %}{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-selects.css' %}?v=blue-palette-20260926-2">{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-workspace.css' %}?v=blue-palette-20260926-2"><script src="{% static 'forms/response-review.js' %}?v=4" defer></script><script src="{% static 'forms/response-documents.js' %}?v=2" defer></script><script src="{% static 'forms/response-workspace.js' %}?v=audit-20260925" defer></script><script src="{% static 'forms/response-date-picker.js' %}?v=1" defer></script><script src="{% static 'forms/response-selects.js' %}?v=2" defer></script><script src="{% static 'forms/response-board-drag.js' %}?v=1" defer></script>{% endblock %}
 {% block content %}
-<div class="responses-workspace">
-<header class="response-board-heading"><div class="response-board-title">{% if is_nav_sidebar_enabled and not is_popup %}<button type="button" x-on:click="sidebarToggle()" aria-label="Abrir o cerrar navegación"><span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span></button>{% endif %}<h1>Respuestas</h1></div><div class="response-board-heading-tools"><span class="response-total">{{ cl.result_count }} respuesta{{ cl.result_count|pluralize:"s" }}</span>{% include "unfold/helpers/userlinks.html" %}</div></header>
-<div class="response-toolbar">
-    <form method="get" role="search" class="response-search"><button type="submit" aria-label="Buscar respuestas"><span class="material-symbols-outlined" aria-hidden="true">search</span></button><input id="searchbar" type="search" name="q" value="{{ cl.query }}" placeholder="Buscar por nombre, documento, formulario…" aria-label="Buscar por nombre, documento o formulario">{% for key,value in search_params %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}</form>
-    <details class="response-filters"><summary><span class="material-symbols-outlined" aria-hidden="true">filter_list</span>Filtros{% if cl.has_active_filters %}<span class="filter-active" aria-label="Filtros activos"></span>{% endif %}</summary><div class="response-filter-panel">{% for filter in response_filters %}<section><h2>{{ filter.title|capfirst }}</h2>{% for choice in filter.choices %}<a href="{{ choice.query_string }}" {% if choice.selected %}aria-current="true"{% endif %}>{{ choice.display }}</a>{% endfor %}</section>{% endfor %}<a class="response-clear-filters" href="{{ clear_url }}">Limpiar filtros</a></div></details>
-    <nav class="response-view-switch" aria-label="Vista de respuestas"><a href="{{ list_url }}" {% if response_layout == 'list' %}aria-current="page"{% endif %}><span class="material-symbols-outlined" aria-hidden="true">view_list</span>Tabla</a><a href="{{ board_url }}" {% if response_layout == 'board' %}aria-current="page"{% endif %}><span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>Estado</a></nav>
-</div>
-{% if response_layout == 'board' %}
-<div class="response-board" role="region" tabindex="0" aria-label="Respuestas por estado; desplázate horizontalmente para ver todas las columnas">
-{% for column in response_columns %}
-    <section class="response-column" data-status="{{ column.status }}" aria-labelledby="column-{{ column.status }}">
-        <header><div><h2 id="column-{{ column.status }}">{% if column.status == 'SUBMITTED' %}Recibidas{% elif column.status == 'VALIDATED' %}Validadas{% elif column.status == 'REJECTED' %}Rechazadas{% else %}En revisión{% endif %}</h2><span class="response-column-count">{{ column.total }}</span></div><p>{{ column.help }}</p></header>
-        <div class="response-cards">
-        {% for card in column.cards %}{% with item=card.submission %}
-            <article class="response-card">
-                <h3><a href="{% url 'admin:submissions_submission_detail' item.pk %}">{{ card.title }}</a></h3>
-                <p class="response-card-form">{{ item.form.name }}</p>
-                {% if card.details %}<dl class="response-card-data">{% for datum in card.details %}<div><dt>{{ datum.label }}</dt><dd>{{ datum.value }}</dd></div>{% endfor %}</dl>{% endif %}
-                {% include "admin/submissions/badges.html" %}
-                <time class="response-card-time" datetime="{{ item.submitted_at|date:'c' }}" title="Recibida: {{ card.date }}">{{ card.relative }}</time>
-                <div class="response-card-actions"><a class="response-review-link" href="{% url 'admin:submissions_submission_detail' item.pk %}">{% if card.can_review %}Revisar{% else %}Ver respuesta{% endif %}<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>{% include "admin/submissions/card_menu.html" %}</div>
-            </article>
-        {% endwith %}{% empty %}<p class="response-column-empty">Sin respuestas</p>{% endfor %}
-        </div>
-        {% if column.has_more %}<a class="response-column-more" href="{{ column.all_url }}">Ver las {{ column.total }} respuestas →</a>{% endif %}
-    </section>
-{% endfor %}
-</div>
-{% else %}
-<form method="post" action="{% url 'admin:submissions_submission_download_selected' %}" id="response-selection-form">{% csrf_token %}
-    <div class="response-bulk"><span id="response-selection-count" role="status">Selecciona respuestas para descargarlas</span><button type="submit" id="response-export-selected" disabled><span class="material-symbols-outlined" aria-hidden="true">download</span>Descargar selección</button></div>
-    <div class="response-table-scroll"><table id="result_list" class="response-table"><thead><tr><th><input type="checkbox" id="response-select-all" aria-label="Seleccionar todas las respuestas de esta página"></th><th>Respondiente</th><th>Documento</th><th>Datos clave</th><th>Formulario</th><th>Recibida</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr></thead><tbody>
-    {% for card in response_rows %}{% with item=card.submission %}<tr><td><input type="checkbox" name="selected" value="{{ item.pk }}" aria-label="Seleccionar {{ card.title }}"></td><td><a class="response-table-title" href="{% url 'admin:submissions_submission_detail' item.pk %}">{{ card.title }}</a>{% include "admin/submissions/badges.html" %}</td><td>{{ card.document }}</td><td><dl class="response-table-data">{% for datum in card.details %}{% if not datum.document %}<div><dt>{{ datum.label }}</dt><dd>{{ datum.value }}</dd></div>{% endif %}{% endfor %}</dl></td><td>{{ item.form.name }}</td><td><time datetime="{{ item.submitted_at|date:'c' }}">{{ card.date }}</time></td><td><span class="response-status" data-status="{{ item.status }}">{{ item.get_status_display }}</span></td><td>{% include "admin/submissions/card_menu.html" %}</td></tr>{% endwith %}{% empty %}<tr><td colspan="8" class="response-table-empty">No hay respuestas que coincidan con tu búsqueda.</td></tr>{% endfor %}
-    </tbody></table></div>
-</form>
-{% endif %}
-</div>
+<main class="responses-workspace response-workspace-new">
+    {% include "admin/submissions/responses/_header.html" %}
+    {% include "admin/submissions/responses/_summary.html" %}
+    {% include "admin/submissions/responses/_filters.html" %}
+    {% if response_layout == 'board' %}
+        {% include "admin/submissions/responses/_board.html" %}
+    {% elif response_layout == 'list' %}
+        {% include "admin/submissions/responses/_table.html" %}
+    {% else %}
+        {% include "admin/submissions/responses/_work.html" %}
+    {% endif %}
+</main>
 {{ review_transitions|json_script:"review-transitions" }}
-<dialog id="review-dialog" class="review-dialog" aria-labelledby="review-dialog-title">
-    <div class="review-heading"><div><span class="response-eyebrow">CAMBIAR ESTADO</span><h2 id="review-dialog-title">Revisar respuesta</h2><p id="review-dialog-response"></p></div><button type="button" data-close-review aria-label="Cerrar">×</button></div>
-    <form method="post" class="review-form" data-review-form id="board-review-form">
-        {% csrf_token %}<input type="hidden" name="revision">
-        <label for="board-review-status">Acción<select id="board-review-status" name="status" required></select></label>
-        <label for="board-review-note"><span data-note-label>Comentario</span><textarea id="board-review-note" name="note" rows="4" maxlength="2000"></textarea></label>
-        <p class="review-hint">Obligatorio al rechazar. En las demás acciones es opcional.</p>
-        <p class="review-errors" role="alert" id="review-error" hidden></p>
-        <a href="" id="review-reload" hidden>Actualizar tablero</a>
-        <div class="review-dialog-actions"><button type="button" data-close-review>Cancelar</button><button type="submit" class="review-primary">Guardar estado</button></div>
-    </form>
-</dialog>
+{% include "admin/submissions/responses/_review_dialog.html" %}
 {% endblock %}
-{% block footer %}{% if response_layout == 'list' %}{% include "unfold/helpers/pagination.html" %}{% endif %}{% endblock %}
+{% block footer %}{% if response_layout != 'board' %}{% include "unfold/helpers/pagination.html" %}{% endif %}{% endblock %}

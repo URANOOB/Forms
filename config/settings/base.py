@@ -28,6 +28,17 @@ DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+PUBLIC_INSTITUTION_NAME = os.environ.get("PUBLIC_INSTITUTION_NAME", "").strip() or "LogicForms"
+PUBLIC_SUPPORT_EMAIL = os.environ.get("PUBLIC_SUPPORT_EMAIL", "").strip()
+PUBLIC_PRIVACY_URL = os.environ.get("PUBLIC_PRIVACY_URL", "").strip()
+if PUBLIC_PRIVACY_URL:
+    privacy_url = urlsplit(PUBLIC_PRIVACY_URL)
+    if (
+        privacy_url.scheme != "https"
+        or not privacy_url.hostname
+        or privacy_url.username is not None
+    ):
+        raise ImproperlyConfigured("PUBLIC_PRIVACY_URL debe ser una URL HTTPS sin credenciales.")
 if PUBLIC_BASE_URL:
     origin = urlsplit(PUBLIC_BASE_URL)
     if (
@@ -51,11 +62,13 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.forms",
     "apps.submissions",
+    "apps.notifications",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
+    "apps.accounts.rate_limits.RateLimitMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -73,6 +86,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.accounts.platform.shell_context",
+                "config.context_processors.public_footer",
             ]
         },
     }
@@ -134,10 +149,73 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 # JSON drafts can include imported catalogs; multipart files retain their own 5 MB limit.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
+# Leave room for multipart headers below Vercel's 4.5 MB request limit.
+SUBMISSION_MAX_BYTES = 4_000_000 if os.environ.get("VERCEL") == "1" else None
 EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
 ENABLE_DEMO_SEED = False
+EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "resend")
+EMAIL_FROM = os.environ.get("EMAIL_FROM", "LogicForms <notificaciones@logicforms.xyz>")
+EMAIL_API_KEY = os.environ.get("EMAIL_API_KEY", "")
+RESEND_USAGE_API_KEY = os.environ.get("RESEND_USAGE_API_KEY", "").strip()
+RESEND_WEBHOOK_SECRET = os.environ.get("RESEND_WEBHOOK_SECRET", "")
+EMAIL_NOTIFICATIONS_ENABLED = env_bool("EMAIL_NOTIFICATIONS_ENABLED", False)
+EMAIL_TEST_RECIPIENT = os.environ.get("EMAIL_TEST_RECIPIENT", "").strip()
+if EMAIL_NOTIFICATIONS_ENABLED:
+    from email.utils import parseaddr
+
+    from django.core.exceptions import ValidationError
+    from django.core.validators import validate_email
+
+    try:
+        validate_email(parseaddr(EMAIL_FROM)[1])
+        if len(parseaddr(EMAIL_FROM)[1]) > 254 or len(EMAIL_TEST_RECIPIENT) > 254:
+            raise ValidationError("Dirección demasiado larga.")
+        if EMAIL_TEST_RECIPIENT:
+            validate_email(EMAIL_TEST_RECIPIENT)
+    except ValidationError:
+        raise ImproperlyConfigured("Revisa EMAIL_FROM y EMAIL_TEST_RECIPIENT.") from None
+    if EMAIL_PROVIDER != "resend" or not EMAIL_API_KEY or not PUBLIC_BASE_URL:
+        raise ImproperlyConfigured(
+            "El envío exige EMAIL_PROVIDER=resend, EMAIL_API_KEY y PUBLIC_BASE_URL."
+        )
+    if "\r" in EMAIL_FROM or "\n" in EMAIL_FROM:
+        raise ImproperlyConfigured("EMAIL_FROM no admite saltos de línea.")
+
+# Counters live in PostgreSQL, shared across workers and serverless instances.
+RATE_LIMIT_IP_HEADER = "HTTP_X_VERCEL_FORWARDED_FOR" if os.environ.get("VERCEL") == "1" else None
+RATE_LIMITS = {}
+for _scope, _default, _seconds in (
+    ("public_read", 120, 60),
+    ("public_post", 10, 60),
+    ("public_hour", 60, 3600),
+    ("login_ip", 20, 300),
+    ("login_account", 10, 900),
+):
+    _name = f"RATE_LIMIT_{_scope.upper()}"
+    try:
+        _limit = int(os.environ.get(_name, str(_default)))
+        if not 1 <= _limit <= 1_000_000:
+            raise ValueError
+    except ValueError:
+        raise ImproperlyConfigured(f"{_name} debe ser un entero entre 1 y 1000000.") from None
+    RATE_LIMITS[_scope] = (_limit, _seconds)
 
 UNFOLD = {
+    "COLORS": {
+        "primary": {
+            "50": "#eff6ff",
+            "100": "#dbeafe",
+            "200": "#bfdbfe",
+            "300": "#93c5fd",
+            "400": "#60a5fa",
+            "500": "#3b82f6",
+            "600": "#2563eb",
+            "700": "#1d4ed8",
+            "800": "#1e40af",
+            "900": "#1e3a8a",
+            "950": "#172554",
+        },
+    },
     "DASHBOARD_CALLBACK": "apps.accounts.dashboard.dashboard_callback",
     "SITE_TITLE": "Formularios institucionales",
     "SITE_HEADER": "LogicForms",
@@ -150,35 +228,68 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "Administración",
+                "title": "General",
                 "items": [
                     {
-                        "title": "Inicio",
-                        "icon": "dashboard",
+                        "title": "Panel general",
+                        "icon": "space_dashboard",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:index"),
                     },
+                ],
+            },
+            {
+                "title": "Gestión",
+                "items": [
                     {
                         "title": "Formularios",
-                        "icon": "description",
+                        "icon": "dynamic_form",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:forms_form_changelist"),
                         "permission": lambda r: r.user.has_perm("forms.view_form"),
                     },
                     {
-                        "title": "Respuestas",
+                        "title": "Respuestas recibidas",
                         "icon": "inbox",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:submissions_submission_changelist"),
                         "permission": lambda r: r.user.has_perm("submissions.view_submission"),
                     },
                     {
-                        "title": "Usuarios",
-                        "icon": "group",
+                        "title": "Reportes y descargas",
+                        "icon": "analytics",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
+                        "link": lambda request: reverse("admin:submissions_submission_reports"),
+                        "permission": lambda r: r.user.has_perm("submissions.view_submission"),
+                    },
+                    {
+                        "title": "Correos",
+                        "icon": "mail",
+                        "active": lambda r: r.path.startswith(
+                            reverse("admin:notifications_emailnotification_changelist")
+                        ),
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
+                        "link": lambda request: reverse(
+                            "admin:notifications_emailnotification_changelist"
+                        ),
+                        "permission": lambda r: r.user.has_perm("submissions.view_submission"),
+                    },
+                ],
+            },
+            {
+                "title": "Configuración",
+                "items": [
+                    {
+                        "title": "Usuarios y permisos",
+                        "icon": "manage_accounts",
+                        "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:accounts_user_changelist"),
                         "permission": lambda r: (
                             r.user.is_active and r.user.is_staff and r.user.is_superuser
                         ),
                     },
                 ],
-            }
+            },
         ],
     },
 }

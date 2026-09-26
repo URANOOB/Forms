@@ -1,0 +1,10 @@
+<footer class="public-institutional-footer" aria-label="Información institucional">
+    <div class="public-footer-identity"><strong>{{ public_institution_name }}</strong><span aria-hidden="true">·</span><span>Portal de formularios</span></div>
+    <nav class="public-footer-links" aria-label="Información y ayuda">
+        <a href="{% if public_privacy_url %}{{ public_privacy_url }}{% else %}{% url 'public_information' %}#privacidad{% endif %}" target="_blank" rel="noopener" aria-label="Privacidad (abre en otra pestaña)">Privacidad</a>
+        <a href="{% url 'public_information' %}#accesibilidad" target="_blank" rel="noopener" aria-label="Accesibilidad (abre en otra pestaña)">Accesibilidad</a>
+        <a href="{% url 'public_information' %}#ayuda" target="_blank" rel="noopener" aria-label="¿Necesitas ayuda? (abre en otra pestaña)">¿Necesitas ayuda?</a>
+    </nav>
+    {% if public_support_email %}<p class="public-footer-contact">Soporte: <a href="mailto:{{ public_support_email }}">{{ public_support_email }}</a></p>{% endif %}
+    <p class="public-footer-credit">Desarrollado con <a href="{% url 'home' %}" target="_blank" rel="noopener" aria-label="LogicForms (abre en otra pestaña)">LogicForms</a></p>
+</footer>

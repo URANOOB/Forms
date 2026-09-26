@@ -1,0 +1,30 @@
+{% extends "admin/accounts/users/base.html" %}
+{% block extrahead %}{{ block.super }}{{ media }}{% endblock %}
+{% block users_content %}
+<a class="users-back" href="{% url 'admin:accounts_user_changelist' %}">← Volver a usuarios</a>
+<header class="users-heading"><div class="users-heading-title"><span class="material-symbols-outlined users-heading-icon" aria-hidden="true">{% if add %}person_add{% else %}manage_accounts{% endif %}</span><div><h1>{% if add %}Crear usuario{% else %}Editar usuario{% endif %}</h1><p>{% if add %}Configura sus datos y el acceso a la plataforma.{% else %}Actualiza la información y el acceso de {{ original.username }}.{% endif %}</p></div></div>{% if change %}<a class="users-button" href="{% url 'admin:accounts_user_history' original.pk %}"><span class="material-symbols-outlined" aria-hidden="true">history</span>Historial</a>{% endif %}</header>
+<form method="post" id="user_form" class="users-editor" {% if form_url %}action="{{ form_url }}"{% endif %} novalidate>
+    {% csrf_token %}{% for field in adminform.form.hidden_fields %}{{ field }}{% endfor %}
+    {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+    {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+    {% if adminform.form.errors %}<div class="users-errors" role="alert" tabindex="-1"><h2>Revisa los datos del usuario</h2>{{ adminform.form.non_field_errors }}<ul>{% for field in adminform.form %}{% for error in field.errors %}<li><a href="#{{ field.id_for_label }}">{{ field.label }}: {{ error }}</a></li>{% endfor %}{% endfor %}</ul></div>{% endif %}
+    <div class="users-editor-layout"><div class="users-editor-main">
+        <section class="users-card users-form-card" aria-labelledby="users-details-title"><h2 id="users-details-title"><span class="material-symbols-outlined" aria-hidden="true">badge</span>Datos del usuario</h2><p class="users-card-intro">Identificación y datos de contacto.</p><div class="users-field-grid">
+            {% include "admin/accounts/users/_field.html" with field=adminform.form.username %}
+            {% include "admin/accounts/users/_field.html" with field=adminform.form.email %}
+            {% include "admin/accounts/users/_field.html" with field=adminform.form.first_name %}
+            {% include "admin/accounts/users/_field.html" with field=adminform.form.last_name %}
+        </div></section>
+        <section class="users-card users-form-card" aria-labelledby="users-security-title"><h2 id="users-security-title"><span class="material-symbols-outlined" aria-hidden="true">lock</span>Contraseña y seguridad</h2>
+            {% if add %}<p class="users-card-intro">Define la contraseña inicial de esta cuenta.</p><div class="users-field-grid">{% include "admin/accounts/users/_field.html" with field=adminform.form.password1 %}{% include "admin/accounts/users/_field.html" with field=adminform.form.password2 %}</div>
+            {% else %}<div class="users-security-summary"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span><div><strong>{% if original.has_usable_password %}Contraseña configurada{% else %}Acceso con contraseña deshabilitado{% endif %}</strong><p>Por seguridad, la contraseña actual no se muestra.</p></div><a class="users-button" href="{% url 'admin:auth_user_password_change' original.pk %}">Cambiar contraseña</a></div>{% endif %}
+        </section>
+        {% if change %}<section class="users-card users-form-card"><h2><span class="material-symbols-outlined" aria-hidden="true">schedule</span>Actividad de la cuenta</h2><dl class="users-account-dates"><div><dt>Fecha de creación</dt><dd>{{ original.date_joined|date:'d/m/Y, H:i' }}</dd></div><div><dt>Último acceso</dt><dd>{% if original.last_login %}{{ original.last_login|date:'d/m/Y, H:i' }}{% else %}Todavía no ha iniciado sesión{% endif %}</dd></div></dl></section>{% endif %}
+    </div><aside class="users-card users-form-card users-access" aria-labelledby="users-access-title"><h2 id="users-access-title"><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span>Acceso y permisos</h2>
+        {% include "admin/accounts/users/_field.html" with field=adminform.form.role %}
+        <div class="users-active-setting"><label for="{{ adminform.form.is_active.id_for_label }}">{{ adminform.form.is_active }}<span>Cuenta activa</span></label><p>Al desactivarla, esta persona no podrá iniciar sesión. Sus registros se conservan.</p>{{ adminform.form.is_active.errors }}</div>
+        <div class="users-access-note"><span class="material-symbols-outlined" aria-hidden="true">info</span><p>Los permisos se asignan según el rol seleccionado.</p></div>
+    </aside></div>
+    <div class="users-form-actions"><div>{% if change and has_delete_permission %}<a class="users-button users-danger-link" href="{% url 'admin:accounts_user_delete' original.pk %}">Eliminar usuario</a>{% endif %}</div><div><a class="users-button" href="{% url 'admin:accounts_user_changelist' %}">Cancelar</a>{% if has_change_permission or has_add_permission %}<button type="submit" name="_continue" class="users-button">Guardar y seguir editando</button><button type="submit" name="_save" class="users-button users-primary">{% if add %}Crear usuario{% else %}Guardar cambios{% endif %}</button>{% endif %}</div></div>
+</form>
+{% endblock %}

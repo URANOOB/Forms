@@ -9,6 +9,11 @@ from django.utils import timezone
 from .storage import response_file_path, response_file_storage
 
 
+class ActiveSubmissionManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(deleted_at__isnull=True)
+
+
 class Submission(models.Model):
     class Attention(models.TextChoices):
         NONE = "", "Sin incidencias"
@@ -38,12 +43,34 @@ class Submission(models.Model):
     )
     status = models.CharField("estado", max_length=16, choices=Status, default=Status.SUBMITTED)
     review_revision = models.PositiveIntegerField(default=0, editable=False)
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="assigned_submissions",
+    )
+    review_started_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     attention = models.CharField(max_length=16, choices=Attention, blank=True, default="")
     attention_note = models.TextField(blank=True, max_length=2000)
     submitted_at = models.DateTimeField("fecha de envío", default=timezone.now, editable=False)
     idempotency_key = models.UUIDField(unique=True, editable=False)
+    deleted_at = models.DateTimeField(null=True, blank=True, db_index=True, editable=False)
+    deleted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="deleted_submissions",
+        editable=False,
+    )
+    objects = ActiveSubmissionManager()
+    all_objects = models.Manager()
 
     class Meta:
+        base_manager_name = "all_objects"
+        default_manager_name = "objects"
         verbose_name = "respuesta"
         verbose_name_plural = "respuestas"
         ordering = ["-submitted_at", "-id"]
@@ -65,6 +92,14 @@ class Submission(models.Model):
         if self.form_version_id and self.form_version.form_id != self.form_id:
             raise ValidationError("La versión no pertenece al formulario.")
 
+    def can_mutate(self, user):
+        return (
+            user.is_superuser
+            or self.status != self.Status.UNDER_REVIEW
+            or not self.assigned_to_id
+            or self.assigned_to_id == user.pk
+        )
+
     def __str__(self):
         return f"Respuesta {str(self.pk)[:8]}"
 
@@ -85,6 +120,27 @@ class SubmissionReview(models.Model):
                 name="rejected_review_has_reason",
             )
         ]
+
+
+class SubmissionActivity(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="activity")
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    event_type = models.CharField(max_length=40)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
+
+
+class SubmissionNote(models.Model):
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name="notes")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    content = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
+
+    class Meta:
+        ordering = ["-created_at", "-pk"]
 
 
 class SubmissionAnswer(models.Model):
@@ -122,3 +178,10 @@ class SubmissionFile(models.Model):
 
     def get_absolute_url(self):
         return reverse("response_file", args=[self.pk])
+
+
+class PendingFileDeletion(models.Model):
+    """Durable retry record when a purge cannot reach object storage."""
+
+    name = models.CharField(max_length=300, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)

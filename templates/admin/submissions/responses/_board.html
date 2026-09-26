@@ -1,0 +1,27 @@
+<div class="response-alternate-heading">
+    <div>
+        <strong>{{ total_matching_count }} respuesta{{ total_matching_count|pluralize:"s" }}</strong>
+        {% if board_can_drag %}<p class="response-board-help">Arrastra una tarjeta a un estado disponible para cambiarla y añadir una nota.</p>{% endif %}
+    </div>
+    <nav class="response-layout-switch" aria-label="Vista de respuestas"><a href="{{ work_url }}"><span class="material-symbols-outlined" aria-hidden="true">view_list</span>Lista</a><a href="{{ list_url }}"><span class="material-symbols-outlined" aria-hidden="true">table_rows</span>Tabla</a><a href="{{ board_url }}" aria-current="page"><span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>Estado</a></nav>
+</div>
+<div class="response-board" role="region" tabindex="0" aria-label="Respuestas por estado; desplázate horizontalmente para ver todas las columnas">
+    {% for column in response_columns %}
+    <section class="response-column" data-status="{{ column.status }}" aria-labelledby="column-{{ column.status }}">
+        <header><div><h2 id="column-{{ column.status }}">{{ column.label }}</h2><span class="response-column-count">{{ column.total }}</span></div><p>{{ column.help }}</p></header>
+        <div class="response-cards">
+            {% for card in column.cards %}{% with item=card.submission %}
+            <article class="response-card" {% if card.can_review and card.transitions %}draggable="true" data-response-id="{{ item.pk }}" data-allowed-statuses="{% for value,label in card.transitions %}{{ value }} {% endfor %}"{% endif %}>
+                <div class="response-card-top"><h3><a href="{% url 'admin:submissions_submission_detail' item.pk %}">{{ card.title }}</a></h3>{% if card.can_review and card.transitions %}<span class="response-card-drag-icon material-symbols-outlined" aria-hidden="true" title="Arrastra a otra columna">drag_indicator</span>{% endif %}</div>
+                <p class="response-card-form">{{ item.form.name }}</p>
+                {% if card.details %}<dl class="response-card-data">{% for datum in card.details %}<div><dt>{{ datum.label }}</dt><dd>{{ datum.value }}</dd></div>{% endfor %}</dl>{% endif %}
+                {% include "admin/submissions/badges.html" %}
+                <time class="response-card-time" datetime="{{ item.submitted_at|date:'c' }}" title="Recibida: {{ card.date }}">{{ card.relative }}</time>
+                <div class="response-card-actions"><a class="response-review-link" href="{% url 'admin:submissions_submission_detail' item.pk %}">{% if card.can_review %}Revisar{% else %}Ver respuesta{% endif %}<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a>{% include "admin/submissions/card_menu.html" %}</div>
+            </article>
+            {% endwith %}{% empty %}<p class="response-column-empty">Sin respuestas</p>{% endfor %}
+        </div>
+        {% if column.has_more %}<a class="response-column-more" href="{{ column.all_url }}">Ver las {{ column.total }} respuestas →</a>{% endif %}
+    </section>
+    {% endfor %}
+</div>

@@ -4,8 +4,8 @@
   --response-border: #e2e8f0;
   --response-surface: #fff;
   --response-soft: #f7f9fc;
-  --response-accent: #5840c7;
-  --response-accent-soft: #f0ecff;
+  --response-accent: #4078c7;
+  --response-accent-soft: #ecf4ff;
   color: var(--response-ink);
 }
 .dark :is(.response-details, .response-document-dialog, .response-summary, .response-contents, .response-detail-topbar) {
@@ -14,8 +14,8 @@
   --response-border: #344155;
   --response-surface: #182231;
   --response-soft: #131c29;
-  --response-accent: #b7a4ff;
-  --response-accent-soft: #30274a;
+  --response-accent: #93c5fd;
+  --response-accent-soft: #27364a;
 }
 .response-details { width: 100%; container-type: inline-size; }
 .response-details-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }

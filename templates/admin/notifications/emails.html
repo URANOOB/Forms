@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}{% load static %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/notifications.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-selects.css' %}?v=blue-palette-20260926-2"><script src="{% static 'forms/response-selects.js' %}?v=2" defer></script>{% endblock %}
+{% block content %}
+<main class="email-page metrics-dashboard">
+    <header class="email-heading"><div><h1>Correos</h1><p>Gestiona y revisa las notificaciones enviadas desde la plataforma.</p></div><div class="email-heading-actions">{% if can_configure_recipients %}<a class="email-button email-primary" href="{% url 'admin:notifications_emailnotification_recipients' %}">Destinatarios</a>{% endif %}<a class="email-button" href="{{ request.get_full_path }}">Actualizar</a></div></header>
+    <div class="email-layout{% if selected %} has-selection{% endif %}">
+        <div class="email-main">
+            {% include "admin/notifications/_summary.html" %}
+            {% include "admin/notifications/_filters.html" %}
+            {% include "admin/notifications/_table.html" %}
+        </div>
+        {% if selected %}{% include "admin/notifications/_detail_panel.html" %}{% endif %}
+    </div>
+</main>
+{% endblock %}

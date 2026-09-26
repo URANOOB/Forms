@@ -1,0 +1,123 @@
+/* Only respondent pages and their preview load this file. */
+html[data-public-text="large"] { font-size: 125%; }
+html[data-public-text="extra"] { font-size: 150%; }
+body[data-public-accessibility] {
+  --accent: var(--accessible-accent, #3434aa);
+  --ink: #1d2239;
+  --muted: #48536f;
+  --error: #9f1830;
+  font-size: max(1rem, var(--form-text-size, 1rem));
+  overflow-wrap: anywhere;
+}
+body[data-public-accessibility] .form-sheet,
+body[data-public-accessibility] .welcome-card { background: #fff; --ink: #1d2239; --muted: #48536f; }
+body[data-public-accessibility] :is(.page, .form-sheet, .field, .section-intro, .welcome-card, .confirmation-card, .success-card) { min-width: 0; }
+body[data-public-accessibility] :is(h1, h2, h3, legend, label) { overflow-wrap: anywhere; }
+body[data-public-accessibility] :is(h1, .welcome-card h1) { font-size: max(1.75rem, var(--form-heading-size, 1.75rem)); }
+body[data-public-accessibility] h2 { font-size: max(1.25rem, var(--form-heading-size, 1.25rem)); }
+body[data-public-accessibility] h3 { font-size: 1.125rem; }
+body[data-public-accessibility] .field > label,
+body[data-public-accessibility] .field legend { font-size: max(1rem, var(--form-question-size, 1rem)); }
+body[data-public-accessibility] :is(.hint, .help, .field fieldset label, .information, .description, .confirmation-description) { font-size: max(1rem, var(--form-text-size, 1rem)); }
+body[data-public-accessibility] :is(button, input, select, textarea) { font-size: 1rem; }
+body[data-public-accessibility] :is(.section-progress, .errorlist, .scale-labels, .confirmation-note, .confirmation-status, .file-name, .file-meta, .file-state, .file-picker-status, .file-picker-note, .file-picker-error, .file-drop-instruction, .file-browse-label, .file-preview-fallback, .file-actions button, .file-actions a, .form-dropdown-result-status, .calendar-heading, .calendar-hint, .calendar-footer button, .calendar-grid th, .calendar-grid button, footer) { font-size: .9375rem; }
+body[data-public-accessibility] :is(.form-calendar, .form-dropdown-menu) { font-size: 1rem; }
+body[data-public-accessibility] :is(.calendar-heading, .calendar-hint, .calendar-grid th, .outside-month, .file-picker-note, .file-drop-instruction, .file-preview-fallback, .form-dropdown-result-status, .form-dropdown-option.is-placeholder, .form-dropdown-select.is-placeholder, input::placeholder, textarea::placeholder) { color: #48536f; }
+body[data-public-accessibility] .form-sheet :is(input:not([type="hidden"]), select, textarea),
+body[data-public-accessibility] :is(.calendar-navigation input, .calendar-navigation select, .form-dropdown-search-header input, .file-dropzone) { border-color: #737d90; }
+body[data-public-accessibility] :is(button, a, input, select, textarea) { touch-action: manipulation; }
+body[data-public-accessibility] button { min-width: 2.75rem; min-height: 2.75rem; height: auto; white-space: normal; }
+body[data-public-accessibility] :is(a, .welcome-back) { min-height: 24px; }
+body[data-public-accessibility] input:is([type="radio"], [type="checkbox"]) { flex: none; width: 24px; height: 24px; margin: 3px; }
+body[data-public-accessibility] :is(label, legend) { max-width: 100%; }
+body[data-public-accessibility] fieldset label { min-height: 44px; }
+body[data-public-accessibility] :is(input, select, textarea) { min-width: 0; max-width: 100%; }
+body[data-public-accessibility] :is(button, a, input, select, textarea, [tabindex]):focus-visible,
+body[data-public-accessibility] :is(.error-summary, .form-section, .form-section h2):focus {
+  outline: 3px solid #172554;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px #fff;
+}
+body[data-public-accessibility] [id] { scroll-margin-block: 1.5rem; }
+body[data-public-accessibility] .file-dropzone:focus-within { outline: 3px solid #172554; outline-offset: 3px; }
+body[data-public-accessibility] .form-sheet { overflow: visible; }
+body[data-public-accessibility] .form-sheet::before { border-radius: 26px 26px 0 0; }
+body[data-public-accessibility] .scale-option:has(input:checked) { border: 2px solid var(--accent); }
+body[data-public-accessibility] .form-dropdown-option.is-active { outline: 2px solid var(--accent); outline-offset: -2px; }
+body[data-public-accessibility] .form-dropdown-check { color: var(--accent); }
+body[data-public-accessibility] .form-calendar [data-calendar-today] { color: var(--accent); }
+body[data-public-accessibility] .calendar-grid button { min-width: 24px; min-height: 2.5rem; }
+body[data-public-accessibility] .calendar-navigation { grid-template-columns: 2rem minmax(0, 1fr) minmax(4rem, 5rem) 2rem; }
+body[data-public-accessibility] .calendar-navigation button { min-width: 24px; }
+body[data-public-accessibility] .form-dropdown-searchable:popover-open { overflow-y: auto; }
+body[data-public-accessibility] .form-dropdown-results { flex: 1 0 4rem; }
+body[data-public-accessibility] .public-field-errors:empty { display: none; }
+body[data-public-accessibility] .error-summary { border: 2px solid var(--error); color: #641224; }
+body[data-public-accessibility] .error-summary h2 { font-size: 1.125rem; }
+body[data-public-accessibility] .error-summary a { display: inline-block; padding-block: .25rem; text-decoration: underline; }
+body[data-public-accessibility] .public-field-errors { color: var(--error); }
+body[data-public-accessibility] .public-field-errors .errorlist { color: inherit; }
+body[data-public-accessibility] #submit-status:empty { display: block; height: 0; margin: 0; }
+body[data-public-accessibility] .form-section[hidden] { display: none; }
+
+.public-skip-link { position: absolute; top: .5rem; left: .5rem; z-index: 100; padding: .75rem 1rem; background: #fff; color: #172554; border: 2px solid #172554; border-radius: .5rem; transform: translateY(-200%); }
+.public-skip-link:focus { transform: translateY(0); }
+.public-accessibility-toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; max-width: 1160px; padding: 1rem 1.5rem 0; margin-inline: auto; }
+.public-accessibility-toolbar button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border: 1px solid #737d90; background: #fff; color: #243c91; padding: .6rem 1rem; }
+.public-accessibility-toolbar svg { flex: none; }
+.public-accessibility-panel { position: fixed; inset: 1rem 1rem 1rem auto; margin: auto 0; width: 25rem; max-width: calc(100% - 2rem); max-height: calc(100dvh - 2rem); padding: 1.25rem; border: 1px solid #737d90; border-radius: 1rem; background: #fff; color: #1d2239; overflow-y: auto; overscroll-behavior: contain; box-shadow: 0 1rem 4rem #10234a40; }
+.public-accessibility-panel::backdrop { background: #17255470; }
+.public-accessibility-panel:not([open]) { display: none; }
+.accessibility-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+body[data-public-accessibility] .accessibility-panel-heading h2 { font-size: 1.125rem; margin: .5rem 0; }
+.public-accessibility-panel p { margin: .5rem 0 .75rem; font-size: .9375rem; line-height: 1.6; color: #48536f; }
+.public-accessibility-panel button { background: #eef2ff; border: 1px solid #6a7592; color: #243c91; padding: .5rem .75rem; }
+.public-accessibility-panel #accessibility-close { font-size: 1.5rem; padding: .25rem; background: transparent; }
+.accessibility-option { border: 1px solid #d5dcec; background: #f7f8ff; border-radius: .75rem; padding: .875rem; margin: 1rem 0; min-width: 0; }
+.public-accessibility-panel legend { padding-inline: .25rem; font-size: 1rem; font-weight: 650; }
+body[data-public-accessibility] .accessibility-option h3 { font-size: 1rem; margin: 0; }
+.accessibility-choices { display: flex; flex-wrap: wrap; gap: .5rem; }
+.public-accessibility-panel .accessibility-choices label { flex: 1 1 auto; display: flex; align-items: center; gap: .3rem; padding: .4rem; border: 1px solid #737d90; border-radius: .4rem; font-size: .875rem; background: #fff; cursor: pointer; }
+.accessibility-choices label:has(:checked) { border: 2px solid #243c91; background: #edf1ff; }
+.accessibility-toggle { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin: 0; cursor: pointer; }
+.accessibility-speech-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.public-accessibility-panel button:disabled { cursor: default; }
+.accessibility-panel-note a { text-decoration: underline; color: #243c91; }
+
+body[data-public-spacing="wide"] :is(p, label, legend, li, h1, h2, h3, button, input, textarea, select, th, td) { line-height: 1.8; letter-spacing: .12em; word-spacing: .16em; }
+body[data-public-spacing="wide"] p { margin-bottom: 2em; }
+body[data-public-spacing="wide"] .form-sheet .field { margin-bottom: 2.5rem; }
+body[data-public-focus="strong"] :is(button, a, input, select, textarea, [tabindex]):focus { outline: 4px solid #172554; outline-offset: 4px; box-shadow: 0 0 0 4px #fff; }
+
+/* Solid surfaces also protect contrast when the author selected a photo/pattern. */
+body[data-public-contrast="high"] { --accent: #000 !important; --ink: #000; --muted: #000; --error: #8b001c; background: #fff !important; background-image: none !important; }
+body[data-public-contrast="high"] :is(.form-sheet, .welcome-screen, .welcome-card, .field, .section-intro, .submit-panel, .section-progress, .confirmation-card, .success-card, .public-accessibility-panel, .accessibility-option, .form-calendar, .form-dropdown-menu, .form-dropdown-search-header, .form-dropdown-result-status, .file-dropzone, .file-card, .file-preview, .information, .error-summary, footer) { color: #000 !important; background: #fff !important; border-color: #000 !important; --ink: #000; --muted: #000; }
+body[data-public-contrast="high"] :is(p, h1, h2, h3, label, legend, dt, dd, th, td, span, a, button, input, select, textarea, .errorlist, .form-dropdown-option) { color: #000 !important; }
+body[data-public-contrast="high"] :is(button, input, select, textarea, .scale-option, .accessibility-choices label, .file-browse-label) { background: #fff !important; border: 2px solid #000 !important; }
+body[data-public-contrast="high"] :is(.is-active, .scale-option:has(:checked), .accessibility-choices label:has(:checked)) { outline: 2px solid #000; outline-offset: -2px; }
+body[data-public-contrast="high"] .welcome-background { display: none; }
+body[data-public-contrast="high"] .answer-grid tr { background: #fff; }
+body[data-public-contrast="high"] .form-sheet::before,
+body[data-public-contrast="high"] .confirmation-card::before { background: #000; }
+body[data-public-contrast="high"] input::placeholder,
+body[data-public-contrast="high"] textarea::placeholder { color: #333 !important; }
+
+body[data-public-motion="reduce"] *, body[data-public-motion="reduce"] *::before, body[data-public-motion="reduce"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+@media (prefers-reduced-motion: reduce) {
+  body[data-public-accessibility] *, body[data-public-accessibility] *::before, body[data-public-accessibility] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+@media (max-width: 640px) {
+  body[data-public-accessibility] .page { padding-inline: .5rem; }
+  body[data-public-accessibility] :is(.form-sheet, .welcome-card, .confirmation-card, .success-card) { padding: 1rem; }
+  body[data-public-accessibility] .form-sheet .field { padding: .875rem; }
+  body[data-public-accessibility] .welcome-screen { padding: .75rem; min-height: 24rem; }
+  body[data-public-accessibility] .file-card { grid-template-columns: minmax(0, 1fr); }
+  body[data-public-accessibility] .file-actions { align-items: stretch; }
+  body[data-public-accessibility] .form-sheet .choice-option-image { width: 3rem; height: 3rem; }
+  .public-accessibility-panel { inset: .5rem; max-width: calc(100% - 1rem); max-height: calc(100dvh - 1rem); width: auto; padding: .875rem; }
+}
+@media (forced-colors: active) {
+  body[data-public-accessibility] :is(button, input, select, textarea, .file-dropzone, .accessibility-option) { border: 1px solid ButtonText; }
+  body[data-public-accessibility] :focus-visible { outline: 3px solid Highlight !important; }
+  body[data-public-accessibility] input:is([type="checkbox"], [type="radio"]) { forced-color-adjust: auto; }
+}

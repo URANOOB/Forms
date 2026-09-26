@@ -1,12 +1,11 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=4">{% endblock %}
-{% block extrahead %}{{ block.super }}<script src="{% static 'forms/response-documents.js' %}?v=1" defer></script><script src="{% static 'forms/response-review.js' %}?v=3" defer></script><script src="{% static 'forms/response-detail.js' %}?v=1" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-details.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-board.css' %}?v=blue-palette-20260926-2">{% endblock %}
+{% block extrahead %}{{ block.super }}<script src="{% static 'forms/response-documents.js' %}?v=2" defer></script><script src="{% static 'forms/response-review.js' %}?v=3" defer></script><script src="{% static 'forms/response-detail.js' %}?v=1" defer></script>{% endblock %}
 {% block header %}
+{{ block.super }}
 <div class="response-detail-topbar">
-    {% if is_nav_sidebar_enabled and not is_popup %}<button type="button" x-on:click="sidebarToggle()" aria-label="Abrir o cerrar navegación"><span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span></button>{% endif %}
     <a href="{% url 'admin:submissions_submission_changelist' %}"><span class="material-symbols-outlined" aria-hidden="true">arrow_back</span>Respuestas</a>
-    <div class="response-detail-usertools">{% include "unfold/helpers/userlinks.html" %}</div>
 </div>
 {% endblock %}
 {% block content %}
@@ -17,12 +16,13 @@
             <button type="button" class="response-more" popovertarget="response-detail-menu" aria-label="Más acciones" title="Más acciones"><span class="material-symbols-outlined" aria-hidden="true">more_horiz</span></button>
             <div id="response-detail-menu" class="response-action-menu" popover>
                 <a href="{% url 'admin:submissions_submission_download' original.pk %}">Descargar respuesta (CSV)</a>
+                {% if response_summary.files %}<a href="{% url 'admin:submissions_submission_documents' original.pk %}">Descargar documentos ZIP</a>{% endif %}
                 {% if version_url %}<a href="{{ version_url }}">Ver versión {{ original.form_version.version_number }}</a>{% endif %}
                 {% if can_delete %}<a class="response-delete" href="{% url 'admin:submissions_submission_remove' original.pk %}">Eliminar respuesta</a>{% endif %}
             </div>
         </div>
     </div>
-    <div class="response-detail-meta"><span>Respuesta #{{ original.pk|stringformat:"s"|slice:":8" }}</span><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span><time datetime="{{ original.submitted_at|date:'c' }}">{{ original.submitted_at|date:"j M Y, H:i" }}</time><span>Versión {{ original.form_version.version_number }}</span></div>
+    <div class="response-detail-meta"><span>Respuesta #{{ original.pk|stringformat:"s"|slice:":8" }}</span><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span><time datetime="{{ original.submitted_at|date:'c' }}">{{ original.submitted_at|date:"j M Y, H:i" }}</time>{% if original.assigned_to %}<span>Asignada a {{ original.assigned_to.get_full_name|default:original.assigned_to.get_username }}</span>{% endif %}<span>Versión {{ original.form_version.version_number }}</span></div>
 </header>
 <div class="response-review-layout">
 <div>{{ details }}</div>
@@ -30,10 +30,9 @@
 <section id="response-review" class="response-workflow" aria-labelledby="review-heading">
     <div class="review-heading"><div><span class="response-eyebrow">SEGUIMIENTO</span><h2 id="review-heading">Revisión de la respuesta</h2><p>{{ status_help }}</p></div><span class="response-status" data-status="{{ original.status }}">{{ original.get_status_display }}</span></div>
     <details class="review-history" id="response-history" ><summary>Historial · {{ reviews|length }} cambio{{ reviews|length|pluralize }}</summary>
-        <ol>{% for review in reviews %}<li><div><strong>{% if review.previous_status == review.status %}Señal de revisión{% else %}{{ review.get_previous_status_display }} → {{ review.get_status_display }}{% endif %}</strong><time datetime="{{ review.created_at|date:'c' }}">{{ review.created_at|date:"d/m/Y H:i" }}</time></div><p class="review-author">{% if review.actor %}{{ review.actor.get_full_name|default:review.actor.get_username }}{% else %}Usuario eliminado{% endif %}</p>{% if review.note %}<p class="review-note">{{ review.note }}</p>{% endif %}</li>{% endfor %}
-        <li><div><strong>Respuesta recibida</strong><time datetime="{{ original.submitted_at|date:'c' }}">{{ original.submitted_at|date:"d/m/Y H:i" }}</time></div><p class="review-author">Envío del formulario</p></li></ol>
+        <ol>{% for event in history %}<li><div><strong>{{ event.title }}</strong><time datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|date:"d/m/Y H:i" }}</time></div>{% if event.actor %}<p class="review-author">{{ event.actor.get_full_name|default:event.actor.get_username }}</p>{% elif event.actor_deleted %}<p class="review-author">Usuario eliminado</p>{% endif %}{% if event.description %}<p class="review-note">{{ event.description }}</p>{% endif %}</li>{% endfor %}</ol>
     </details>
-    {% if can_edit %}
+    {% if can_review_action %}
     <form method="post" action="{% url 'admin:submissions_submission_review' original.pk %}" class="review-form" data-review-form>
         {% csrf_token %}{{ review_form.revision }}
         {% if review_form.errors %}<div class="review-errors" role="alert">{{ review_form.non_field_errors }}{{ review_form.status.errors }}{{ review_form.note.errors }}{{ review_form.revision.errors }}</div>{% endif %}

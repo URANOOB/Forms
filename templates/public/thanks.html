@@ -6,7 +6,8 @@
 {% block content %}
 <section class="confirmation-card" aria-labelledby="confirmation-title">
     <div class="confirmation-emblem" aria-hidden="true">
-        <span><svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m14 24 7 7 14-15"/></svg></span>
+        <span class="confirmation-fallback"><svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m14 24 7 7 14-15"/></svg></span>
+        <div id="confirmation-animation" data-animation="{% static 'forms/submission-success.json' %}" hidden></div>
     </div>
     <p class="confirmation-status">Envío completado</p>
     <h1 class="confirmation-title" id="confirmation-title">Respuesta registrada</h1>
@@ -18,3 +19,4 @@
     </div>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script><script src="{% static 'forms/confirmation-animation.js' %}?v=accessibility-1" defer></script>{% endblock %}

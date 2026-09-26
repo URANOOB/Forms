@@ -1,0 +1,9 @@
+{% autoescape off %}{% if notification.is_test %}CORREO DE PRUEBA
+{% endif %}LogicForms — Nueva respuesta recibida
+
+Formulario: {{ notification.form_name }}
+Fecha: {{ submitted_at|date:"d/m/Y H:i" }}
+Respuesta: #{{ short_id }}
+
+Ver respuesta (requiere iniciar sesión): {{ detail_url }}
+{% endautoescape %}

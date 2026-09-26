@@ -19,6 +19,8 @@ from storages.backends.s3 import S3Storage
 
 from apps.submissions.models import SubmissionFile
 
+from .email_usage import email_usage_info
+
 
 def storage_size(value):
     """Decimal units, so a 500,000,000-byte allowance displays as 500 MB."""
@@ -230,4 +232,4 @@ def infrastructure_info():
     if data is None:
         data = [database_info(), files_info()]
         cache.set(key, data, 300 if all(item["available"] for item in data) else 30)
-    return data
+    return [*data, email_usage_info()]

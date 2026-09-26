@@ -29,11 +29,12 @@
     list.setAttribute("aria-busy", "true");
     try {
       const data = await responseData({ page, q: query.value.trim() }, controller.signal);
+      if (controller.signal.aborted) return;
       list.innerHTML = data.html;
       document.getElementById("builder-response-count").textContent = `(${data.total})`;
       status.textContent = data.count === 1 ? "1 respuesta" : `${data.count} respuestas`;
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (!controller.signal.aborted && error.name !== "AbortError") {
         list.replaceChildren();
         status.textContent = error.message;
       }

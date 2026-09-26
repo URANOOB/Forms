@@ -1,0 +1,9 @@
+{% autoescape off %}{% if notification.is_test %}CORREO DE PRUEBA
+{% endif %}LogicForms — Tu solicitud requiere correcciones
+
+Formulario: {{ notification.form_name }}
+Motivo: {{ reason }}
+
+Realiza las correcciones indicadas y vuelve a enviar el formulario:
+{{ form_url }}
+{% endautoescape %}
