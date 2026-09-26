@@ -1,12 +1,12 @@
 .responses-workspace, .response-workflow, .review-dialog, .response-action-menu {
   --review-ink: #202b40; --review-muted: #718096; --review-border: #e7eaf0;
-  --review-surface: #fff; --review-soft: #f8f9fb; --review-accent: #6941c6;
-  --review-accent-soft: #f3efff; color: var(--review-ink);
+  --review-surface: #fff; --review-soft: #f8f9fb; --review-accent: #2563eb;
+  --review-accent-soft: #eff6ff; color: var(--review-ink);
 }
 .dark :is(.responses-workspace, .response-workflow, .review-dialog, .response-action-menu) {
   --review-ink: #e5eaf2; --review-muted: #a1aec0; --review-border: #344155;
-  --review-surface: #182231; --review-soft: #131c29; --review-accent: #b7a4ff;
-  --review-accent-soft: #30274a;
+  --review-surface: #182231; --review-soft: #131c29; --review-accent: #93c5fd;
+  --review-accent-soft: #27364a;
 }
 .responses-workspace { min-width: 0; }
 .response-board-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin: 28px 0 22px; }

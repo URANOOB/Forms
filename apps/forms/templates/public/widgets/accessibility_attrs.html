@@ -1,0 +1,1 @@
+{% for name, value in widget.attrs.items %}{% if name == 'aria-describedby' or name == 'aria-invalid' or name == 'required' or name == 'disabled' %} {{ name }}="{{ value }}"{% endif %}{% endfor %}

@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}{% load static %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/notifications.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-selects.css' %}?v=blue-palette-20260926-2"><script src="{% static 'forms/response-selects.js' %}?v=2" defer></script>{% endblock %}
+{% block content %}
+<main class="email-page metrics-dashboard">
+    <header class="email-heading"><div><h1>Destinatarios</h1><p>Elige quién recibe un aviso cuando llega una nueva respuesta a cada formulario.</p></div><a class="email-button" href="{% url 'admin:notifications_emailnotification_changelist' %}">Volver a Correos</a></header>
+    {% if available_forms %}
+    <section class="email-settings-card" aria-labelledby="form-picker-title">
+        <h2 id="form-picker-title">Selecciona un formulario</h2>
+        <form method="get" class="email-form-picker">
+            <div><label for="recipient-form">Formulario</label><select id="recipient-form" name="form">{% for form in available_forms %}<option value="{{ form.pk }}"{% if form.pk == selected_form.pk %} selected{% endif %}>{{ form.name }}</option>{% endfor %}</select></div>
+            <button class="email-button" type="submit">Ver configuración</button>
+        </form>
+    </section>
+    {% if editor %}
+    <section class="email-settings-card" aria-labelledby="recipient-settings-title">
+        <h2 id="recipient-settings-title">Nuevas respuestas · {{ selected_form.name }}</h2>
+        {% if not email_enabled %}<p class="email-notice" role="status">El envío de correos está desactivado en este entorno. Puedes guardar los destinatarios para cuando se active.</p>{% elif email_test_mode %}<p class="email-notice" role="status">Modo de prueba: los avisos se redirigen al buzón de pruebas configurado.</p>{% endif %}
+        <form method="post" class="email-recipient-editor">
+            {% csrf_token %}<input type="hidden" name="form" value="{{ selected_form.pk }}">
+            {{ editor.non_field_errors }}
+            <label class="email-toggle">{{ editor.notify_internal_on_submission }} {{ editor.notify_internal_on_submission.label }}</label>
+            <div class="email-recipient-field">
+                <label for="{{ editor.internal_recipients.id_for_label }}">{{ editor.internal_recipients.label }}</label>
+                {{ editor.internal_recipients }}
+                <p class="email-muted" id="id_internal_recipients_helptext">{{ editor.internal_recipients.help_text }}</p>
+                {% if editor.internal_recipients.errors %}<div role="alert">{{ editor.internal_recipients.errors }}</div>{% endif %}
+            </div>
+            <p class="email-muted">Destinatario predeterminado: {% if selected_form.created_by.email %}{{ selected_form.created_by.email }} (creador del formulario).{% else %}El creador no tiene correo. Añade al menos un destinatario para recibir los avisos.{% endif %}</p>
+            <p class="email-muted">La lista reemplaza al destinatario predeterminado. Los cambios se aplican a nuevas respuestas; cada persona recibe un correo individual.</p>
+            <div class="email-settings-footer"><button type="submit" class="email-button email-primary">Guardar destinatarios</button></div>
+        </form>
+    </section>
+    {% endif %}
+    {% else %}<section class="email-settings-card"><h2>Aún no hay formularios</h2><p class="email-muted">Crea un formulario para configurar sus destinatarios.</p></section>{% endif %}
+</main>
+{% endblock %}

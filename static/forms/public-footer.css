@@ -1,0 +1,39 @@
+body.public-form-page > footer.public-institutional-footer {
+  width: min(1112px, calc(100% - 48px));
+  max-width: none;
+  margin: 0 auto;
+  padding: 22px 16px 28px;
+  border: 0;
+  border-top: 1px solid #d5dfef;
+  color: #48536f;
+  background: #f5f8fd;
+  border-radius: 0 0 16px 16px;
+  text-align: center;
+  font-size: .875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.public-footer-identity, .public-footer-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 12px; }
+.public-footer-identity strong { color: #1d2239; font-weight: 600; }
+.public-footer-links { margin-top: 8px; gap: 4px 20px; }
+.public-institutional-footer a { color: #2454a0; text-decoration: underline; text-underline-offset: 4px; }
+.public-footer-links a { display: inline-flex; align-items: center; min-height: 32px; }
+.public-institutional-footer a:hover { color: #163d7c; }
+.public-institutional-footer .public-footer-contact { margin: 8px 0 0; }
+.public-institutional-footer .public-footer-credit { margin: 12px 0 0; font-size: .8125rem; }
+.public-footer-credit a { font-weight: 600; }
+.public-information-page { max-width: 880px; }
+.public-information-card { padding: clamp(24px, 5vw, 48px); border: 1px solid #d5dfef; border-radius: 24px; background: #fff; color: #1d2239; box-shadow: 0 16px 45px #273b5c0a; }
+.public-information-card header { padding-bottom: 12px; }
+.public-information-eyebrow { color: #48536f; font-size: .9375rem; }
+.public-information-card section { padding-top: 24px; margin-top: 20px; border-top: 1px solid #d5dfef; }
+.public-information-card a { color: #2454a0; text-underline-offset: 3px; }
+.public-information-card p { line-height: 1.75; }
+.public-information-return { margin: 28px 0 0; color: #48536f; }
+body[data-public-contrast="high"] :is(.public-institutional-footer, .public-information-card) { background: #fff !important; color: #000 !important; border-color: #000 !important; }
+body[data-public-contrast="high"] :is(.public-institutional-footer, .public-information-card) :is(a, strong, p) { color: #000 !important; }
+@media (max-width: 480px) {
+  body.public-form-page > footer.public-institutional-footer { width: calc(100% - 24px); padding: 18px 12px 24px; }
+  .public-footer-identity { flex-direction: column; gap: 2px; }
+  .public-footer-identity > span[aria-hidden] { display: none; }
+}

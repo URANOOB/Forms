@@ -1,0 +1,11 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrahead %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'forms/response-selects.css' %}?v=blue-palette-20260926-2">
+<link rel="stylesheet" href="{% static 'forms/users.css' %}?v=1">
+<script src="{% static 'forms/response-selects.js' %}?v=users-1" defer></script>
+<script src="{% static 'forms/users.js' %}?v=1" defer></script>
+{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+{% block nav-global-side %}{% endblock %}
+{% block content %}<main class="users-page">{% block users_content %}{% endblock %}</main>{% endblock %}

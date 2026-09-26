@@ -8,7 +8,11 @@ SETTING_FLAGS = (
     "notify_respondent_on_validated",
     "notify_respondent_on_rejected",
 )
-DEFAULTS = {**dict.fromkeys(SETTING_FLAGS, True), "respondent_email_stable_key": ""}
+DEFAULTS = {
+    **dict.fromkeys(SETTING_FLAGS, True),
+    "respondent_email_stable_key": "",
+    "internal_recipients": [],
+}
 
 
 def settings_for(form):
@@ -19,7 +23,7 @@ def settings_for(form):
 def save_settings(form, data, fields):
     if not isinstance(data, dict) or set(data) - set(DEFAULTS):
         raise ValidationError("Configuración de notificaciones inválida.")
-    values = {**DEFAULTS, **data}
+    values = {**settings_for(form), **data}
     if any(type(values[key]) is not bool for key in SETTING_FLAGS):
         raise ValidationError("Las opciones de correo deben ser verdaderas o falsas.")
     key = values["respondent_email_stable_key"]
@@ -27,7 +31,25 @@ def save_settings(form, data, fields):
         key and key not in {f.stable_key for f in fields if f.field_type == "EMAIL"}
     ):
         raise ValidationError("Selecciona un campo EMAIL existente para las notificaciones.")
+    values["internal_recipients"] = clean_internal_recipients(values["internal_recipients"])
     FormNotificationSettings.objects.update_or_create(form=form, defaults=values)
+
+
+def clean_internal_recipients(values):
+    if not isinstance(values, list) or len(values) > 20:
+        raise ValidationError("Puedes configurar hasta 20 direcciones de correo.")
+    recipients = []
+    seen = set()
+    for value in values:
+        email = valid_email(value)
+        if not email:
+            raise ValidationError(
+                "Revisa los destinatarios: todas las direcciones deben ser válidas."
+            )
+        if email.casefold() not in seen:
+            recipients.append(email)
+            seen.add(email.casefold())
+    return recipients
 
 
 def valid_email(value):

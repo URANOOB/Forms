@@ -1,7 +1,41 @@
 """The only module allowed to communicate with Resend."""
 
+import json
+
 import resend
 from django.conf import settings
+
+
+class UsageUnavailable(Exception):
+    """Only safe, user-facing diagnostics may leave the usage client."""
+
+
+def usage(api_key):
+    # Use a separate client so a monitoring key never replaces the sending key
+    # in the SDK's process-wide configuration while another request sends mail.
+    try:
+        body, status, _ = resend.RequestsClient(timeout=5).request(
+            method="get",
+            url="https://api.resend.com/usage",
+            headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+        )
+    except (RuntimeError, OSError):
+        raise UsageUnavailable("No se pudo conectar con Resend. Intenta más tarde.") from None
+    if status in {401, 403}:
+        raise UsageUnavailable(
+            "Resend no autorizó la consulta de consumo. Revisa la clave y sus permisos."
+        )
+    if status == 429:
+        raise UsageUnavailable("Resend limitó las consultas. Intenta más tarde.")
+    if status != 200:
+        raise UsageUnavailable("No se pudo consultar el consumo en Resend.")
+    try:
+        data = json.loads(body)
+        if not isinstance(data, dict) or not isinstance(data.get("emails"), dict):
+            raise ValueError
+        return data["emails"]
+    except (ValueError, UnicodeError):
+        raise UsageUnavailable("Resend devolvió datos de consumo no disponibles.") from None
 
 
 def send(payload, key):

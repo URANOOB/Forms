@@ -4,7 +4,7 @@ from django.urls import path
 from apps.forms.admin import PlatformAdmin
 
 from .models import EmailNotification
-from .views import emails, retry_email
+from .views import emails, recipient_settings, retry_email
 
 
 @admin.register(EmailNotification)
@@ -29,6 +29,11 @@ class EmailNotificationAdmin(PlatformAdmin):
     def get_urls(self):
         # No default change/add/delete/history endpoints, even for superusers.
         return [
+            path(
+                "recipients/",
+                self.admin_site.admin_view(lambda request: recipient_settings(self, request)),
+                name="notifications_emailnotification_recipients",
+            ),
             path(
                 "",
                 self.admin_site.admin_view(lambda request: emails(self, request)),

@@ -4,7 +4,7 @@
 {% block bodyclass %}{{ block.super }} login auth-workspace{% endblock %}
 {% block nav-global %}{% endblock %}
 {% block content_title %}{% endblock %}
-{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/platform-auth.css' %}?v=2">{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/platform-auth.css' %}?v=blue-palette-20260926-2">{% endblock %}
 {% block title %}{{ title }} | {{ site_title }}{% endblock %}
 
 {% block base %}
@@ -16,7 +16,7 @@
         </div>
         {% include "unfold/helpers/unauthenticated_header.html" %}
     </div>
-    <aside class="auth-promo" {% if login_image %}style="background-image: linear-gradient(135deg, #6755d9d9, #4168d8dd), url('{{ login_image }}')"{% endif %}>
+    <aside class="auth-promo" {% if login_image %}style="background-image: linear-gradient(135deg, #153e75d9, #176bc4dd), url('{{ login_image }}')"{% endif %}>
         <div class="auth-promo-content">
             <span class="auth-promo-icon material-symbols-outlined" aria-hidden="true">dashboard_customize</span>
             <p class="auth-promo-eyebrow">LOGICFORMS</p>

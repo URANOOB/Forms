@@ -15,10 +15,19 @@ El purgado definitivo se realiza desde la papelera, con confirmación, y exige a
 La migración renombra el grupo `Visor` a `Operador` conservando miembros y permisos;
 si ambos existen, los combina.
 
-El administrador asigna el rol desde **Usuarios → Acceso a la plataforma**. El acceso
+El administrador asigna el rol desde **Usuarios → Editar usuario → Acceso y permisos**. El acceso
 a esta administración se comprueba en el servidor, también al abrir una URL directa.
 Las cuentas inactivas no pueden iniciar sesión. Las cuentas internas de los datos de
 ejemplo permanecen inactivas y no aparecen en el listado ni en el contador de usuarios.
+
+El apartado utiliza el diseño de la plataforma en el listado, la creación y edición,
+el cambio de contraseña, el historial y las confirmaciones de eliminación. Incluye
+un resumen de usuarios, activos y roles; búsqueda por usuario, nombre o correo;
+filtros de rol y estado; ordenamiento y paginación de 25 usuarios. Los indicadores
+resumen todas las cuentas visibles, mientras que el contador de resultados refleja
+los filtros aplicados. La selección múltiple se limita a la página actual y la
+eliminación sigue requiriendo confirmación. Estas pantallas conservan las
+validaciones, el registro de cambios y los permisos del administrador de Django.
 
 Ejecuta `python manage.py setup_roles` después de las migraciones al preparar un
 entorno. El comando configura los dos grupos, sustituye los roles anteriores y

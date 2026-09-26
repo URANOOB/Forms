@@ -179,7 +179,9 @@ class VercelDiscoveryTests(SimpleTestCase):
                 self.assertIn("PUBLIC_BASE_URL", result.stderr)
 
     def test_navigation_links_resolve_after_django_startup(self):
-        navigation = settings.UNFOLD["SIDEBAR"]["navigation"][0]["items"]
+        navigation = [
+            item for group in settings.UNFOLD["SIDEBAR"]["navigation"] for item in group["items"]
+        ]
         self.assertEqual(
             [item["link"](None) for item in navigation],
             [

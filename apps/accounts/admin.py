@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
+from django.db.models import Count, Q
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm
 
@@ -39,8 +40,29 @@ class SuperuserOnlyMixin:
         return self.has_module_permission(request)
 
 
+class UserStatusFilter(admin.SimpleListFilter):
+    title = "estado"
+    parameter_name = "is_active__exact"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Activos"), ("0", "Inactivos"))
+
+    def queryset(self, request, queryset):
+        if self.value() in ("0", "1"):
+            return queryset.filter(is_active=self.value() == "1")
+        return queryset
+
+
 @admin.register(User)
 class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
+    change_list_template = "admin/accounts/users/list.html"
+    change_form_template = "admin/accounts/users/form.html"
+    add_form_template = "admin/accounts/users/form.html"
+    change_user_password_template = "admin/accounts/users/password.html"
+    delete_confirmation_template = "admin/accounts/users/delete.html"
+    delete_selected_confirmation_template = "admin/accounts/users/delete.html"
+    object_history_template = "admin/accounts/users/history.html"
+    list_per_page = 25
     form = PlatformUserChangeForm
     add_form = PlatformUserCreationForm
     change_password_form = AdminPasswordChangeForm
@@ -69,7 +91,7 @@ class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
         ),
     )
     list_display = ["username", "email", "role_label", "is_active"]
-    list_filter = [RoleFilter, "is_active"]
+    list_filter = [RoleFilter, UserStatusFilter]
     filter_horizontal = ()
     readonly_fields = ["last_login", "date_joined"]
 
@@ -79,6 +101,40 @@ class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
 
     def get_queryset(self, request):
         return visible_users(super().get_queryset(request))
+
+    def changelist_view(self, request, extra_context=None):
+        response = super().changelist_view(request, extra_context)
+        context = getattr(response, "context_data", None)
+        if context is None or "cl" not in context:
+            return response
+        changelist = context["cl"]
+        context["user_metrics"] = self.get_queryset(request).aggregate(
+            total=Count("pk"),
+            active=Count("pk", filter=Q(is_active=True)),
+            administrators=Count("pk", filter=Q(is_superuser=True)),
+            operators=Count("pk", filter=Q(is_superuser=False)),
+        )
+        context["user_role_choices"] = ROLE_CHOICES
+        context["selected_user_role"] = request.GET.get("role", "")
+        context["selected_user_active"] = request.GET.get("is_active__exact", "")
+        page = changelist.page_num
+        context["user_previous_url"] = (
+            changelist.get_query_string({"p": page - 1}) if page > 1 else None
+        )
+        context["user_next_url"] = (
+            changelist.get_query_string({"p": page + 1})
+            if page < changelist.paginator.num_pages and not changelist.show_all
+            else None
+        )
+        context["user_sort_links"] = {
+            name: changelist.get_query_string(
+                {"o": str(index) if request.GET.get("o") != str(index) else f"-{index}"},
+                remove=["p"],
+            )
+            for index, name in enumerate(changelist.list_display)
+            if name in {"username", "email", "role_label", "is_active"}
+        }
+        return response
 
 
 admin.site.unregister(Group)

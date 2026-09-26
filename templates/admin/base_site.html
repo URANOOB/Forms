@@ -4,5 +4,5 @@
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:"LogicForms" }}{% endblock %}
 {% block branding %}{% include "unfold/helpers/site_branding.html" %}{% endblock %}
 {% block nav-global %}{% endblock %}
-{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/platform-design.css' %}?v=16"><link rel="stylesheet" href="{% static 'forms/platform-header.css' %}?v=5"><script src="{% static 'forms/platform-header.js' %}?v=1" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/platform-design.css' %}?v=contained-shell-20260926-2"><link rel="stylesheet" href="{% static 'forms/platform-header.css' %}?v=contained-shell-20260926-2"><script src="{% static 'forms/platform-header.js' %}?v=1" defer></script>{% endblock %}
 {% block header %}{% if not is_popup %}{% include "admin/platform_header.html" %}{% endif %}{% endblock %}

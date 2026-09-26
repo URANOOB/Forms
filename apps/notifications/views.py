@@ -2,17 +2,24 @@ import uuid
 from datetime import timedelta
 
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponseNotAllowed
+from django.http import Http404, HttpResponseBadRequest, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.forms.models import Form
+
+from .forms import RecipientSettingsForm
 from .models import EmailNotification as Email
+from .models import FormNotificationSettings
+from .recipients import settings_for
 from .services import can_retry, send_notification
 
 
@@ -181,8 +188,69 @@ def emails(model_admin, request):
             "close_url": close_url,
             "page_query": query.urlencode(),
             "can_retry": selected and request.user.is_superuser and can_retry(selected),
+            "can_configure_recipients": request.user.has_perm("forms.change_form"),
         },
         status=200 if valid else 400,
+    )
+
+
+def recipient_settings(model_admin, request):
+    if not model_admin.has_view_permission(request) or not request.user.has_perm(
+        "forms.change_form"
+    ):
+        raise PermissionDenied
+    if request.method not in {"GET", "POST"}:
+        return HttpResponseNotAllowed(["GET", "POST"])
+    available = Form.objects.filter(deleted_at=None).select_related("created_by").order_by("name")
+    selected = None
+    form_id = request.POST.get("form") if request.method == "POST" else request.GET.get("form")
+    if form_id:
+        try:
+            form_id = uuid.UUID(form_id)
+        except ValueError:
+            raise Http404 from None
+        selected = get_object_or_404(available, pk=form_id)
+    elif request.method == "POST":
+        return HttpResponseBadRequest("Selecciona un formulario.")
+    else:
+        selected = available.first()
+    editor = None
+    if selected:
+        config = settings_for(selected)
+        editor = RecipientSettingsForm(
+            request.POST if request.method == "POST" else None,
+            initial={
+                "notify_internal_on_submission": config["notify_internal_on_submission"],
+                "internal_recipients": "\n".join(config["internal_recipients"]),
+            },
+        )
+        if request.method == "POST" and editor.is_valid():
+            with transaction.atomic():
+                # Use the same parent lock as the builder and submission workflow.
+                selected = get_object_or_404(
+                    Form.objects.select_for_update(), pk=selected.pk, deleted_at=None
+                )
+                FormNotificationSettings.objects.update_or_create(
+                    form=selected, defaults=editor.cleaned_data
+                )
+            messages.success(request, "Destinatarios guardados para las nuevas respuestas.")
+            return redirect(
+                reverse("admin:notifications_emailnotification_recipients") + f"?form={selected.pk}"
+            )
+    return render(
+        request,
+        "admin/notifications/recipients.html",
+        {
+            **model_admin.admin_site.each_context(request),
+            "title": "Destinatarios de correos",
+            "opts": Email._meta,
+            "available_forms": available,
+            "selected_form": selected,
+            "editor": editor,
+            "email_enabled": settings.EMAIL_NOTIFICATIONS_ENABLED,
+            "email_test_mode": bool(settings.EMAIL_TEST_RECIPIENT),
+        },
+        status=400 if editor and editor.is_bound and editor.errors else 200,
     )
 
 

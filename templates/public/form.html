@@ -18,7 +18,7 @@
 <noscript><style>#form-content[hidden]{display:block!important}#welcome-start{display:none}.page.showing-welcome{max-width:1120px}</style></noscript>
 {% endif %}
 <div id="form-content" class="form-sheet" {% if welcome and not response_form.is_bound %}hidden{% endif %}>
-{% with header_url=appearance|header_image_url %}{% if header_url %}<img class="form-header-image" src="{{ header_url }}" alt="Encabezado del formulario">{% endif %}{% endwith %}
+{% with header_url=appearance|header_image_url %}{% if header_url %}<img class="form-header-image" src="{{ header_url }}" alt="{% if staff_edit %}Encabezado del formulario{% endif %}">{% endif %}{% endwith %}
 <header class="intro">
     {% if welcome %}<button type="button" id="welcome-back" class="welcome-back">← Volver a la presentación</button>{% endif %}
     {% if staff_edit %}<p><a href="{{ back_url }}">← Volver a la respuesta</a></p>{% endif %}
@@ -34,17 +34,16 @@
         <input type="hidden" name="revision" value="{{ revision }}">
         <div class="section-intro"><p>Estado: {{ response_status }}. <a href="{{ back_url }}#response-review">Gestionar revisión</a></p><p class="hint">Si cambias una respuesta validada o rechazada, volverá a «En revisión».</p></div>
     {% endif %}
-    {% if response_form.errors %}
-    <div class="error-summary" role="alert" tabindex="-1" id="error-summary">
-        <strong>Revise los campos indicados antes de continuar.</strong>
+    <div class="error-summary" tabindex="-1" id="error-summary" aria-labelledby="error-summary-title" {% if not response_form.errors %}hidden{% endif %}>
+        <h2 id="error-summary-title">Revise los campos indicados antes de continuar.</h2>
         {{ response_form.non_field_errors }}
-        <ul>{% for input in response_form %}{% for error in input.errors %}
+        <ul data-error-links>{% for input in response_form %}{% for error in input.errors %}
             <li><a href="#{{ input.auto_id }}">{{ input.label }}: {{ error }}</a></li>
         {% endfor %}{% endfor %}</ul>
     </div>
-    {% endif %}
     <noscript><p class="hint">Activa JavaScript para recorrer el formulario por secciones. Sin JavaScript se muestran todas las preguntas; las condiciones y los saltos se revisarán al enviar.</p></noscript>
     <p class="section-progress" id="section-progress" aria-live="polite" hidden></p>
+    {% if not staff_edit %}<p class="visually-hidden" id="condition-status" role="status" aria-atomic="true"></p>{% endif %}
     {% for item in sections %}
     <section class="form-section" data-section="{{ item.section.pk }}" tabindex="-1" {% if item.section.configuration.hide_header %}aria-label="Sección {{ forloop.counter }}"{% else %}aria-labelledby="section-{{ item.section.pk }}"{% endif %}>
         {% if not item.section.configuration.hide_header %}
@@ -59,20 +58,20 @@
             {% if row.input %}
                 {% if row.field.field_type == 'MULTIPLE_CHOICE' or row.field.configuration.widget == 'radio' or row.field.field_type == 'LINEAR_SCALE' or row.field.field_type == 'RATING' or row.field.field_type == 'GRID_SINGLE' or row.field.field_type == 'GRID_MULTIPLE' %}<fieldset><legend><span class="question-number">{{ row.number }}.</span> {{ row.field.label }} <span data-required {% if not row.field.required %}hidden{% endif %}>*</span></legend>
                 {% else %}<label for="{{ row.input.id_for_label }}"><span class="question-number">{{ row.number }}.</span> {{ row.field.label }} <span data-required {% if not row.field.required %}hidden{% endif %}>*</span></label>{% endif %}
-                {% if row.field.help_text %}<p class="help" id="{{ row.input.auto_id }}_helptext">{{ row.field.help_text|linebreaksbr }}</p>{% endif %}
+                {% if row.field.help_text %}<p class="help" id="{{ row.input.auto_id }}_helptext">{{ row.field.help_text|linebreaksbr }}</p>{% elif not staff_edit and row.is_phone %}<p class="help" id="{{ row.input.auto_id }}_helptext">Use de 6 a 25 dígitos, sin espacios ni símbolos.</p>{% elif not staff_edit and row.field.field_type == 'NUMBER' %}<p class="help" id="{{ row.input.auto_id }}_helptext">Use solo dígitos del 0 al 9, sin decimales ni signos.</p>{% endif %}
                 {% if row.is_phone %}<div class="form-phone-control">
                     <span class="form-phone-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16.5v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 1.1 3.8 2 2 0 0 1 3.1 1.6h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L7 9.6a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/></svg></span>
-                    {{ row.input }}
+                    {% include "public/_input.html" with input=row.input %}
                 </div>{% elif row.field.field_type == 'NUMBER' %}<div class="form-number-control">
                     <span class="form-number-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M10 3 8 21M16 3l-2 18M4 9h16M3 15h16"/></svg></span>
-                    {{ row.input }}
-                </div>{% else %}{{ row.input }}{% endif %}
+                    {% include "public/_input.html" with input=row.input %}
+                </div>{% else %}{% include "public/_input.html" with input=row.input %}{% endif %}
                 {% if row.additional_input %}
                 <div class="additional-choice-text" data-additional-container>
                     <label for="{{ row.additional_input.id_for_label }}">{{ row.additional_label }}</label>
-                    <p class="help">{{ row.additional_hint }}</p>
-                    {{ row.additional_input }}
-                    {{ row.additional_input.errors }}
+                    <p class="help" id="{{ row.additional_input.auto_id }}_helptext">{{ row.additional_hint }}</p>
+                    {% include "public/_input.html" with input=row.additional_input %}
+                    {% include "public/_input_errors.html" with input=row.additional_input %}
                 </div>
                 {% endif %}
                 {% if row.attachments %}
@@ -83,8 +82,8 @@
                     </div>{% endfor %}
                 </div>
                 {% endif %}
-                {% if row.upload_hint %}<p class="help upload-hint">{{ row.upload_hint }}</p>{% endif %}
-                {{ row.input.errors }}
+                {% if row.upload_hint %}<p class="help upload-hint" id="{{ row.input.auto_id }}_upload_hint">{{ row.upload_hint }}</p>{% endif %}
+                {% include "public/_input_errors.html" with input=row.input %}
                 {% if row.field.field_type == 'MULTIPLE_CHOICE' or row.field.configuration.widget == 'radio' or row.field.field_type == 'LINEAR_SCALE' or row.field.field_type == 'RATING' or row.field.field_type == 'GRID_SINGLE' or row.field.field_type == 'GRID_MULTIPLE' %}</fieldset>{% endif %}
             {% else %}
                 {% if row.field.field_type == 'HEADING' %}<h3>{{ row.field.label }}</h3>{% else %}<p class="information">{{ row.field.label }}</p>{% endif %}
@@ -102,15 +101,15 @@
             <button type="button" id="next-button" hidden>Siguiente</button>
             <button type="submit" id="submit-button">{% if staff_edit %}Guardar cambios{% elif preview %}Finalizar vista previa{% else %}Enviar respuesta{% endif %}</button>
         </div>
-        <p class="hint" id="submit-status" aria-live="polite"></p>
+        <p class="hint" id="submit-status" role="status" aria-live="polite" aria-atomic="true"></p>
     </div>
 </form>
 </div>
 {% endblock %}
 {% block scripts %}
 {{ schema|json_script:"form-schema" }}
-<script src="{% static 'forms/public.js' %}?v=audit-20260925" defer></script>
+<script src="{% static 'forms/public.js' %}?v=accessibility-1" defer></script>
 <script src="{% static 'forms/date-picker.js' %}?v=calendar-1" defer></script>
-<script src="{% static 'forms/select-picker.js' %}?v=catalog-3" defer></script>
-<script src="{% static 'forms/file-picker.js' %}?v=upload-1" defer></script>
+<script src="{% static 'forms/select-picker.js' %}?v=accessibility-1" defer></script>
+<script src="{% static 'forms/file-picker.js' %}?v=accessibility-1" defer></script>
 {% endblock %}

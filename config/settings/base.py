@@ -28,6 +28,17 @@ DEBUG = False
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+PUBLIC_INSTITUTION_NAME = os.environ.get("PUBLIC_INSTITUTION_NAME", "").strip() or "LogicForms"
+PUBLIC_SUPPORT_EMAIL = os.environ.get("PUBLIC_SUPPORT_EMAIL", "").strip()
+PUBLIC_PRIVACY_URL = os.environ.get("PUBLIC_PRIVACY_URL", "").strip()
+if PUBLIC_PRIVACY_URL:
+    privacy_url = urlsplit(PUBLIC_PRIVACY_URL)
+    if (
+        privacy_url.scheme != "https"
+        or not privacy_url.hostname
+        or privacy_url.username is not None
+    ):
+        raise ImproperlyConfigured("PUBLIC_PRIVACY_URL debe ser una URL HTTPS sin credenciales.")
 if PUBLIC_BASE_URL:
     origin = urlsplit(PUBLIC_BASE_URL)
     if (
@@ -76,6 +87,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.accounts.platform.shell_context",
+                "config.context_processors.public_footer",
             ]
         },
     }
@@ -144,6 +156,7 @@ ENABLE_DEMO_SEED = False
 EMAIL_PROVIDER = os.environ.get("EMAIL_PROVIDER", "resend")
 EMAIL_FROM = os.environ.get("EMAIL_FROM", "LogicForms <notificaciones@logicforms.xyz>")
 EMAIL_API_KEY = os.environ.get("EMAIL_API_KEY", "")
+RESEND_USAGE_API_KEY = os.environ.get("RESEND_USAGE_API_KEY", "").strip()
 RESEND_WEBHOOK_SECRET = os.environ.get("RESEND_WEBHOOK_SECRET", "")
 EMAIL_NOTIFICATIONS_ENABLED = env_bool("EMAIL_NOTIFICATIONS_ENABLED", False)
 EMAIL_TEST_RECIPIENT = os.environ.get("EMAIL_TEST_RECIPIENT", "").strip()
@@ -188,6 +201,21 @@ for _scope, _default, _seconds in (
     RATE_LIMITS[_scope] = (_limit, _seconds)
 
 UNFOLD = {
+    "COLORS": {
+        "primary": {
+            "50": "#eff6ff",
+            "100": "#dbeafe",
+            "200": "#bfdbfe",
+            "300": "#93c5fd",
+            "400": "#60a5fa",
+            "500": "#3b82f6",
+            "600": "#2563eb",
+            "700": "#1d4ed8",
+            "800": "#1e40af",
+            "900": "#1e3a8a",
+            "950": "#172554",
+        },
+    },
     "DASHBOARD_CALLBACK": "apps.accounts.dashboard.dashboard_callback",
     "SITE_TITLE": "Formularios institucionales",
     "SITE_HEADER": "LogicForms",
@@ -200,7 +228,7 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": "",
+                "title": "General",
                 "items": [
                     {
                         "title": "Panel general",
@@ -208,6 +236,11 @@ UNFOLD = {
                         "icon_template": "unfold/helpers/platform_nav_icon.html",
                         "link": lambda request: reverse("admin:index"),
                     },
+                ],
+            },
+            {
+                "title": "Gestión",
+                "items": [
                     {
                         "title": "Formularios",
                         "icon": "dynamic_form",
@@ -241,6 +274,11 @@ UNFOLD = {
                         ),
                         "permission": lambda r: r.user.has_perm("submissions.view_submission"),
                     },
+                ],
+            },
+            {
+                "title": "Configuración",
+                "items": [
                     {
                         "title": "Usuarios y permisos",
                         "icon": "manage_accounts",
@@ -251,7 +289,7 @@ UNFOLD = {
                         ),
                     },
                 ],
-            }
+            },
         ],
     },
 }

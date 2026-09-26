@@ -60,6 +60,7 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
         form.save()
         user = form.created_by
         user.is_superuser = True
+        user.email = "demo@example.com"
         user.save()
         now = timezone.now()
         response = None
@@ -127,6 +128,30 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
             page = context.new_page()
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(url)
+            frame = page.locator("#page")
+            main = page.locator("#main")
+            topbar = page.locator("#platform-topbar")
+            frame_bounds = frame.bounding_box()
+            topbar_bounds = topbar.bounding_box()
+            self.assertAlmostEqual(frame_bounds["y"], 18, delta=1)
+            self.assertAlmostEqual(frame_bounds["y"] + frame_bounds["height"], 1150 - 18, delta=1)
+            main.evaluate("element => element.scrollTop = 600")
+            self.assertGreater(main.evaluate("element => element.scrollTop"), 500)
+            self.assertEqual(page.evaluate("window.scrollY"), 0)
+            self.assertAlmostEqual(topbar.bounding_box()["y"], topbar_bounds["y"], delta=1)
+            self.assertTrue(
+                page.evaluate("""() => {
+                const bounds = document.getElementById('page').getBoundingClientRect();
+                const x = bounds.right - 80;
+                return [bounds.top - 5, bounds.bottom + 5].every(y =>
+                    !document.elementFromPoint(x, y)?.closest('#page'));
+            }""")
+            )
+            page.screenshot(path=str(Path(tempfile.gettempdir()) / "forms-frame-scrolled.png"))
+            main.evaluate("element => element.scrollTop = element.scrollHeight")
+            expect(page.locator(".metrics-events li").last).to_be_in_viewport()
+            page.screenshot(path=str(Path(tempfile.gettempdir()) / "forms-frame-bottom.png"))
+            main.evaluate("element => element.scrollTop = 0")
             expect(page.locator(".metric-card")).to_have_count(5)
             expect(page.locator(".metrics-trend-total strong")).to_have_text("40")
             expect(page.locator('[data-status="SUBMITTED"] .metric-value')).to_have_text("12")
@@ -188,5 +213,26 @@ class DashboardBrowserTests(StaticLiveServerTestCase):
             )
             page.get_by_role("button", name="Abrir o cerrar navegación").click()
             expect(page.locator("#nav-sidebar")).to_be_visible()
+            sidebar = page.locator("#nav-sidebar")
+            for group in ("General", "Gestión", "Configuración"):
+                expect(sidebar.get_by_role("heading", name=group, exact=True)).to_be_visible()
+            sidebar.get_by_role("button", name="Cerrar navegación", exact=True).click()
+            expect(sidebar).not_to_be_visible()
+            page.get_by_role("button", name="Abrir o cerrar navegación").click()
+            expect(sidebar.get_by_role("link", name="LogicForms, inicio")).to_be_in_viewport()
+            sidebar.screenshot(path=str(Path(tempfile.gettempdir()) / "forms-sidebar-mobile.png"))
+            page.set_viewport_size({"width": 1440, "height": 1000})
+            sidebar.get_by_role("link", name="Correos", exact=True).click()
+            expect(sidebar.locator("a.active")).to_have_text("Correos")
+            sidebar.screenshot(path=str(Path(tempfile.gettempdir()) / "forms-sidebar-desktop.png"))
+            profile = sidebar.get_by_role("button", name="Abrir configuración de la cuenta")
+            profile.click()
+            expect(sidebar.get_by_role("navigation", name="Opciones de cuenta")).to_be_visible()
+            sidebar.get_by_role("button", name="Oscuro", exact=True).click()
+            expect(sidebar.get_by_role("button", name="Oscuro", exact=True)).to_have_attribute(
+                "aria-pressed", "true"
+            )
+            profile.click()
+            sidebar.screenshot(path=str(Path(tempfile.gettempdir()) / "forms-sidebar-dark.png"))
             browser.close()
         self.assertFalse(errors, errors)

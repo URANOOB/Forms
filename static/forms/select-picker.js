@@ -156,6 +156,9 @@
       searchInput.setAttribute("aria-controls", list.id);
       searchInput.setAttribute("aria-autocomplete", "list");
       searchInput.setAttribute("aria-expanded", "false");
+      if (document.body.hasAttribute("data-public-accessibility")) {
+        searchInput.setAttribute("aria-describedby", select.getAttribute("aria-describedby") || "");
+      }
       const resultStatus = document.createElement("p");
       resultStatus.className = "form-dropdown-result-status";
       resultStatus.setAttribute("role", "status");

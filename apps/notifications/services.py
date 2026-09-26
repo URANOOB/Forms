@@ -52,6 +52,7 @@ def lock_provider_message(message_id):
         cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))", [message_id])
 
 
+@transaction.atomic
 def queue_notification(submission, review=None):
     if review and not (
         review.previous_status == "UNDER_REVIEW" and review.status in {"VALIDATED", "REJECTED"}
@@ -61,17 +62,29 @@ def queue_notification(submission, review=None):
     config = settings_for(submission.form)
     if review:
         recipient, reason = respondent(submission, config["respondent_email_stable_key"])
+        recipients = [recipient]
         enabled = config[f"notify_respondent_on_{review.status.lower()}"]
         kind = Email.Recipient.RESPONDENT
     else:
-        recipient = valid_email(submission.form.created_by.email)
-        reason = "" if recipient else "El creador del formulario no tiene un correo válido."
+        recipients = config["internal_recipients"] or [
+            valid_email(submission.form.created_by.email)
+        ]
+        reason = "" if any(recipients) else "El creador del formulario no tiene un correo válido."
         enabled = config["notify_internal_on_submission"]
         kind = Email.Recipient.INTERNAL
     if not enabled:
         reason = "Notificación desactivada para este formulario."
     if not settings.EMAIL_NOTIFICATIONS_ENABLED:
         reason = "Envíos de correo desactivados en este entorno."
+    notifications = [
+        _queue_recipient(submission, review, event, kind, recipient, reason)
+        for recipient in recipients
+    ]
+    # Preserve the single-notification return contract used by review callers.
+    return notifications[0]
+
+
+def _queue_recipient(submission, review, event, kind, recipient, reason):
     key = hashlib.sha256(
         f"{event}:{review.pk if review else submission.pk}:{recipient}".encode()
     ).hexdigest()

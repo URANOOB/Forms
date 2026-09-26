@@ -1,0 +1,1 @@
+{% if staff_edit %}{{ input.errors }}{% else %}<div id="{{ input.auto_id }}_error" class="public-field-errors" data-input-errors="{{ input.name }}">{% if input.errors %}<ul class="errorlist">{% for error in input.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}</div>{% endif %}

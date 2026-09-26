@@ -27,7 +27,7 @@ procesos interrumpidos sin bloquear permanentemente un correo.
 
 | Evento | Disparador | Destinatario |
 | --- | --- | --- |
-| Nueva respuesta | Se guarda una respuesta nueva | Email del creador del formulario |
+| Nueva respuesta | Se guarda una respuesta nueva | Lista configurada por formulario; por defecto, su creador |
 | Solicitud aprobada | UNDER_REVIEW → VALIDATED | Respondiente |
 | Solicitud rechazada | UNDER_REVIEW → REJECTED | Respondiente |
 
@@ -37,6 +37,21 @@ la versión histórica de la respuesta. No interpreta nombres de preguntas.
 Automático requiere exactamente un campo EMAIL contestado con dirección válida.
 Si faltan correos o hay varios candidatos, registra SKIPPED y su explicación.
 Un campo explícito sin valor válido no recurre a otro destinatario.
+
+En **Correos → Destinatarios**, selecciona el formulario y guarda hasta 20
+direcciones separadas por comas, punto y coma o saltos de línea. La lista sustituye
+al creador para los avisos de nuevas respuestas; vaciarla recupera ese valor
+predeterminado. También puedes activar o desactivar el aviso desde esta pantalla.
+Configurar destinatarios requiere `submissions.view_submission` y `forms.change_form`.
+Los formularios eliminados no pueden configurarse.
+
+Se validan todas las direcciones antes de guardar y se eliminan duplicados sin
+distinguir mayúsculas. Cada destinatario recibe un mensaje individual con su propio
+estado, clave de idempotencia, supresión y reintentos. Un fallo de entrega no impide
+los demás envíos. Los cambios se aplican a nuevas respuestas; no modifican correos
+ya registrados ni los destinatarios de aprobación o rechazo. El modo de prueba
+redirige cada mensaje al buzón configurado. La migración `notifications.0002`
+añade la lista vacía para conservar el comportamiento de los formularios existentes.
 
 La clave única incluye evento, respuesta o revisión y destinatario lógico. Una
 petición repetida no duplica; una nueva revisión tras una reapertura sí puede

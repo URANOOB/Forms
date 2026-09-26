@@ -1,11 +1,11 @@
 .forms-gallery {
   --gallery-ink: #263445; --gallery-muted: #697586; --gallery-line: #e2e6ed;
-  --gallery-bg: #fff; --gallery-soft: #f8f9fc; --gallery-accent: #7146db; --gallery-accent-soft: #f0ebfb;
+  --gallery-bg: #fff; --gallery-soft: #f8fafc; --gallery-accent: #2563eb; --gallery-accent-soft: #ebf2fb;
   color: var(--gallery-ink); margin: 0 -16px; font-size: 14px;
 }
 .dark .forms-gallery {
   --gallery-ink: #e1e5ec; --gallery-muted: #a0a9b8; --gallery-line: #3c414e;
-  --gallery-bg: #1b202c; --gallery-soft: #242937; --gallery-accent: #cbb5fd; --gallery-accent-soft: #342b48;
+  --gallery-bg: #1b202c; --gallery-soft: #242937; --gallery-accent: #b5d3fd; --gallery-accent-soft: #2b3748;
 }
 .gallery-inner { max-width: 1400px; margin: 0 auto; padding: 40px 32px; }
 .gallery-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 32px; }
@@ -16,8 +16,8 @@
 .gallery-navigation:hover { background: var(--gallery-soft); }
 .gallery-navigation .material-symbols-outlined { font-size: 21px; }
 .gallery-heading-actions { display: flex; align-items: center; gap: 12px; }
-.create-form-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 16px; border-radius: 7px; background: #7146db; color: #fff; font-size: 13px; font-weight: 500; text-decoration: none; white-space: nowrap; }
-.create-form-button:hover { background: #6037c5; color: #fff; }
+.create-form-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 16px; border-radius: 7px; background: #2563eb; color: #fff; font-size: 13px; font-weight: 500; text-decoration: none; white-space: nowrap; }
+.create-form-button:hover { background: #3772c5; color: #fff; }
 .create-form-button .material-symbols-outlined { font-size: 20px; }
 .gallery-filters { position: relative; display: flex; align-items: center; gap: 10px; padding-bottom: 22px; border-bottom: 1px solid var(--gallery-line); }
 .gallery-search { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; height: 46px; border: 1px solid var(--gallery-line); border-radius: 7px; padding: 0 14px; background: var(--gallery-bg); }
@@ -33,7 +33,7 @@
 .gallery-filter-panel select { width: 100%; height: 40px; border: 1px solid var(--gallery-line); border-radius: 6px; background: var(--gallery-bg); color: var(--gallery-ink); padding: 0 28px 0 10px; font-size: 12px; }
 .gallery-filter-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12px; margin-top: 4px; }
 .gallery-filter-actions a { color: var(--gallery-muted); }
-.gallery-filter-actions button { padding: 9px 15px; border-radius: 6px; background: #7146db; color: #fff; cursor: pointer; }
+.gallery-filter-actions button { padding: 9px 15px; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
 .view-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--gallery-line); border-radius: 7px; flex-shrink: 0; }
 .view-button { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 5px; background: transparent; color: var(--gallery-muted); cursor: pointer; }
 .view-button .material-symbols-outlined { font-size: 21px; }
@@ -41,7 +41,7 @@
 .gallery-result-count { margin: 20px 0; font-size: 12px; color: var(--gallery-muted); }
 .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 24px; }
 .form-card { min-width: 0; border: 1px solid var(--gallery-line); border-radius: 14px; background: var(--gallery-bg); position: relative; display: flex; flex-direction: column; box-shadow: 0 2px 5px #202b4004; transition: border-color .15s, box-shadow .15s; }
-.form-card:hover { border-color: #c2b2e6; box-shadow: 0 5px 18px #4934700c; }
+.form-card:hover { border-color: #b2c8e6; box-shadow: 0 5px 18px #344d700c; }
 .form-card:has(.card-menu[open]) { z-index: 12; }
 .card-preview { height: 184px; display: flex; justify-content: center; background: var(--preview-bg); padding-top: 20px; overflow: hidden; border-radius: 13px 13px 0 0; border-bottom: 1px solid var(--gallery-line); text-decoration: none; }
 .card-info { padding: 22px; flex: 1; display: flex; flex-direction: column; align-items: flex-start; }
@@ -65,8 +65,8 @@
 .card-open:hover { background: var(--gallery-accent-soft); }
 .card-open .material-symbols-outlined { font-size: 16px; }
 .theme-lavender {
-  --preview-bg: #efecfc;
-  --preview-accent: #7c5bd2;
+  --preview-bg: #ecf3fc;
+  --preview-accent: #5b8dd2;
 }
 .theme-mint {
   --preview-bg: #e7f2e8;
@@ -97,7 +97,7 @@
   color: #39414a;
 }
 .mini-heading {
-  border-top: 3px solid var(--preview-accent, #7958c8);
+  border-top: 3px solid var(--preview-accent, #5887c8);
   background: #fff;
   padding: 10px 10px 9px;
   border-radius: 3px 3px 0 0;
@@ -146,7 +146,7 @@
 }
 .mini-line {
   height: 1px;
-  background: #e8e9ed;
+  background: #e8eaed;
   width: 75%;
   margin-top: 11px;
 }
@@ -183,7 +183,7 @@
   display: none;
 }
 .card-menu summary:hover {
-  background: #f0edf7;
+  background: #edf1f7;
 }
 .card-menu summary .material-symbols-outlined {
   font-size: 21px;
@@ -233,7 +233,7 @@
 }
 .card-menu-panel a:hover,
 .card-menu-panel button:hover {
-  background: #f0edf7;
+  background: #edf1f7;
 }
 .card-menu-panel .material-symbols-outlined {
   font-size: 18px;
@@ -271,7 +271,7 @@
 .form-grid[data-layout="list"] .card-updated { grid-column: 1; }
 .form-grid[data-layout="list"] .card-context { grid-column: 1; margin: 10px 0 0; }
 .form-grid[data-layout="list"] .card-bottom { grid-column: 2; grid-row: 1 / 5; border: 0; padding: 0; margin: 0; width: auto; align-self: center; }
-.forms-gallery :is(a,button,summary,select):focus-visible, .gallery-search:focus-within { outline: 2px solid #9d86d9; outline-offset: 3px; }
+.forms-gallery :is(a,button,summary,select):focus-visible, .gallery-search:focus-within { outline: 2px solid #86a9d9; outline-offset: 3px; }
 .forms-gallery [hidden] { display: none !important; }
 .gallery-notice {
   position: fixed;
@@ -318,7 +318,7 @@
 #copy-dialog button {
   margin-top: 15px;
   padding: 8px 18px;
-  background: #7454c8;
+  background: #5484c8;
   color: white;
   border-radius: 6px;
   border: 0;

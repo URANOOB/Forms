@@ -1,6 +1,7 @@
 (() => {
   const form = document.getElementById("public-form");
   if (!form || typeof DataTransfer === "undefined") return;
+  const accessible = document.body.hasAttribute("data-public-accessibility");
   try { new DataTransfer(); } catch { return; }
   const widgets = [];
   const sizeLabel = (bytes) => bytes < 1024 * 1024
@@ -27,12 +28,23 @@
     status.setAttribute("role", "status");
     const error = create("p", "file-picker-error");
     error.setAttribute("role", "alert");
+    if (accessible) error.id = `${input.id}-upload-error`;
     error.hidden = true;
     const cards = create("div", "file-cards");
     const note = create("p", "file-picker-note", "Revise y confirme cada archivo. Se enviarán al enviar el formulario.");
     const hintId = `${input.id}-upload-note`;
     note.id = hintId;
     input.setAttribute("aria-describedby", [input.getAttribute("aria-describedby"), hintId].filter(Boolean).join(" "));
+    if (accessible) {
+      input.setAttribute("aria-describedby", `${input.getAttribute("aria-describedby")} ${error.id}`);
+      // Keep the visible action in the accessible name for voice control.
+      const label = input.labels?.[0];
+      if (label) {
+        label.id ||= `${input.id}-label`;
+        browse.id = `${input.id}-browse`;
+        input.setAttribute("aria-labelledby", `${label.id} ${browse.id}`);
+      }
+    }
     input.before(root);
     zone.append(icon, title, instruction, browse, input);
     root.append(zone, status, error, cards, note);
@@ -74,6 +86,10 @@
           image.src = entry.url;
           image.addEventListener("error", () => { box.replaceChildren(create("span", "file-preview-fallback", "No se pudo mostrar la imagen.")); });
           box.append(image);
+        } else if (accessible) {
+          // Browser PDF plugins can trap keyboard focus. The explicit link below
+          // still opens the original preview in a separate tab.
+          box.append(create("span", "file-preview-fallback", "Documento PDF. Usa «Ver documento» para abrirlo en otra pestaña."));
         } else {
           const documentPreview = document.createElement("object");
           documentPreview.type = "application/pdf";
@@ -103,7 +119,7 @@
       const actions = create("div", "file-actions");
       const confirm = create("button", "file-confirm", "Confirmar archivo");
       confirm.type = "button";
-      confirm.setAttribute("aria-label", `Confirmar ${entry.file.name}`);
+      confirm.setAttribute("aria-label", `${accessible ? "Confirmar archivo" : "Confirmar"} ${entry.file.name}`);
       const remove = create("button", "file-remove", "Quitar");
       remove.type = "button";
       remove.setAttribute("aria-label", `Quitar ${entry.file.name}`);
@@ -114,7 +130,7 @@
         link.href = entry.url;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
-        link.setAttribute("aria-label", `Ver ${entry.file.name} en otra pestaña`);
+        link.setAttribute("aria-label", `${accessible ? "Ver documento" : "Ver"} ${entry.file.name} en otra pestaña`);
         actions.append(link);
       }
       actions.append(remove);

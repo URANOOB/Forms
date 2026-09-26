@@ -183,7 +183,7 @@ class DashboardTests(TestCase):
         data = self.context()
         self.assertEqual(
             [card["label"] for card in data["dashboard_infrastructure"]],
-            ["Base de datos", "Archivos"],
+            ["Base de datos", "Archivos", "Correos"],
         )
         self.assertNotIn("percent", str(data["dashboard_infrastructure"]))
         self.assertNotIn("disk", str(data["dashboard_infrastructure"]))

@@ -1,7 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static l10n %}
-{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}?v=storage-2">{% endblock %}
-{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard-operational.css' %}?v=2"><script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script><script src="{% static 'forms/dashboard.js' %}?v=trend-dates-1" defer></script><script src="{% static 'forms/dashboard-hero.js' %}?v=8" defer></script>{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard.css' %}?v=resend-usage-20260926">{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/dashboard-operational.css' %}?v=blue-palette-20260926-2"><script src="{% static 'vendor/lottie/lottie_light-5.13.0.min.js' %}" defer></script><script src="{% static 'forms/dashboard.js' %}?v=trend-dates-1" defer></script><script src="{% static 'forms/dashboard-hero.js' %}?v=8" defer></script>{% endblock %}
 {% block content %}
 <div class="metrics-dashboard">
     <header class="dashboard-intro"><div><h1>Panel general</h1><p>Consulta el estado de tus formularios y respuestas en un solo lugar.</p></div>{% if dashboard_can_responses %}<nav class="metrics-periods" aria-label="Período de las estadísticas">{% for period in dashboard_periods %}<a href="{{ period.url }}" {% if dashboard_period == period.key %}aria-current="page"{% endif %}>{{ period.label }}</a>{% endfor %}</nav>{% endif %}</header>
@@ -35,8 +35,11 @@
     </div>
     {% else %}<p class="metrics-empty">No tienes permiso para consultar las respuestas de la plataforma.</p>{% endif %}
     {% if dashboard_infrastructure %}
-    <section aria-labelledby="infrastructure-title"><div class="metrics-section-heading"><h2 id="infrastructure-title">Infraestructura</h2><span>Información del almacenamiento</span></div><div class="metrics-infrastructure">
+    <section aria-labelledby="infrastructure-title"><div class="metrics-section-heading"><h2 id="infrastructure-title">Infraestructura</h2><span>Almacenamiento y consumo de correo</span></div><div class="metrics-infrastructure">
         {% for item in dashboard_infrastructure %}
+        {% if item.kind == 'email' %}
+        {% include "admin/dashboard/_email_usage.html" %}
+        {% else %}
         <article class="infrastructure-card" data-kind="{{ item.kind }}" {% if item.over_capacity %}data-warning="true"{% endif %}>
             <div class="infrastructure-heading"><h3>{{ item.label }}</h3><span class="metric-caption">{{ item.provider }}</span></div>
             <p class="infrastructure-scope">{{ item.scope }}</p>
@@ -53,6 +56,7 @@
             <div class="infrastructure-footer"><span>{% if item.kind == "database" and item.tables != None %}{{ item.tables }} tablas de la aplicación{% elif item.objects != None %}{{ item.objects }} archivo{{ item.objects|pluralize }}{% endif %}</span><time datetime="{{ item.checked_at|date:'c' }}" title="{{ item.checked_at|date:'d/m/Y H:i T' }}">Consultado {{ item.checked_at|date:'H:i' }}</time></div>
             <p class="infrastructure-state">{{ item.state }}</p>
         </article>
+        {% endif %}
         {% endfor %}
     </div></section>
     {% endif %}

@@ -1,5 +1,6 @@
 """Browser regression coverage; all email delivery is synthetic."""
 
+import re
 import tempfile
 from pathlib import Path
 
@@ -17,6 +18,76 @@ from apps.notifications.tests.test_notifications import setup_case
 
 @override_settings(EMAIL_NOTIFICATIONS_ENABLED=False)
 class EmailBrowserTests(StaticLiveServerTestCase):
+    def test_recipients_save_validation_and_mobile_layout(self):
+        setup_case(self)
+        self.user.user_permissions.set(
+            Permission.objects.filter(codename__in=["view_submission", "change_form"])
+        )
+        from apps.submissions.tests.test_public import fixture
+
+        other, *_ = fixture("second", "second")
+        other.name = "Otro formulario"
+        other.save()
+        self.client.force_login(self.user)
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            context = browser.new_context(viewport={"width": 1440, "height": 1000})
+            context.add_cookies(
+                [
+                    {
+                        "name": "sessionid",
+                        "value": self.client.cookies["sessionid"].value,
+                        "url": self.live_server_url,
+                    }
+                ]
+            )
+            page = context.new_page()
+            page.goto(
+                self.live_server_url + reverse("admin:notifications_emailnotification_changelist")
+            )
+            page.get_by_role("link", name="Destinatarios", exact=True).click()
+            page.get_by_role("combobox", name=re.compile("^Formulario:")).click()
+            page.get_by_role("option", name=self.form.name, exact=True).click()
+            page.get_by_role("button", name="Ver configuración").click()
+            addresses = page.get_by_label("Destinatarios", exact=True)
+            addresses.fill("equipo@example.com; jefe@example.com; EQUIPO@example.com")
+            page.get_by_role("button", name="Guardar destinatarios").click()
+            expect(addresses).to_have_value("equipo@example.com\njefe@example.com")
+            expect(
+                page.get_by_text("Destinatarios guardados para las nuevas respuestas.")
+            ).to_be_visible()
+            page.reload()
+            expect(addresses).to_have_value("equipo@example.com\njefe@example.com")
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-recipients-desktop.png"),
+                full_page=True,
+            )
+            addresses.fill("incorrecto")
+            page.get_by_role("button", name="Guardar destinatarios").click()
+            expect(page.get_by_role("alert")).to_contain_text("direcciones deben ser válidas")
+            page.set_viewport_size({"width": 390, "height": 844})
+            self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 390)
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-recipients-mobile.png"),
+                full_page=True,
+            )
+            page.get_by_role("combobox", name=re.compile("^Formulario:")).click()
+            page.get_by_role("option", name=other.name, exact=True).click()
+            page.get_by_role("button", name="Ver configuración").click()
+            expect(addresses).to_have_value("")
+            page.get_by_role("combobox", name=re.compile("^Formulario:")).click()
+            page.get_by_role("option", name=self.form.name, exact=True).click()
+            page.get_by_role("button", name="Ver configuración").click()
+            expect(addresses).to_have_value("equipo@example.com\njefe@example.com")
+            addresses.fill("")
+            page.get_by_label("Avisar cuando llegue una nueva respuesta").uncheck()
+            page.get_by_role("button", name="Guardar destinatarios").click()
+            expect(addresses).to_have_value("")
+            expect(
+                page.get_by_label("Avisar cuando llegue una nueva respuesta")
+            ).not_to_be_checked()
+            browser.close()
+
     def test_filters_detail_timeline_and_responsive_layout(self):
         setup_case(self)
         self.user.user_permissions.set(Permission.objects.filter(codename="view_submission"))
@@ -65,7 +136,31 @@ class EmailBrowserTests(StaticLiveServerTestCase):
             expect(page.locator(".email-results tbody tr")).to_have_count(10)
             page.get_by_role("link", name="Siguiente", exact=True).click()
             expect(page.locator(".email-results tbody tr")).to_have_count(2)
-            page.get_by_label("Estado", exact=True).select_option("DELIVERED")
+            state_picker = page.get_by_role("combobox", name=re.compile("^Estado:"))
+            state_picker.click()
+            expect(page.get_by_role("listbox", name="Estado", exact=True)).to_be_visible()
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-email-dropdown-desktop.png"),
+                full_page=True,
+            )
+            state_picker.press("End")
+            state_picker.press("Enter")
+            expect(state_picker).to_have_accessible_name("Estado: Omitido")
+            state_picker.click()
+            state_picker.press("Home")
+            state_picker.press("ArrowDown")
+            state_picker.press("Escape")
+            expect(state_picker).to_have_accessible_name("Estado: Omitido")
+            expect(state_picker).to_be_focused()
+            state_picker.click()
+            page.get_by_role("option", name="Entregado", exact=True).click()
+            expect(state_picker).to_have_accessible_name("Estado: Entregado")
+            state_picker.click()
+            expect(page.get_by_role("option", name="Entregado", exact=True)).to_have_attribute(
+                "aria-selected", "true"
+            )
+            page.get_by_role("heading", name="Correos", exact=True).click()
+            expect(state_picker).to_have_attribute("aria-expanded", "false")
             page.get_by_label("Buscar", exact=True).fill("persona11@")
             page.get_by_role("button", name="Aplicar filtros").click()
             expect(page.locator(".email-results tbody tr")).to_have_count(1)
@@ -90,6 +185,28 @@ class EmailBrowserTests(StaticLiveServerTestCase):
                 path=str(Path(tempfile.gettempdir()) / "forms-emails-desktop.png"), full_page=True
             )
             page.set_viewport_size({"width": 390, "height": 844})
+            state_picker.click()
+            dropdown = page.locator("#response-select-menu")
+            expect(dropdown).to_be_visible()
+            bounds = dropdown.bounding_box()
+            self.assertGreaterEqual(bounds["x"], 0)
+            self.assertLessEqual(bounds["x"] + bounds["width"], 390)
+            self.assertGreaterEqual(bounds["y"], 0)
+            self.assertLessEqual(bounds["y"] + bounds["height"], 844)
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-email-dropdown-mobile.png"),
+                full_page=True,
+            )
+            state_picker.press("Escape")
+            page.evaluate("document.documentElement.classList.add('dark')")
+            state_picker.click()
+            page.screenshot(
+                path=str(Path(tempfile.gettempdir()) / "forms-email-dropdown-dark.png"),
+                full_page=True,
+            )
+            state_picker.press("Tab")
+            expect(dropdown).not_to_be_visible()
+            page.evaluate("document.documentElement.classList.remove('dark')")
             panel.scroll_into_view_if_needed()
             expect(panel).to_be_visible()
             self.assertLessEqual(page.evaluate("document.documentElement.scrollWidth"), 390)

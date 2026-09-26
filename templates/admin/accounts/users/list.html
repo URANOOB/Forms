@@ -1,0 +1,54 @@
+{% extends "admin/accounts/users/base.html" %}
+{% block users_content %}
+<header class="users-heading">
+    <div class="users-heading-title"><span class="material-symbols-outlined users-heading-icon" aria-hidden="true">manage_accounts</span><div><h1>Usuarios y permisos</h1><p>Gestiona las personas que tienen acceso a la plataforma y sus roles.</p></div></div>
+    {% if has_add_permission %}<a class="users-button users-primary" href="{% url 'admin:accounts_user_add' %}"><span class="material-symbols-outlined" aria-hidden="true">person_add</span>Crear usuario</a>{% endif %}
+</header>
+<section class="users-metrics" aria-label="Resumen de usuarios de la plataforma">
+    <article><span class="material-symbols-outlined" aria-hidden="true">group</span><div><strong>{{ user_metrics.total }}</strong><h2>Usuarios</h2><p>En la plataforma</p></div></article>
+    <article><span class="material-symbols-outlined users-icon-green" aria-hidden="true">how_to_reg</span><div><strong>{{ user_metrics.active }}</strong><h2>Activos</h2><p>Con acceso habilitado</p></div></article>
+    <article><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span><div><strong>{{ user_metrics.administrators }}</strong><h2>Administradores</h2><p>Gestión completa</p></div></article>
+    <article><span class="material-symbols-outlined" aria-hidden="true">assignment_ind</span><div><strong>{{ user_metrics.operators }}</strong><h2>Operadores</h2><p>Formularios y respuestas</p></div></article>
+</section>
+<section class="users-card users-filter-card" aria-labelledby="users-filter-title">
+    <h2 id="users-filter-title"><span class="material-symbols-outlined" aria-hidden="true">filter_alt</span>Buscar usuarios</h2>
+    <form method="get" class="users-filters" role="search" aria-label="Buscar y filtrar usuarios">
+        <label class="users-search">Nombre o correo<div class="users-search-control"><span class="material-symbols-outlined" aria-hidden="true">search</span><input type="search" name="q" value="{{ cl.query }}" placeholder="Buscar por usuario, nombre o correo…"></div></label>
+        <label>Rol<select name="role" aria-label="Rol"><option value="">Todos los roles</option>{% for value, label in user_role_choices %}<option value="{{ value }}" {% if selected_user_role == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Estado<select name="is_active__exact" aria-label="Estado"><option value="">Todos los estados</option><option value="1" {% if selected_user_active == '1' %}selected{% endif %}>Activos</option><option value="0" {% if selected_user_active == '0' %}selected{% endif %}>Inactivos</option></select></label>
+        <button type="submit" class="users-button users-primary">Aplicar filtros</button>
+        <a class="users-button" href="{% url 'admin:accounts_user_changelist' %}">Limpiar</a>
+    </form>
+</section>
+<section class="users-card users-list" aria-labelledby="users-list-title">
+    <div class="users-list-heading"><h2 id="users-list-title">Personas de la plataforma</h2><span>{{ cl.result_count }} resultado{{ cl.result_count|pluralize:"s" }}</span></div>
+    <form method="post" id="users-list-form">
+        {% csrf_token %}
+        {% if action_form %}<div class="users-bulk-actions">
+            <span id="users-selection-status" role="status">Selecciona usuarios para aplicar una acción.</span>
+            <label for="users-action">Acción</label><select name="action" id="users-action" aria-label="Acción sobre usuarios seleccionados"><option value="">Seleccionar acción</option>{% for value, label in action_form.fields.action.choices %}{% if value %}<option value="{{ value }}">{{ label }}</option>{% endif %}{% endfor %}</select>
+            <input type="hidden" name="select_across" value="0"><button type="submit" name="index" value="0" class="users-button">Aplicar</button>
+        </div>{% endif %}
+        <div class="users-table-scroll" tabindex="0" role="region" aria-label="Tabla de usuarios">
+            <table class="users-table"><thead><tr>
+                {% if action_form %}<th scope="col" class="users-checkbox"><input type="checkbox" id="users-select-all" aria-label="Seleccionar todos los usuarios de esta página"></th>{% endif %}
+                <th scope="col"><a href="{{ user_sort_links.username }}">Usuario <span aria-hidden="true">↕</span></a></th>
+                <th scope="col"><a href="{{ user_sort_links.email }}">Correo electrónico <span aria-hidden="true">↕</span></a></th>
+                <th scope="col"><a href="{{ user_sort_links.role_label }}">Rol <span aria-hidden="true">↕</span></a></th>
+                <th scope="col"><a href="{{ user_sort_links.is_active }}">Estado <span aria-hidden="true">↕</span></a></th>
+                <th scope="col">Acciones</th>
+            </tr></thead><tbody>
+            {% for person in cl.result_list %}<tr>
+                {% if action_form %}<td class="users-checkbox"><input type="checkbox" name="_selected_action" value="{{ person.pk }}" aria-label="Seleccionar a {{ person.username }}"></td>{% endif %}
+                <th scope="row"><a class="users-person" href="{% url 'admin:accounts_user_change' person.pk %}"><span class="users-avatar" aria-hidden="true">{{ person.username|first|upper }}</span><span><strong>{{ person.username }}</strong>{% if person.get_full_name %}<small>{{ person.get_full_name }}</small>{% endif %}{% if person.pk == request.user.pk %}<small class="users-self">Tu cuenta</small>{% endif %}</span></a></th>
+                <td>{{ person.email|default:"Sin correo registrado" }}</td>
+                <td><span class="users-badge {% if person.is_superuser %}users-badge-admin{% else %}users-badge-operator{% endif %}"><span class="material-symbols-outlined" aria-hidden="true">{% if person.is_superuser %}shield_person{% else %}person{% endif %}</span>{% if person.is_superuser %}Administrador{% else %}Operador{% endif %}</span></td>
+                <td><span class="users-badge {% if person.is_active %}users-badge-active{% else %}users-badge-inactive{% endif %}"><span class="users-status-dot" aria-hidden="true"></span>{% if person.is_active %}Activo{% else %}Inactivo{% endif %}</span></td>
+                <td><a class="users-edit" href="{% url 'admin:accounts_user_change' person.pk %}" aria-label="Editar a {{ person.username }}"><span class="material-symbols-outlined" aria-hidden="true">edit</span>Editar</a></td>
+            </tr>{% empty %}<tr><td colspan="6"><div class="users-empty"><span class="material-symbols-outlined" aria-hidden="true">person_search</span><strong>No encontramos usuarios</strong><p>Prueba con otro nombre, correo o combinación de filtros.</p><a class="users-button" href="{% url 'admin:accounts_user_changelist' %}">Ver todos los usuarios</a></div></td></tr>{% endfor %}
+            </tbody></table>
+        </div>
+    </form>
+    <nav class="users-pagination" aria-label="Páginas de usuarios"><span>{{ cl.result_count }} usuario{{ cl.result_count|pluralize:"s" }}{% if cl.has_active_filters or cl.query %} en este resultado{% endif %}</span><div>{% if user_previous_url %}<a class="users-button" href="{{ user_previous_url }}">← Anterior</a>{% endif %}<span>Página {{ cl.page_num }} de {{ cl.paginator.num_pages }}</span>{% if user_next_url %}<a class="users-button" href="{{ user_next_url }}">Siguiente →</a>{% endif %}</div></nav>
+</section>
+{% endblock %}

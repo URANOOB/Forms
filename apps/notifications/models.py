@@ -9,6 +9,7 @@ class FormNotificationSettings(models.Model):
         "forms.Form", on_delete=models.CASCADE, related_name="email_settings"
     )
     notify_internal_on_submission = models.BooleanField(default=True)
+    internal_recipients = models.JSONField(default=list, blank=True)
     notify_respondent_on_validated = models.BooleanField(default=True)
     notify_respondent_on_rejected = models.BooleanField(default=True)
     respondent_email_stable_key = models.CharField(max_length=100, blank=True)

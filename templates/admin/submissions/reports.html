@@ -1,6 +1,6 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
-{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-reports-redesign.css' %}?v=1"><script src="{% static 'forms/response-reports.js' %}?v=1" defer></script>{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="{% static 'forms/response-selects.css' %}?v=blue-palette-20260926-2"><link rel="stylesheet" href="{% static 'forms/response-reports-redesign.css' %}?v=report-dropdowns-1"><script src="{% static 'forms/response-reports.js' %}?v=1" defer></script><script src="{% static 'forms/response-selects.js' %}?v=report-dropdowns-1" defer></script>{% endblock %}
 {% block content %}
 <main class="reports-page">
     {% include "admin/submissions/reports/_header.html" %}

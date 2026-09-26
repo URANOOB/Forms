@@ -1539,7 +1539,7 @@
     if (event.detail !== "questions") setThemePanel(false);
   });
   window.addEventListener("resize", positionThemePanel);
-  window.addEventListener("scroll", positionThemePanel, { passive: true });
+  window.addEventListener("scroll", positionThemePanel, { passive: true, capture: true });
   window.addEventListener("scroll", positionTypeMenu, true);
   window.visualViewport?.addEventListener("resize", positionTypeMenu);
   if (!state.sections.length) {

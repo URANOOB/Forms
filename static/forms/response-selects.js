@@ -1,9 +1,10 @@
 (() => {
-  const form = document.querySelector('.response-work-filters');
-  if (!form || !HTMLElement.prototype.showPopover) return;
+  if (!HTMLElement.prototype.showPopover) return;
 
-  const fields = [...form.querySelectorAll('.response-select-field')];
-  if (!fields.length) return;
+  const selects = [...document.querySelectorAll(
+    '.response-work-filters .response-select-field select, .email-page select, .reports-page select, .users-page select'
+  )].filter((select) => !select.multiple && select.size <= 1);
+  if (!selects.length) return;
 
   const menu = document.createElement('div');
   menu.id = 'response-select-menu';
@@ -21,7 +22,12 @@
   let search = '';
   let searchTimer;
   const isOpen = () => menu.matches(':popover-open');
-  const label = (select) => select.closest('.response-select-field').querySelector('span').textContent.trim();
+  const reportLabels = { form: 'Formulario', orden: 'Ordenar por', por_pagina: 'Por página' };
+  const label = (select) => select.getAttribute('aria-label')
+    || (select.closest('.reports-page') && reportLabels[select.name])
+    || select.labels?.[0]?.textContent.trim()
+    || select.closest('.response-select-field')?.querySelector('span')?.textContent.trim()
+    || 'Seleccionar';
   const normalize = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');
 
   function position() {
@@ -32,9 +38,10 @@
     const top = viewport?.offsetTop || 0;
     const width = viewport?.width || window.innerWidth;
     const height = viewport?.height || window.innerHeight;
-    const menuWidth = Math.min(Math.max(rect.width, active.name === 'response_form' ? 310 : 220), width - 24);
+    const minimumWidth = active.name === 'por_pagina' ? 160 : ['response_form', 'form'].includes(active.name) ? 310 : 220;
+    const menuWidth = Math.min(Math.max(rect.width, minimumWidth), width - 24);
     menu.style.width = `${menuWidth}px`;
-    menu.style.maxHeight = `${Math.max(160, height - 24)}px`;
+    menu.style.maxHeight = `${Math.max(0, height - 24)}px`;
     const box = menu.getBoundingClientRect();
     menu.style.left = `${Math.max(left + 12, Math.min(rect.left, left + width - box.width - 12))}px`;
     const below = rect.bottom + 7;
@@ -58,6 +65,9 @@
       other.removeAttribute('aria-activedescendant');
     }
     heading.textContent = label(active);
+    menu.classList.toggle('email-select-menu', Boolean(active.closest('.email-page')));
+    menu.classList.toggle('reports-select-menu', Boolean(active.closest('.reports-page')));
+    menu.classList.toggle('users-select-menu', Boolean(active.closest('.users-page')));
     options.setAttribute('aria-label', label(active));
     options.replaceChildren();
     for (const [index, choice] of [...active.options].entries()) {
@@ -100,17 +110,19 @@
     const value = select.selectedOptions[0]?.textContent.trim() || '';
     trigger.querySelector('.response-select-value').textContent = value;
     trigger.setAttribute('aria-label', `${label(select)}: ${value}`);
+    trigger.disabled = select.disabled;
+    trigger.title = value;
   }
 
   function choose(index) {
+    if (active.disabled || !active.options[index] || active.options[index].disabled) return;
     active.selectedIndex = index;
     active.dispatchEvent(new Event('change', { bubbles: true }));
     sync(active);
     close(true);
   }
 
-  for (const field of fields) {
-    const select = field.querySelector('select');
+  for (const select of selects) {
     const trigger = document.createElement('button');
     trigger.type = 'button';
     trigger.className = 'response-select-trigger';
@@ -118,11 +130,25 @@
     trigger.setAttribute('aria-haspopup', 'listbox');
     trigger.setAttribute('aria-controls', options.id);
     trigger.setAttribute('aria-expanded', 'false');
+    if (select.id) trigger.id = `${select.id}-picker`;
     trigger.innerHTML = '<span class="response-select-value"></span><span class="material-symbols-outlined" aria-hidden="true">keyboard_arrow_down</span>';
+    if (select.closest('.reports-filters')) {
+      const icon = document.createElement('span');
+      icon.className = 'material-symbols-outlined reports-select-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = select.name === 'form' ? 'description' : 'sort';
+      trigger.prepend(icon);
+    }
     select.hidden = true;
     select.after(trigger);
     triggers.set(select, trigger);
     sync(select);
+    for (const fieldLabel of select.labels || []) {
+      fieldLabel.addEventListener('click', (event) => {
+        event.preventDefault();
+        trigger.focus();
+      });
+    }
     select.addEventListener('change', () => sync(select));
     let pointerWasOpen = false;
     trigger.addEventListener('pointerdown', () => { pointerWasOpen = active === select && isOpen(); });
@@ -148,6 +174,7 @@
         return;
       }
       if (event.key.length !== 1 || event.altKey || event.ctrlKey || event.metaKey) return;
+      event.preventDefault();
       if (!isOpen() || active !== select) open(select);
       search += normalize(event.key);
       clearTimeout(searchTimer);

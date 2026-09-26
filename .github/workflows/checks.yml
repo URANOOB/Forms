@@ -37,6 +37,8 @@ jobs:
           apps.submissions.tests.browser_public_audit
           apps.forms.tests.browser_gallery
           apps.accounts.tests.browser_dashboard
+          apps.accounts.tests.browser_users
+          apps.submissions.tests.browser_accessibility
           apps.submissions.tests.browser_detail
           apps.submissions.tests.browser_review
           apps.notifications.tests.browser_emails --noinput

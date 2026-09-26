@@ -1,0 +1,28 @@
+{% extends "public/base.html" %}
+{% block title %}Información y ayuda · {{ public_institution_name }}{% endblock %}
+{% block page_class %}public-information-page{% endblock %}
+{% block content %}
+<article class="public-information-card">
+    <header><p class="public-information-eyebrow">{{ public_institution_name }}</p><h1>Información y ayuda</h1><p>Orientación para completar los formularios del portal.</p></header>
+    <section id="privacidad" aria-labelledby="privacy-title">
+        <h2 id="privacy-title">Privacidad</h2>
+        <p>Antes de enviar tus respuestas, revisa las instrucciones y el aviso de privacidad que acompañan al formulario. Comparte únicamente la información solicitada.</p>
+        {% if public_privacy_url %}<p><a href="{{ public_privacy_url }}">Consultar la política de privacidad de la entidad</a></p>{% else %}<p>Si necesitas conocer cómo se utilizarán tus datos o solicitar información sobre tus respuestas, contacta al equipo que te compartió el formulario. Esta orientación no sustituye el aviso de privacidad de la entidad.</p>{% endif %}
+    </section>
+    <section id="accesibilidad" aria-labelledby="accessibility-info-title">
+        <h2 id="accessibility-info-title">Accesibilidad</h2>
+        <p>El botón «Accesibilidad» de las vistas públicas permite ajustar el tamaño del texto, el contraste, el espaciado y el resaltado del enfoque, además de reducir el movimiento. Las preferencias se guardan en este navegador.</p>
+        <p>Puedes recorrer los controles con Tab y Mayús + Tab, activarlos con Enter o Espacio y cerrar el menú con Escape. También puedes ampliar la página con el zoom del navegador.</p>
+        <p>La lectura en voz alta de preguntas e instrucciones está disponible en los navegadores compatibles. No lee tus respuestas.</p>
+        <p>Si encuentras una barrera que te impide completar el formulario, <a href="#ayuda">solicita ayuda al equipo responsable</a>.</p>
+    </section>
+    <section id="ayuda" aria-labelledby="help-title">
+        <h2 id="help-title">¿Necesitas ayuda?</h2>
+        <p>Revisa los campos marcados como obligatorios y los mensajes junto a cada pregunta. Si adjuntas un archivo, comprueba el formato y el tamaño indicados en el formulario.</p>
+        <p>Al enviar, espera a que aparezca la confirmación de recepción antes de cerrar la página.</p>
+        {% if public_support_email %}<p>Escríbenos a <a href="mailto:{{ public_support_email }}">{{ public_support_email }}</a> e indica el nombre del formulario y la dificultad que encontraste.</p>{% else %}<p>Si el problema continúa, contacta a la persona o al equipo que te compartió el enlace e indica el nombre del formulario y la dificultad que encontraste.</p>{% endif %}
+        <p>No incluyas contraseñas ni respuestas sensibles al solicitar ayuda.</p>
+    </section>
+    <p class="public-information-return">Para continuar llenando el formulario, vuelve a su pestaña.</p>
+</article>
+{% endblock %}
