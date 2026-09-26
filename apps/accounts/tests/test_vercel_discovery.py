@@ -84,6 +84,7 @@ class VercelDiscoveryTests(SimpleTestCase):
         env.update(
             VERCEL="1",
             VERCEL_URL="forms-build-example.vercel.app",
+            VERCEL_BRANCH_URL="forms-git-feature-example.vercel.app",
             VERCEL_PROJECT_PRODUCTION_URL="forms-production-example.vercel.app",
             DJANGO_CSRF_TRUSTED_ORIGINS="https://build.invalid",
         )
@@ -92,7 +93,12 @@ class VercelDiscoveryTests(SimpleTestCase):
         data = json.loads(result.stdout)
         self.assertEqual(
             data["hosts"],
-            ["build.invalid", env["VERCEL_URL"], env["VERCEL_PROJECT_PRODUCTION_URL"]],
+            [
+                "build.invalid",
+                env["VERCEL_URL"],
+                env["VERCEL_BRANCH_URL"],
+                env["VERCEL_PROJECT_PRODUCTION_URL"],
+            ],
         )
         self.assertEqual(data["origins"], [f"https://{host}" for host in data["hosts"]])
 

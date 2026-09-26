@@ -12,8 +12,8 @@ def configure_settings(default="config.settings.production"):
         if os.environ.get("DJANGO_SETTINGS_MODULE") != "_vercel_collectstatic_settings":
             os.environ["DJANGO_SETTINGS_MODULE"] = "config.settings.production"
         # These hosts come from Vercel's deployment metadata, never the request.
-        # Allow exact deployment/production domains without a *.vercel.app wildcard.
-        for name in ("VERCEL_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
+        # Allow exact deployment/branch/production domains without a wildcard.
+        for name in ("VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"):
             host = os.environ.get(name, "").strip()
             if host:
                 for setting, value in (

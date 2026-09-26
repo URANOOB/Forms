@@ -8,7 +8,7 @@ conserva por error la configuración local o experimental de Workers.
 Se respeta únicamente la configuración temporal `_vercel_collectstatic_settings`
 que genera el builder para publicar los estáticos en su CDN.
 Los dominios exactos que Vercel proporciona en `VERCEL_URL` y
-`VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
+`VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` se añaden a los hosts y orígenes CSRF permitidos,
 conservando los dominios propios configurados sin aceptar `*.vercel.app`.
 
 Los enlaces de Unfold se resuelven durante las peticiones, para que la detección
