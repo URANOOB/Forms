@@ -88,6 +88,8 @@ class DetailBrowserTests(StaticLiveServerTestCase):
 
     def test_response_reading_navigation_actions_and_mobile(self):
         form, version, name, choice, email = fixture()
+        name.label = "Nombres y Apellidos (Paciente)"
+        name.save()
         version.title = "Reporte de Casos Incidentes de Cáncer"
         version.save()
         name.section.title = "Sección 1"
@@ -107,7 +109,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
             fields.append((result, value))
             return result
 
-        field(name.section, "Número de documento", "NUMBER", 1312441240.0)
+        field(name.section, "Numero de Documento (Paciente)", "NUMBER", 1312441240.0)
         field(name.section, "Fecha de nacimiento", "DATE", "1985-09-10")
         field(name.section, "Teléfono actualizado", "PHONE", "3101234567")
         field(
@@ -185,6 +187,7 @@ class DetailBrowserTests(StaticLiveServerTestCase):
             )
             page.goto(url)
             expect(page.locator(".response-detail-title h1")).to_have_text(version.title)
+            expect(page.locator(".response-detail-person")).to_have_text("María Rodríguez")
             expect(page.locator(".response-section[open]")).to_have_count(3)
             expect(page.locator(".response-details")).to_contain_text("1.312.441.240")
             expect(page.locator(".response-details")).to_contain_text("19 sep 2026")
