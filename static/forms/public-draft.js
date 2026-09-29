@@ -42,6 +42,18 @@
       "Este navegador no permite guardar el borrador. Mantén esta página abierta hasta confirmar el envío.",
     );
   }
+  function validDraft(item) {
+    return item && Number.isFinite(item.updatedAt) &&
+      item.updatedAt <= Date.now() && Date.now() - item.updatedAt < ttl &&
+      item.answers && typeof item.answers === "object" && !Array.isArray(item.answers) &&
+      typeof item.token === "string" && typeof item.version === "string";
+  }
+  function readStored(name) {
+    try {
+      const item = JSON.parse(localStorage.getItem(name));
+      return validDraft(item) ? item : null;
+    } catch { return null; }
+  }
   function storageOperation(operation) {
     writes = writes.then(() => navigator.locks
       ? navigator.locks.request(baseKey, operation)
@@ -278,30 +290,31 @@
     for (const storedKey of Object.keys(localStorage).filter((name) =>
       name.startsWith(prefix),
     )) {
-      try {
-        const item = JSON.parse(localStorage.getItem(storedKey));
-        if (
-          !item ||
-          !Number.isFinite(item.updatedAt) ||
-          item.updatedAt > Date.now() ||
-          Date.now() - item.updatedAt >= ttl
-        )
-          localStorage.removeItem(storedKey);
-      } catch {
-        localStorage.removeItem(storedKey);
+      if (!readStored(storedKey)) {
+        const revision = localStorage.getItem(storedKey);
+        const cleanup = () => {
+          // Recheck inside the same lock used by writers: another tab may have
+          // renewed an expired draft since this page first inspected it.
+          if (localStorage.getItem(storedKey) === revision && !readStored(storedKey))
+            localStorage.removeItem(storedKey);
+        };
+        if (navigator.locks)
+          navigator.locks.request(storedKey.split(":").slice(0, 4).join(":"), cleanup).catch(storageFailure);
+        else cleanup();
       }
     }
     let remembered;
     try { remembered = sessionStorage.getItem(baseKey); } catch { /* Optional hint. */ }
     const candidates = Object.keys(localStorage).filter((name) =>
-      name === baseKey || name.startsWith(`${baseKey}:`));
+      (name === baseKey || name.startsWith(`${baseKey}:`)) && readStored(name));
     if (remembered && candidates.includes(remembered)) key = remembered;
     else if (candidates.length) key = candidates.sort((a, b) =>
-      JSON.parse(localStorage.getItem(b)).updatedAt - JSON.parse(localStorage.getItem(a)).updatedAt)[0];
+      (readStored(b)?.updatedAt || 0) - (readStored(a)?.updatedAt || 0))[0];
     storedRevision = localStorage.getItem(key);
-    draft = JSON.parse(storedRevision);
+    draft = readStored(key);
     for (const [index, name] of candidates.entries()) {
-      const item = JSON.parse(localStorage.getItem(name));
+      const item = readStored(name);
+      if (!item) continue;
       const option = document.createElement("option");
       option.value = name;
       option.textContent = `Borrador ${index + 1} · ${new Date(item.updatedAt).toLocaleString()}`;
@@ -313,7 +326,7 @@
       try {
         key = draftChoice.value;
         storedRevision = localStorage.getItem(key);
-        draft = JSON.parse(storedRevision);
+        draft = readStored(key);
         if (!draft) { location.reload(); return; }
         sessionStorage.setItem(baseKey, key);
         armExpiry();
@@ -321,15 +334,6 @@
           ? "Continuar borrador" : "Comprobar envío anterior";
       } catch { storageFailure(); }
     });
-    if (
-      draft &&
-      (!draft.answers ||
-        typeof draft.answers !== "object" ||
-        typeof draft.token !== "string")
-    ) {
-      removeStored();
-      draft = null;
-    }
   } catch {
     storageFailure();
   }
