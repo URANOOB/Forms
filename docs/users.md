@@ -1,5 +1,25 @@
 # Usuarios y roles
 
+## Cierre por inactividad
+
+La sesión del panel vence tras **30 minutos sin actividad**. Escribir, hacer clic,
+desplazarse o navegar mantiene la sesión activa; también se reconoce la actividad
+en otra pestaña de la misma sesión. Consultar automáticamente las notificaciones
+no renueva ese plazo. Al vencer se oculta el contenido privado y se vuelve al
+inicio de sesión con un aviso. Los cambios del editor que no se hayan guardado
+se pierden al cerrarse la sesión.
+
+El servidor comprueba el vencimiento antes de permitir operaciones, incluso sin
+JavaScript. Los formularios públicos sin registro no están sujetos a este cierre.
+Las sesiones anteriores a esta configuración reciben el plazo en su primera
+petición posterior al despliegue.
+
+`SESSION_IDLE_TIMEOUT_SECONDS` configura el plazo en segundos: `1800` por defecto,
+con valores admitidos entre `60` y `86400`. Los cambios de configuración requieren
+reiniciar o desplegar la aplicación. No se necesita ninguna migración.
+
+## Permisos
+
 La plataforma utiliza dos roles:
 
 - **Administrador:** acceso completo, incluida la creación, edición, desactivación,

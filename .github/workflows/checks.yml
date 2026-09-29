@@ -43,6 +43,7 @@ jobs:
           apps.forms.tests.browser_gallery
           apps.accounts.tests.browser_dashboard
           apps.accounts.tests.browser_users
+          apps.accounts.tests.browser_sessions
           apps.submissions.tests.browser_accessibility
           apps.submissions.tests.browser_detail
           apps.submissions.tests.browser_review

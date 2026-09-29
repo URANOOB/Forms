@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import admin
 from django.db.models import Exists, OuterRef, Q
 from django.http import HttpResponseNotAllowed, JsonResponse
@@ -37,7 +38,10 @@ def shell_context(request):
         section = "Búsqueda"
     else:
         section = "Panel de control"
-    return {"platform_section": section}
+    return {
+        "platform_section": section,
+        "session_idle_timeout_seconds": settings.SESSION_IDLE_TIMEOUT_SECONDS,
+    }
 
 
 def search_matches(request, query, limit):

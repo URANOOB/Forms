@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from apps.accounts.platform import platform_activity, platform_search
+from apps.accounts.sessions import session_activity
 from apps.forms.builder_views import form_image
 from apps.submissions.views import public_form, response_file, thanks
 
@@ -24,6 +25,7 @@ urlpatterns = [
         admin.site.admin_view(platform_activity),
         name="platform_activity",
     ),
+    path("admin/session-activity/", session_activity, name="session_activity"),
     path("admin/", admin.site.urls),
     path("webhooks/", include("apps.notifications.urls")),
     path("f/enviado/", thanks, name="submission_thanks"),
