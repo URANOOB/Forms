@@ -31,6 +31,10 @@ jobs:
       - run: uv run python manage.py check
       - run: uv run python manage.py test --noinput
       - run: uv run --with playwright python -m playwright install --with-deps chromium
+      - name: Draft recovery browser regression checks
+        run: |
+          export PLAYWRIGHT_NODE_MODULE="$(uv run --with playwright python -c "from pathlib import Path; import playwright; print(Path(playwright.__file__).parent / 'driver' / 'package')")"
+          uv run python manage.py test apps.submissions.tests.browser_drafts --noinput
       - name: Browser regression checks
         run: >-
           uv run --with playwright python manage.py test

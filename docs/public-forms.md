@@ -9,16 +9,68 @@ consulta [despliegue](vercel-deployment.md).
 
 Submission referencia Form y FormVersion; SubmissionAnswer guarda un JSONB por campo.
 Texto y fecha ISO se guardan como strings, números como números JSON, booleanos como
-booleanos y selección múltiple como arrays. No se guardan IP, user agent ni datos en
-localStorage. Los datos ocultos y claves no reconocidas se descartan.
+booleanos y selección múltiple como arrays. No se guardan IP ni user agent.
+Los formularios públicos guardan un borrador de las respuestas en localStorage,
+separado por formulario, durante 24 horas desde la última modificación. Los datos
+ocultos y claves no reconocidas se descartan al guardar el envío en el servidor.
+
+El borrador se ofrece al volver al mismo enlace y navegador: **Continuar borrador**
+restaura los valores; **Descartar datos guardados** los elimina e inicia un envío nuevo.
+Consultar o recuperar el borrador no extiende el vencimiento. Los borradores vencidos
+se eliminan al abrir un formulario público; una página abierta programa su eliminación.
+Un navegador cerrado no puede ejecutar esa limpieza, pero nunca restaura valores vencidos.
+La confirmación del servidor elimina el borrador. No se guardan archivos binarios:
+al recargar o cerrar hay que seleccionarlos otra vez. Si falla el envío con la página
+abierta, se conservan los controles y sus archivos para reintentar. Sin almacenamiento
+disponible se muestra un aviso; el envío sigue funcionando. La vista previa y la edición
+del personal no guardan borradores.
 
 CSRF permanece activo. Un token firmado de 24 horas contiene formulario, versión y
 nonce, nunca respuestas. El nonce es único en PostgreSQL. Una transacción bloquea el
 formulario, verifica estado/versión y guarda respuesta y valores atómicamente.
-Reintentar el mismo envío conserva un único registro. Las versiones antiguas no se
+Reintentar el mismo envío conserva un único registro. Antes del envío con JavaScript,
+una solicitud POST con CSRF verifica el token firmado: si ya se recibió, devuelve
+únicamente la confirmación genérica; si no, renueva el token conservando su nonce.
+Esta comprobación admite un token vencido para recuperar una confirmación perdida,
+pero nunca devuelve respuestas ni permite usar el token de otro formulario.
+Un envío pendiente de otra versión exige recargar y revisar el formulario.
+Las versiones antiguas no se
 reinterpretan: un envío con token desactualizado debe revisarse antes de volver a enviar.
 La respuesta de validación conserva los datos introducidos, sin redirecciones con PII.
 Páginas públicas y confirmación usan Cache-Control no-store; la confirmación es genérica.
+
+## Posibles duplicados
+
+**Configuración → Posibles duplicados** permite elegir hasta tres campos que se comparan
+juntos, por ejemplo tipo y número de documento. Sin selección se desactiva la detección.
+No se infiere la identidad por el nombre de la pregunta. Se admiten texto corto, número,
+correo, teléfono y selección única; si falta algún valor, no se genera coincidencia.
+Los campos se vinculan por su clave estable entre versiones. Se normalizan mayúsculas,
+espacios y separadores de documentos, conservando ceros iniciales; en correo y selección
+se conserva la puntuación. Para documentos con ceros iniciales se recomienda texto.
+
+Cada nuevo envío se compara solo con las respuestas del mismo formulario, incluidas
+las rechazadas y versiones anteriores; las respuestas en papelera quedan excluidas.
+La coincidencia marca **Duplicado** con una nota de **Posible duplicado** y registra un
+evento en el historial. No bloquea, modifica ni elimina respuestas. El detalle y el panel
+del personal muestran enlaces a hasta 20 coincidencias para revisión. Las coincidencias
+se calculan con los datos actuales; cambiar la configuración no reescribe señales ni
+historial de respuestas anteriores. El vencimiento local nunca desactiva esta comparación.
+
+Aplicar la migración `forms.0012` con `uv run python manage.py migrate` antes de usar
+la nueva configuración. Pruebas del servidor:
+
+```sh
+uv run python manage.py test apps.submissions.tests.test_recovery_duplicates --noinput
+```
+
+La prueba de concurrencia necesita PostgreSQL. La regresión del navegador usa Node y
+un paquete Playwright instalado: definir `PLAYWRIGHT_NODE_MODULE` con la ruta del
+paquete y ejecutar `uv run python manage.py test apps.submissions.tests.browser_drafts
+--noinput`. En Windows usa Edge; en otros sistemas, Chromium de Playwright.
+`PLAYWRIGHT_BROWSER_CHANNEL` permite elegir otro canal instalado. Cubre recuperación,
+vencimiento, descarte, conexión perdida, confirmación perdida, adjuntos y almacenamiento
+local bloqueado, con datos artificiales y archivos temporales.
 
 La lista de Respuestas incluye iconos para ver, editar y eliminar según los permisos.
 La edición conserva fecha y versión originales, valida los tipos y condiciones y permite

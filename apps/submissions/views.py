@@ -2,7 +2,7 @@ from uuid import UUID
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -15,7 +15,12 @@ from apps.forms.models import Form, FormVersion
 from apps.forms.welcome import welcome_data
 
 from .models import SubmissionActivity, SubmissionFile
-from .runtime import PublicResponseForm, new_token, read_token, save_response
+from .runtime import PublicResponseForm, new_token, read_token, recover_token, save_response
+
+
+def confirmation_url(submission):
+    query = urlencode({"version": str(submission.form_version_id)})
+    return f"{reverse('submission_thanks')}?{query}"
 
 
 @sensitive_post_parameters()
@@ -30,7 +35,20 @@ def public_form(request, form_id=None, workspace_slug=None, slug=None):
         deleted_at__isnull=True,
         active_version__status="PUBLISHED",
     )
+    wants_json = request.headers.get("Accept") == "application/json"
+    if request.method == "POST" and request.POST.get("submission_action") == "recover":
+        try:
+            submission, token = recover_token(request.POST.get("submission_token", ""), form)
+        except ValidationError as error:
+            return JsonResponse({"message": " ".join(error.messages)}, status=409)
+        if submission:
+            return JsonResponse({"received": True, "redirect": confirmation_url(submission)})
+        if form.status != Form.Status.PUBLISHED:
+            return JsonResponse({"message": "Este formulario no recibe respuestas."}, status=409)
+        return JsonResponse({"received": False, "token": token})
     if form.status == Form.Status.PAUSED:
+        if wants_json:
+            return JsonResponse({"message": "Este formulario no recibe respuestas."}, status=409)
         return render(
             request,
             "public/closed.html",
@@ -57,10 +75,13 @@ def public_form(request, form_id=None, workspace_slug=None, slug=None):
                 submission = save_response(
                     form.pk, form.active_version_id, nonce, response_form.answers
                 )
-                query = urlencode({"version": str(submission.form_version_id)})
-                return redirect(f"{reverse('submission_thanks')}?{query}")
+                if wants_json:
+                    return JsonResponse(
+                        {"received": True, "redirect": confirmation_url(submission)}
+                    )
+                return redirect(confirmation_url(submission))
             status = 422
-            if request.FILES:
+            if request.FILES and not wants_json:
                 response_form.add_error(
                     None, "Vuelve a seleccionar los archivos antes de reenviar."
                 )
@@ -68,6 +89,10 @@ def public_form(request, form_id=None, workspace_slug=None, slug=None):
             response_form.add_error(None, error)
             token = new_token(form)
             status = 409
+        if wants_json:
+            return JsonResponse(
+                {"errors": response_form.errors.get_json_data(), "token": token}, status=status
+            )
     return render(
         request,
         "public/form.html",

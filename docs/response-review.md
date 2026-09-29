@@ -58,8 +58,12 @@ se presentan con las etiquetas de la versión que recibió la respuesta.
 **Nueva** identifica las respuestas recibidas pendientes de revisión. Las señales
 **Requiere atención**, **Documento ilegible**, **Incompleta** y **Duplicado** las marca
 explícitamente un revisor, con una explicación obligatoria, desde el detalle. Se
-pueden retirar al resolverlas y sus cambios se registran en el historial. No se
-deducen automáticamente incidencias ni urgencias clínicas.
+pueden retirar al resolverlas y sus cambios se registran en el historial. Además,
+si se configuran campos en **Configuración → Posibles duplicados**, un nuevo envío
+coincidente recibe automáticamente la señal **Duplicado**, con una nota que indica
+que debe revisarse y un evento del sistema. El detalle y el panel enlazan las
+respuestas coincidentes del mismo formulario. No se deducen otras incidencias ni
+urgencias clínicas automáticamente.
 
 La tabla permite seleccionar respuestas de la página y descargarlas en CSV.
 El menú de cada tarjeta también permite la descarga individual. El CSV contiene

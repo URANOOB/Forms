@@ -9,6 +9,7 @@
 </div>
 {% endblock %}
 {% block content %}
+{% include "admin/submissions/_duplicates.html" %}
 <header class="response-summary response-detail-summary">
     <div class="response-detail-title"><div><h1>{{ response_form_title }}</h1>{% if response_summary.title != "Respuesta sin identificación" %}<p class="response-detail-person">{{ response_summary.title }}</p>{% endif %}</div>
         <div class="response-detail-actions">

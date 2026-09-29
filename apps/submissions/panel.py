@@ -1,5 +1,6 @@
 """Read-only data for the response workspace's selected case."""
 
+from .duplicates import duplicates_for
 from .presentation import response_sections
 from .summary import load_summary_data, summary_for
 
@@ -34,6 +35,7 @@ def history_for(submission):
                 "document_downloaded": "Documento descargado",
                 "trashed": "Respuesta enviada a la papelera",
                 "restored": "Respuesta restaurada",
+                "duplicate_detected": "Posible duplicado detectado",
             }.get(activity.event_type, activity.event_type),
             "actor": activity.actor,
             "description": activity.description,
@@ -68,6 +70,7 @@ def panel_context(submission, request, model_admin):
         "sections": sections,
         "documents": documents,
         "history": history_for(submission),
+        "possible_duplicates": duplicates_for(submission)[:20],
         "notes": list(submission.notes.select_related("author")[:30]),
         "can_review": model_admin.has_change_permission(request, submission),
         "can_note": model_admin.has_change_permission(request, submission),

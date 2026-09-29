@@ -209,6 +209,7 @@
 
 .question-more-menu .more-menu-detail { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
 .response-summary-setting { margin-top: 16px; }
-#response-summary-fields select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--control-surface); color: var(--ink); }
+#response-summary-fields select, #duplicate-fields select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--control-surface); color: var(--ink); }
+#duplicate-fields select { display: block; margin-top: 8px; }
 #response-summary-fields .summary-mask { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; font-weight: 400; }
 #response-summary-fields .summary-mask input { width: 16px; height: 16px; margin: 0; }

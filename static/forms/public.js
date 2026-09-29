@@ -501,6 +501,11 @@
       event.preventDefault();
       return;
     }
+    if (window.publicDraft) {
+      event.preventDefault();
+      window.publicDraft.submit();
+      return;
+    }
     button.disabled = true;
     status.textContent = form.dataset.edit ? "Guardando cambios…" : "Enviando respuesta…";
   });
@@ -510,6 +515,10 @@
     update();
   });
   update();
+  form.addEventListener("draft:restored", () => {
+    update();
+    document.dispatchEvent(new CustomEvent("public:section-change"));
+  });
   const firstError = form.querySelector("[data-field] .errorlist");
   if (firstError) goTo(firstError.closest("[data-section]").dataset.section, false);
   document.getElementById("error-summary")?.addEventListener("click", (event) => {

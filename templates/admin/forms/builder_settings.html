@@ -15,6 +15,13 @@
         <select id="settings-respondent-email" data-notification="respondent_email_stable_key"></select>
         <p class="settings-hint">Configura quién recibe los avisos de nuevas respuestas en Correos → Destinatarios. Si no hay una lista configurada, se avisa al creador. En modo automático, los avisos al respondiente requieren un único campo de correo con un valor válido.</p>
     </section>
+    <section class="builder-settings-card" id="duplicate-settings">
+        <h3>Posibles duplicados</h3>
+        <p class="settings-hint">Selecciona los campos que identifican a una persona, preferiblemente tipo y número de documento. Se comparan juntos, únicamente dentro de este formulario y entre sus versiones. Las coincidencias se reciben y se marcan para revisión; no se bloquean ni se sobrescriben.</p>
+        <div id="duplicate-fields"></div>
+        <p class="settings-hint">Sin campos seleccionados, la detección está desactivada. Los campos vacíos no generan coincidencias. Las respuestas rechazadas también se comparan; las de la papelera se excluyen.</p>
+        <p class="settings-hint">Los borradores públicos se guardan en el navegador durante 24 horas desde el último cambio. Este vencimiento no afecta a las respuestas recibidas ni al control de duplicados.</p>
+    </section>
     <section class="builder-settings-card" id="response-summary-settings">
         <h3>Identificación de respuestas</h3>
         <p class="settings-hint">Elige quién o qué identifica cada respuesta y hasta tres datos para las tarjetas y la tabla. Se aplica también a respuestas anteriores que contengan esos campos. Sin selección, se usan nombre, documento y otros identificadores reconocibles.</p>

@@ -13,6 +13,7 @@ from apps.notifications.recipients import save_settings, settings_for
 from .appearance import validate_appearance
 from .catalog_import import MAX_OPTIONS
 from .conditions import FormSchema
+from .duplicates import validate_duplicate_fields
 from .models import ConditionalRule, FieldOption, Form, FormField, FormSection, FormVersion
 from .public_fields import CHOICE_TYPES
 from .response_summary import validate_response_summary
@@ -79,6 +80,7 @@ def document(version):
         "title": version.title or form.name,
         "description": version.description if version.title else form.description,
         "response_summary": form.response_summary,
+        "duplicate_fields": form.duplicate_fields,
         "notifications": settings_for(form),
         "appearance": version.appearance,
         "welcome": {
@@ -325,8 +327,13 @@ def save_document(form_id, data, publish=False):
         data.get("response_summary", form.response_summary), fields.values()
     )
     save_settings(form, data.get("notifications", settings_for(form)), fields.values())
+    form.duplicate_fields = validate_duplicate_fields(
+        data.get("duplicate_fields", form.duplicate_fields), fields.values()
+    )
     form.name, form.description = title, description
-    form.save(update_fields=["name", "description", "response_summary", "updated_at"])
+    form.save(
+        update_fields=["name", "description", "response_summary", "duplicate_fields", "updated_at"]
+    )
     if publish or form.status in {Form.Status.PUBLISHED, Form.Status.PAUSED}:
         from .publication import publish_form
 

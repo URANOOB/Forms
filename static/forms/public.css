@@ -648,3 +648,8 @@ body[data-form-background]:not([data-form-background="plain"]) > footer {
   .form-sheet .field { margin-bottom: 32px; }
   .form-sheet .section-intro { margin-bottom: 28px; }
 }
+
+/* Recoverable local draft notice, outside the welcome screen. */
+.draft-panel { margin: 0 0 1rem; padding: 1rem; border: 1px solid #cbd5e1; border-radius: 12px; background: #f8fafc; color: #172033; }
+.draft-panel p { margin: 0 0 .75rem; }
+.draft-panel .section-navigation { flex-wrap: wrap; justify-content: flex-start; }

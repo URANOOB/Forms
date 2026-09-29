@@ -24,9 +24,13 @@ def multi_items(data):
     )
 
 
-def new_token(form):
+def new_token(form, nonce=None):
     return signing.dumps(
-        {"form": str(form.pk), "version": str(form.active_version_id), "nonce": str(uuid.uuid4())},
+        {
+            "form": str(form.pk),
+            "version": str(form.active_version_id),
+            "nonce": str(nonce or uuid.uuid4()),
+        },
         salt=TOKEN_SALT,
     )
 
@@ -41,6 +45,26 @@ def read_token(token, form):
         raise ValidationError(
             "El formulario cambió o el enlace de envío venció. Revisa tus datos y vuelve a enviar."
         ) from error
+
+
+def recover_token(token, form):
+    """A signed receipt may be checked after expiry; never return answer data."""
+    try:
+        payload = signing.loads(token, salt=TOKEN_SALT)
+        if payload["form"] != str(form.pk):
+            raise ValueError
+        nonce = uuid.UUID(payload["nonce"])
+        version = uuid.UUID(payload["version"])
+    except (signing.BadSignature, KeyError, TypeError, ValueError) as error:
+        raise ValidationError("No se pudo verificar el envío. Recarga el formulario.") from error
+    existing = Submission.all_objects.filter(
+        form=form, form_version_id=version, idempotency_key=nonce
+    ).first()
+    if existing:
+        return existing, token
+    if version != form.active_version_id:
+        raise ValidationError("El formulario cambió. Recarga la página y revisa las preguntas.")
+    return None, new_token(form, nonce)
 
 
 class PublicResponseForm(forms.Form):
@@ -232,6 +256,9 @@ def save_response(form_id, version_id, nonce, answers):
                 answer.value = {"files": metadata}
                 answer.save(update_fields=["value"])
             SubmissionAnswer.objects.bulk_create(scalar_answers)
+            from .duplicates import flag_duplicate
+
+            flag_duplicate(submission)
             from apps.notifications.services import queue_notification
 
             queue_notification(submission)

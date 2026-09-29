@@ -13,6 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from apps.forms.conditions import FormSchema
 from apps.forms.question_fields import FILE_TYPES
 
+from .duplicates import duplicates_for
 from .models import Submission, SubmissionActivity, SubmissionAnswer, SubmissionFile, SubmissionNote
 from .panel import history_for, panel_context
 from .presentation import render_response_details, response_sections
@@ -53,6 +54,7 @@ def page_context(model_admin, request, submission, title):
         "history": history_for(submission),
         "status_help": STATUS_HELP[submission.status],
         "response_summary": summary_for(submission),
+        "possible_duplicates": duplicates_for(submission)[:20],
         "attention_form": AttentionForm(
             initial={
                 "attention": submission.attention,
