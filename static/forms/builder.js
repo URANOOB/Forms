@@ -177,7 +177,42 @@
   }
   function branchTargets(field) {
     let number = 0;
+    const source = state.sections.find((section) => section.fields.includes(field));
+    const graph = new Map();
+    const pending = state.sections.map((section) => section.id);
+    while (pending.length) {
+      const id = pending.pop();
+      const edges = [];
+      graph.set(id, edges);
+      const index = state.sections.findIndex((section) => section.id === id);
+      if (index < 0) continue;
+      const section = state.sections[index];
+      const following = state.sections[index + 1]?.id;
+      const next = section.configuration?.next_section || "NEXT";
+      if (next === "NEXT" && following) edges.push(following);
+      else if (next !== "NEXT" && next !== "SUBMIT") edges.push(next);
+      const canSkip = section.fields.length && section.fields.every((item) =>
+        state.rules.some((rule) => ["SHOW", "HIDE"].includes(rule.action) &&
+          (rule.target_field === item.id || rule.target_section === id)));
+      if (canSkip && following) edges.push(following);
+    }
+    const visit = (start) => {
+      const reachable = new Set(), queue = [start];
+      while (queue.length) {
+        const id = queue.pop();
+        if (reachable.has(id)) continue;
+        reachable.add(id);
+        queue.push(...(graph.get(id) || []));
+      }
+      return reachable;
+    };
+    const reachable = visit(state.sections[0]?.id).has(source?.id)
+      ? visit(source.id) : new Set();
     return state.sections.flatMap((section, index) => {
+      if (!reachable.has(section.id)) {
+        number += section.fields.length;
+        return [];
+      }
       const context = `Sección ${index + 1} · ${section.title || "Sin título"}`;
       return [
         ...(!section.fields.includes(field) && section.fields.length

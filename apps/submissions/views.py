@@ -58,6 +58,13 @@ def public_form(request, form_id=None, workspace_slug=None, slug=None):
             },
             status=409 if request.method == "POST" else 200,
         )
+    if request.method == "POST" and request.POST.get("submission_action") == "fork":
+        if request.POST.get("submission_version") != str(form.active_version_id):
+            return JsonResponse(
+                {"message": "El formulario cambió. Recarga la página y revisa las preguntas."},
+                status=409,
+            )
+        return JsonResponse({"token": new_token(form)})
     schema = FormSchema(form.active_version)
     response_form = PublicResponseForm(
         schema,
