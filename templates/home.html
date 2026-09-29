@@ -21,7 +21,6 @@
         <a class="home-brand" href="{% url 'home' %}" aria-label="LogicForms, inicio">
             <img class="home-logo" src="{% static 'forms/brand/logicforms-logo.png' %}?v=2" width="2089" height="753" alt="LogicForms">
         </a>
-        <a class="home-login" href="{% url 'admin:index' %}">{% if request.user.is_active and request.user.is_staff %}Abrir plataforma{% else %}Iniciar sesión{% endif %}<span aria-hidden="true">↗</span></a>
     </header>
 
     <main id="inicio" class="home-main">
