@@ -1137,6 +1137,7 @@
     const controls = [...root.querySelectorAll("input,textarea,select,button")];
     const disabled = controls.map((control) => control.disabled);
     controls.forEach((el) => (el.disabled = true));
+    const stopLoading = window.platformLoader?.start(publish ? 'Publicando formulario…' : 'Guardando formulario…');
     try {
       await initializeForm();
       const response = await fetch(
@@ -1168,6 +1169,7 @@
       status.textContent = "No se guardaron los cambios";
       return false;
     } finally {
+      stopLoading?.();
       busy = false;
       controls.forEach((el, index) => (el.disabled = disabled[index]));
       renderSettings();
@@ -1284,6 +1286,7 @@
       const controls = [...root.querySelectorAll("input,textarea,select,button")];
       const disabled = controls.map((control) => control.disabled);
       controls.forEach((control) => { control.disabled = true; });
+      const stopLoading = window.platformLoader?.start('Actualizando formulario…');
       try {
         const response = await fetch(root.dataset.base + `${operation}/`, {
           method: "POST", headers: { "X-CSRFToken": csrf },
@@ -1299,6 +1302,7 @@
       } catch (error) {
         notify(error.message || "No se pudo actualizar el acceso.", true);
       } finally {
+        stopLoading?.();
         busy = false;
         controls.forEach((control, index) => { control.disabled = disabled[index]; });
         renderSettings();
@@ -1535,6 +1539,7 @@
       updateHistoryButtons();
       const payload = new FormData();
       payload.append("image", file);
+      const stopLoading = window.platformLoader?.start('Subiendo imagen…');
       try {
         await initializeForm();
         const response = await fetch(root.dataset.base + "image/", {
@@ -1567,6 +1572,7 @@
         notify(error.message, true);
         status.textContent = "La imagen no se subió";
       } finally {
+        stopLoading?.();
         busy = false;
         updateHistoryButtons();
       }

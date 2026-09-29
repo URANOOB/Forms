@@ -1,0 +1,7 @@
+#platform-loader { position: fixed; inset: auto 20px 20px auto; margin: 0; display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px); padding: 12px 20px; border: 1px solid #dbe5f3; border-radius: 16px; background: #fff; color: #1d2939; box-shadow: 0 8px 32px #173f7826; font: 600 14px/1.5 Inter, sans-serif; z-index: 10000; pointer-events: none; }
+#platform-loader[hidden] { display: none; }
+#platform-loader .platform-loader-animation { width: 64px; height: 100px; flex: none; }
+#platform-loader .platform-loader-animation[hidden] { display: none; }
+#platform-loader::backdrop { background: transparent; pointer-events: none; }
+.dark #platform-loader { background: #202e41; color: #fff; border-color: #42516a; }
+@media (max-width: 600px) { #platform-loader { right: 16px; bottom: 16px; } }

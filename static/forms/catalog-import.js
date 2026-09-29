@@ -140,6 +140,7 @@
     if (result) data.append("sheet", el("sheet").value);
     if (!reset || header) data.append("header_row", el("header").value);
     if (!reset) data.append("fields", JSON.stringify(definitions));
+    const stopLoading = window.platformLoader?.start('Analizando archivo…');
     try {
       const response = await fetch(root.dataset.catalogUrl, { method: "POST", headers: { "X-CSRFToken": root.querySelector("[name=csrfmiddlewaretoken]").value }, body: data, signal: controller.signal });
       const payload = await response.json();
@@ -154,6 +155,7 @@
       status(error.message || "No se pudo analizar el archivo.", true);
       list("issues", [error.message || "No se pudo analizar el archivo."]);
     } finally {
+      stopLoading?.();
       if (serial === requestId) {
         pending = false;
         activeRequest = null;

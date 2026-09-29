@@ -401,6 +401,7 @@
       form.inert = true;
       form.setAttribute("aria-busy", "true");
       status.textContent = "Comprobando el envío…";
+      const stopLoading = window.platformLoader?.start('Enviando respuesta…');
       try {
         await save();
         if (await recover()) return;
@@ -453,6 +454,7 @@
             ? "No se pudo confirmar el envío. Conservamos tus datos en esta página. Revisa la conexión y pulsa Enviar respuesta para reintentar."
             : error.message;
       } finally {
+        stopLoading?.();
         busy = false;
         submitButton.disabled = completed;
         discardButton.disabled = false;
