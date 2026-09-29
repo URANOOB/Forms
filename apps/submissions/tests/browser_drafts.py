@@ -16,6 +16,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.core.files.storage import FileSystemStorage
 from django.test import override_settings
 
+from apps.accounts.models import RateLimitBucket
 from apps.forms.models import FieldOption, FormField
 from apps.forms.publication import publish_form
 from apps.submissions.models import Submission, SubmissionFile
@@ -80,6 +81,8 @@ class DraftBrowserTests(StaticLiveServerTestCase):
                 ),
             }
             for mode in ["main", "files"]:
+                # These independent browser scenarios share the live server's loopback IP.
+                RateLimitBucket.objects.all().delete()
                 result = subprocess.run(
                     [shutil.which("node"), str(Path(__file__).with_suffix(".cjs"))],
                     env={**env, "FORMS_DRAFT_MODE": mode},
