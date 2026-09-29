@@ -105,7 +105,6 @@
     {% endfor %}
     <div class="submit-panel">
         <p class="hint">La información registrada estará disponible únicamente para el personal autorizado.</p>
-        {% if schema.max_submission_bytes %}<p class="hint">El tamaño total de la respuesta, incluidos todos los adjuntos, admite hasta {{ schema.max_submission_bytes|filesizeformat }}.</p>{% endif %}
         <div class="section-navigation">
             <button type="button" id="back-button" class="secondary" hidden>Anterior</button>
             <button type="button" id="next-button" hidden>Siguiente</button>
