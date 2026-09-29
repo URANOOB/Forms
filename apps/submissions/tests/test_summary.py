@@ -110,6 +110,62 @@ class ResponseSummaryTests(TestCase):
         self.assertEqual(self.submission.form_version_id, self.version.pk)
         self.assertEqual(self.submission.answers.get(field=self.doc).value, "1023984521")
 
+    def test_patient_labels_identify_historical_and_new_versions(self):
+        publish_form(self.form.pk)
+        self.version.refresh_from_db()
+        data = document(self.version)
+        labels = {
+            "nombre": "Nombres y Apellidos (Paciente)",
+            "documento": "Numero de Documento (Paciente)",
+        }
+        for section in data["sections"]:
+            for field in section["fields"]:
+                if field["stable_key"] in labels:
+                    field["label"] = labels[field["stable_key"]]
+        saved = save_document(self.form.pk, data)
+        version = self.form.versions.get(pk=saved["version"])
+        newer = Submission.objects.create(
+            form=self.form, form_version=version, idempotency_key=uuid.uuid4()
+        )
+        for key, value in [("nombre", "Persona de prueba"), ("documento", "0012345678")]:
+            SubmissionAnswer.objects.create(
+                submission=newer, field=version.fields.get(stable_key=key), value=value
+            )
+        before = list(newer.answers.values_list("field__label", "value"))
+        load_summary_data([newer])
+        self.assertEqual(summary_for(newer)["title"], "Persona de prueba")
+        self.assertEqual(summary_for(newer)["document"], "•••• 5678")
+        self.assertEqual(self.summary()["title"], "María Rodríguez")
+        self.assertEqual(self.summary()["document"], "•••• 4521")
+        for view in ("list", "board", "table"):
+            response = self.client.get(self.list_url, {"view": view})
+            self.assertContains(response, "Persona de prueba")
+            self.assertNotContains(response, "Respuesta sin identificación")
+            self.assertNotContains(response, "0012345678")
+        panel = self.client.get(reverse("admin:submissions_submission_panel", args=[newer.pk]))
+        self.assertContains(panel, "Persona de prueba")
+        self.assertNotContains(panel, "Respuesta sin identificación")
+        self.assertEqual(before, list(newer.answers.values_list("field__label", "value")))
+
+    def test_patient_qualifier_does_not_guess_names_from_unrelated_fields(self):
+        for label in (
+            "Nombre de IPS (Paciente)",
+            "Nombre del médico",
+            "Nombre del acompañante",
+            "Tipo de Documento (Paciente)",
+        ):
+            with self.subTest(label=label):
+                self.name.label = label
+                self.name.save()
+                self.assertEqual(self.summary()["title"], "Respuesta sin identificación")
+
+    def test_configured_title_still_overrides_patient_name(self):
+        self.name.label = "Nombres y Apellidos (Paciente)"
+        self.name.save()
+        self.form.response_summary = {"title": "eps", "fields": []}
+        self.form.save()
+        self.assertEqual(self.summary()["title"], "Salud de prueba")
+
     def test_summary_configuration_rejects_duplicates_unknowns_and_too_many_fields(self):
         fields = list(self.version.fields.all())
         invalid = [

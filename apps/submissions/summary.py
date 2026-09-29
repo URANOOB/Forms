@@ -22,6 +22,10 @@ def normalized(value):
 
 def role(answer):
     label = normalized(answer.field.label)
+    # Qualifiers used by patient/response forms do not change the field's role.
+    # Keep the base-label allowlist: institutions, contacts and clinicians must
+    # never become the respondent merely because their label contains "nombre".
+    label = re.sub(r" (?:del |de la )?(?:paciente|solicitante|respondiente)$", "", label)
     if label in {
         "nombre",
         "nombres",

@@ -17,6 +17,7 @@ class ValuePresentationTests(SimpleTestCase):
             ("DATE", "Fecha", "2026-09-19", "19 sep 2026"),
             ("DATE", "Fecha", "fecha inválida", "fecha inválida"),
             ("NUMBER", "Número de documento", 1312441240.0, "1.312.441.240"),
+            ("NUMBER", "Numero de Documento (Paciente)", 123456789, "123.456.789"),
             ("SHORT_TEXT", "Documento", "0012345", "0.012.345"),
             ("SHORT_TEXT", "Documento", "AB-12345", "AB-12345"),
             ("SHORT_TEXT", "Teléfono actualizado", "3101234567", "310 123 4567"),
@@ -85,6 +86,17 @@ class ResponsePresentationTests(TestCase):
         )
         self.name.section.refresh_from_db()
         self.assertEqual(self.name.section.title, "Sección 1")
+
+    def test_patient_qualifier_keeps_identity_section_heading(self):
+        self.name.label = "Nombres y Apellidos (Paciente)"
+        self.name.save()
+        self.add_answer("Numero de Documento (Paciente)", "NUMBER", 123456789)
+        section = response_sections(self.response)[0]
+        self.assertEqual(section["title"], "Datos del solicitante")
+        document = next(
+            a for a in section["answers"] if a["label"] == "Numero de Documento (Paciente)"
+        )
+        self.assertEqual(document["value"], "123.456.789")
 
     def test_choices_grids_attachments_and_html_escaping(self):
         SubmissionAnswer.objects.create(
