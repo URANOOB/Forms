@@ -87,6 +87,7 @@
     controls.forEach((control) => { control.disabled = true; });
     const submit = form.querySelector('[type="submit"]');
     submit.textContent = "Guardando…";
+    const stopLoading = window.platformLoader?.start('Guardando revisión…');
     try {
       const response = await fetch(form.action, { method: "POST", body: data, headers: { Accept: "application/json" } });
       if (!response.headers.get("content-type")?.includes("application/json")) throw new Error("No se pudo guardar. Revisa tu sesión y actualiza el tablero.");
@@ -100,6 +101,7 @@
       error.textContent = failure.message || "No se pudo guardar. Vuelve a intentarlo.";
       error.hidden = false;
     } finally {
+      stopLoading?.();
       pending = false;
       controls.forEach((control) => { control.disabled = false; });
       updateReason(form);

@@ -12,11 +12,16 @@
   async function responseData(params, signal) {
     const url = new URL(tab.dataset.url, location.href);
     Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-    const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
-    if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
-      throw new Error("No se pudieron cargar las respuestas. Revisa tu sesión y vuelve a intentarlo.");
+    const stopLoading = window.platformLoader?.start('Cargando respuestas…');
+    try {
+      const response = await fetch(url, { signal, headers: { Accept: "application/json" } });
+      if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) {
+        throw new Error("No se pudieron cargar las respuestas. Revisa tu sesión y vuelve a intentarlo.");
+      }
+      return await response.json();
+    } finally {
+      stopLoading?.();
     }
-    return response.json();
   }
 
   async function loadResponses(page = 1) {

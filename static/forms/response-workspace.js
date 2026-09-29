@@ -39,6 +39,7 @@
     const pending = new AbortController();
     controller = pending;
     host.setAttribute('aria-busy', 'true');
+    const stopLoading = window.platformLoader?.start('Cargando respuesta…');
     try {
       const response = await fetch(link.dataset.panelUrl, { signal: pending.signal, headers: { Accept: 'text/html' } });
       if (!response.ok || response.redirected || !response.headers.get('content-type')?.includes('text/html')) throw new Error('No se pudo cargar la respuesta.');
@@ -55,6 +56,7 @@
     } catch (error) {
       if (!pending.signal.aborted && error.name !== 'AbortError') location.href = link.href;
     } finally {
+      stopLoading?.();
       if (controller === pending) host.removeAttribute('aria-busy');
     }
   });

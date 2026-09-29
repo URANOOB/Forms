@@ -50,6 +50,7 @@
       return;
     }
     searchRequest = new AbortController();
+    const stopLoading = window.platformLoader?.start('Buscando…');
     try {
       const url = new URL(search.action, window.location.href);
       url.searchParams.set("q", query);
@@ -68,6 +69,8 @@
       suggestions.hidden = false;
     } catch (error) {
       if (error.name !== "AbortError") suggestions.hidden = true;
+    } finally {
+      stopLoading?.();
     }
   }
 
@@ -121,8 +124,13 @@
     panel.hidden = !panel.hidden;
     bell.setAttribute("aria-expanded", String(!panel.hidden));
     if (!panel.hidden) {
-      await refreshActivity();
-      await markSeen();
+      const stopLoading = window.platformLoader?.start('Cargando actividad…');
+      try {
+        await refreshActivity();
+        await markSeen();
+      } finally {
+        stopLoading?.();
+      }
     }
   });
   document.addEventListener("click", (event) => {

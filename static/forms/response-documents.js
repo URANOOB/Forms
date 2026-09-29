@@ -67,6 +67,7 @@
     }
     const pending = new AbortController();
     controller = pending;
+    const stopLoading = window.platformLoader?.start('Cargando documento…');
     try {
       const previewUrl = new URL(url.href);
       previewUrl.searchParams.set("preview", "1");
@@ -118,6 +119,8 @@
       if (pending.signal.aborted) return;
       message(error.message || "No se pudo cargar el documento.");
       footer.textContent = "Cierre el visor e intente abrir el archivo de nuevo.";
+    } finally {
+      stopLoading?.();
     }
   });
   window.addEventListener("pagehide", release);
