@@ -2,6 +2,24 @@
   const host = document.getElementById('response-panel-host');
   let controller;
 
+  const items = document.querySelector('.response-work-items');
+  const visibleItems = items ? [...items.querySelectorAll('.response-work-item')].slice(0, 5) : [];
+  if (items && items.querySelectorAll('.response-work-item').length > 5) {
+    items.setAttribute('tabindex', '0');
+    items.setAttribute('role', 'region');
+    items.setAttribute('aria-label', 'Lista de respuestas');
+    const resizeList = () => {
+      // Measure complete rows so wrapped titles and responsive widths still show five.
+      const first = visibleItems[0].getBoundingClientRect();
+      const fifth = visibleItems[4].getBoundingClientRect();
+      items.style.maxHeight = `${Math.ceil(fifth.bottom - first.top)}px`;
+    };
+    const observer = new ResizeObserver(resizeList);
+    visibleItems.forEach((item) => observer.observe(item));
+    observer.observe(items);
+    resizeList();
+  }
+
   document.addEventListener('click', async (event) => {
     const tab = event.target.closest('[data-case-tab]');
     if (tab) {

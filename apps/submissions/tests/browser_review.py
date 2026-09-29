@@ -16,6 +16,85 @@ from apps.submissions.tests.test_public import fixture
 
 
 class ReviewBrowserTests(StaticLiveServerTestCase):
+    def test_work_list_scrolls_after_five_complete_responses(self):
+        form, version, name, *_ = fixture()
+        for index in range(7):
+            response = Submission.objects.create(
+                form=form,
+                form_version=version,
+                status="SUBMITTED" if index < 5 else "UNDER_REVIEW",
+                idempotency_key=uuid.uuid4(),
+            )
+            SubmissionAnswer.objects.create(
+                submission=response,
+                field=name,
+                value=f"Persona de prueba {index}"
+                + (" con un nombre largo" * 4 if index == 4 else ""),
+            )
+        user = form.created_by
+        user.is_superuser = True
+        user.save()
+        self.client.force_login(user)
+        url = self.live_server_url + reverse("admin:submissions_submission_changelist")
+        errors = []
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            context = browser.new_context(viewport={"width": 1600, "height": 1100})
+            context.add_cookies(
+                [
+                    {
+                        "name": "sessionid",
+                        "value": self.client.cookies["sessionid"].value,
+                        "url": self.live_server_url,
+                    }
+                ]
+            )
+            page = context.new_page()
+            page.on("pageerror", lambda error: errors.append(str(error)))
+            page.goto(url)
+            items = page.locator(".response-work-items")
+            expect(items.locator(".response-work-item")).to_have_count(7)
+            for width in (1600, 1024, 390):
+                page.set_viewport_size({"width": width, "height": 1100})
+                items.evaluate("el => el.scrollTop = 0")
+                page.wait_for_function("""() => {
+                    const list = document.querySelector('.response-work-items');
+                    const rows = list.querySelectorAll('.response-work-item');
+                    const box = list.getBoundingClientRect();
+                    return Math.abs(rows[4].getBoundingClientRect().bottom - box.bottom) <= 1
+                        && rows[5].getBoundingClientRect().top > box.bottom
+                        && list.scrollHeight > list.clientHeight;
+                }""")
+                page.screenshot(
+                    path=str(Path(tempfile.gettempdir()) / f"forms-response-five-{width}.png"),
+                    full_page=True,
+                )
+                items.focus()
+                header_top = page.locator(".response-list-heading").bounding_box()["y"]
+                page.keyboard.press("End")
+                page.wait_for_function("""() => {
+                    const list = document.querySelector('.response-work-items');
+                    return list.scrollTop > 0
+                        && Math.abs(list.scrollHeight - list.clientHeight - list.scrollTop) <= 1;
+                }""")
+                self.assertAlmostEqual(
+                    page.locator(".response-list-heading").bounding_box()["y"], header_top, delta=1
+                )
+                self.assertTrue(page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
+            last = items.locator(".response-item-open").last
+            title = last.locator("strong").inner_text()
+            last.click()
+            expect(page.locator("#response-panel-host .response-case-header")).to_contain_text(
+                title
+            )
+            for status, count in (("SUBMITTED", 5), ("UNDER_REVIEW", 2), ("VALIDATED", 0)):
+                page.goto(url + f"?response_status={status}")
+                expect(items.locator(".response-work-item")).to_have_count(count)
+                self.assertTrue(items.evaluate("el => el.scrollHeight <= el.clientHeight"))
+                expect(items).not_to_have_attribute("tabindex", "0")
+            browser.close()
+        self.assertFalse(errors, errors)
+
     def test_board_review_flow_and_responsive_layout(self):
         form, version, name, *_ = fixture()
         form.name = "Solicitud de acompañamiento"
