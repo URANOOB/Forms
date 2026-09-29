@@ -1,0 +1,14 @@
+{% extends 'unfold/layouts/unauthenticated.html' %}
+
+{% block title %}Sesión cerrada | {{ site_title }}{% endblock %}
+
+{% block content %}
+<div class="auth-logout">
+    <h1>Has cerrado sesión</h1>
+    <p>Tu sesión se cerró correctamente. Puedes volver a entrar cuando lo necesites.</p>
+    <a class="auth-primary-action" href="{% url 'admin:login' %}">
+        Iniciar sesión de nuevo
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+    </a>
+</div>
+{% endblock %}
