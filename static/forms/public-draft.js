@@ -15,7 +15,6 @@
   const draftChoice = document.getElementById("draft-choice");
   const draftChoiceLabel = document.getElementById("draft-choice-label");
   const token = form.elements.namedItem("submission_token");
-  const initialToken = token.value;
   let forkToken = null;
   const submitButton = document.getElementById("submit-button");
   const status = document.getElementById("submit-status");
@@ -88,16 +87,29 @@
   function store() {
     if (!draft || !available) return;
     const snapshot = { ...draft };
-    return storageOperation(() => {
+    return storageOperation(async () => {
       // A lock makes the comparison and write atomic across tabs. Without Web Locks,
       // use a private key for this page instead of sharing a read/modify/write slot.
       if (localStorage.getItem(key) !== storedRevision ||
           (!navigator.locks && !separateDraft)) {
         key = `${baseKey}:${crypto.randomUUID()}`;
         separateDraft = true;
-        forkToken = initialToken;
+        // Never reuse the original submission identity, even while offline.
+        forkToken = "";
       }
-      if (forkToken) {
+      if (forkToken === "") {
+        // Save the answers before contacting the server. A closed/offline page
+        // resumes with an empty identity and obtains a signed one before recovery.
+        snapshot.token = token.value = "";
+        if (draft) draft.token = "";
+        storedRevision = JSON.stringify(snapshot);
+        localStorage.setItem(key, storedRevision);
+        try { sessionStorage.setItem(baseKey, key); } catch { /* Optional resume hint. */ }
+        if (navigator.onLine) {
+          try { forkToken = await freshToken(); } catch { /* Retry before sending. */ }
+        }
+      }
+      if (forkToken !== null) {
         snapshot.token = forkToken;
         token.value = forkToken;
         if (draft) draft.token = forkToken;
@@ -176,6 +188,14 @@
     }
   }
   async function recover() {
+    if (!token.value) {
+      token.value = await freshToken();
+      if (forkToken !== null) forkToken = token.value;
+      if (draft) {
+        draft.token = token.value;
+        await store();
+      }
+    }
     const body = new FormData();
     body.set(
       "csrfmiddlewaretoken",
@@ -197,6 +217,16 @@
       await store();
     }
     return false;
+  }
+  async function freshToken() {
+    const body = new FormData();
+    body.set("csrfmiddlewaretoken", form.elements.namedItem("csrfmiddlewaretoken").value);
+    body.set("submission_action", "fork");
+    body.set("submission_version", form.dataset.versionId);
+    const result = await request(body);
+    if (!result.response.ok || !result.data.token)
+      throw new Error(result.data.message || "No se pudo preparar el envío. Vuelve a intentar.");
+    return result.data.token;
   }
   async function confirm(data) {
     completed = true;

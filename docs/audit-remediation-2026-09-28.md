@@ -1,8 +1,12 @@
 # Correcciones de la auditoría del 28 de septiembre de 2026
 
-El informe fechado se conserva como antecedente. Esta entrega corrige los nueve
-hallazgos funcionales y reúne los cambios pendientes de borradores, duplicados y
-desarrollo local con Docker.
+El informe fechado se conserva como antecedente. La entrega inicial abordó los nueve
+hallazgos funcionales y reunió los cambios de borradores, duplicados y desarrollo
+local con Docker. La reauditoría del 29 de septiembre confirmó siete cierres y dejó
+dos parciales (presupuesto de versiones históricas e identidad entre pestañas),
+además de detectar condiciones con destinos inalcanzables. Las correcciones y
+comprobaciones posteriores se describen en
+[el seguimiento del 29 de septiembre](reaudit-remediation-2026-09-29.md).
 
 1. El esquema comprueba el presupuesto agregado antes de guardar o publicar:
    10.000 parámetros y 200 archivos por petición, reservando parámetros para

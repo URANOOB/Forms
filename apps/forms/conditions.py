@@ -51,7 +51,9 @@ class FormSchema:
         if any(field.section.form_version_id != version.pk for field in self.fields):
             raise ValidationError("Todos los campos deben pertenecer a secciones de esta versión.")
         self.inputs = {str(field.pk): public_field(field) for field in self.fields}
-        validate_request_budget(self.fields, self.inputs)
+        # Admission limits must not invalidate immutable historical versions.
+        if version.status == "DRAFT":
+            validate_request_budget(self.fields, self.inputs)
         self.option_filters = option_filters(self.fields)
         self.groups = []
         grouped = {}
@@ -124,6 +126,20 @@ class FormSchema:
             ) from error
         for group in self.groups:
             for target in group["targets"]:
+                if version.status == "DRAFT":
+                    for condition in group["conditions"]:
+                        source_section = str(self.by_id[condition["source"]].section_id)
+                        target_section = str(self.by_id[target].section_id)
+                        if source_section != target_section and (
+                            not self.reachable(navigation_graph, source_section, target_section)
+                            or not self.reachable(
+                                navigation_graph, self.section_ids[0], source_section
+                            )
+                        ):
+                            raise ValidationError(
+                                "El destino de una condición debe ser alcanzable después "
+                                "de la sección de su pregunta de origen. Revisa la navegación."
+                            )
                 dependencies[target].update(
                     condition["source"] for condition in group["conditions"]
                 )
@@ -140,6 +156,18 @@ class FormSchema:
         self.keys_by_section = {key: [] for key in self.section_ids}
         for key, field in self.by_id.items():
             self.keys_by_section[str(field.section_id)].append(key)
+
+    @staticmethod
+    def reachable(graph, source, target):
+        pending, visited = [source], set()
+        while pending:
+            current = pending.pop()
+            if current == target:
+                return True
+            if current not in visited:
+                visited.add(current)
+                pending.extend(graph.get(current, ()))
+        return False
 
     def expected_value(self, source, rule):
         operator = rule.operator

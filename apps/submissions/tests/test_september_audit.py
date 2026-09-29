@@ -15,7 +15,7 @@ from openpyxl import load_workbook
 from apps.accounts.models import User
 from apps.forms.builder import document, save_document
 from apps.forms.conditions import FormSchema
-from apps.forms.models import FormField
+from apps.forms.models import ConditionalRule, FormField, FormSection
 from apps.forms.publication import publish_form, set_form_status, unarchive_form
 from apps.submissions.admin_views import fingerprint
 from apps.submissions.duplicates import duplicates_for, normalized_identity
@@ -25,7 +25,7 @@ from apps.submissions.models import (
     SubmissionAnswer,
     SubmissionFile,
 )
-from apps.submissions.runtime import new_token, save_response
+from apps.submissions.runtime import new_token, read_token, save_response
 from apps.submissions.tests.test_public import fixture
 
 
@@ -145,6 +145,116 @@ class SeptemberAuditTests(TestCase):
                 field.delete()
         field = self.field("valid", "NUMBER", validation={"min_value": 0.1, "max_value": 1.1})
         self.assertEqual(FormSchema(self.version).inputs[str(field.pk)].clean("1"), 1)
+
+    def test_historical_budget_allows_read_and_small_submission(self):
+        for i in range(41):
+            self.field(f"file{i}", "FILE", configuration={"max_files": 5, "extensions": ["txt"]})
+        with override_settings(DATA_UPLOAD_MAX_NUMBER_FILES=1000):
+            self.publish()
+        self.assertEqual(self.client.get(self.form.get_absolute_url()).status_code, 200)
+        self.assertEqual(self.send().status_code, 200)
+        self.assertEqual(
+            self.send(answer_file0=SimpleUploadedFile("one.txt", b"x")).status_code, 200
+        )
+        self.assertEqual(SubmissionFile.objects.count(), 1)
+        self.assertEqual(
+            self.send(
+                unused=[SimpleUploadedFile(f"{i}.txt", b"x") for i in range(201)]
+            ).status_code,
+            400,
+        )
+        with self.assertRaisesMessage(ValidationError, "archivos en total"):
+            save_document(self.form.pk, document(self.version))
+
+    def test_fork_issues_distinct_signed_identities_and_keeps_retry_identity(self):
+        self.publish()
+        fork = {"submission_action": "fork", "submission_version": str(self.version.pk)}
+        tokens = [
+            self.client.post(self.form.get_absolute_url(), fork).json()["token"] for _ in range(3)
+        ]
+        self.assertEqual(len({read_token(token, self.form) for token in tokens}), 3)
+        self.assertEqual(
+            self.client.post(
+                self.form.get_absolute_url(),
+                {
+                    **fork,
+                    "submission_version": str(uuid.uuid4()),
+                },
+            ).status_code,
+            409,
+        )
+        result = self.client.post(
+            self.form.get_absolute_url(),
+            {
+                "submission_action": "recover",
+                "submission_token": tokens[0],
+            },
+        )
+        self.assertEqual(
+            read_token(result.json()["token"], self.form), read_token(tokens[0], self.form)
+        )
+        csrf = Client(enforce_csrf_checks=True)
+        self.assertEqual(
+            csrf.post(self.form.get_absolute_url(), {"submission_action": "fork"}).status_code, 403
+        )
+        set_form_status(self.form.pk, "PAUSED")
+        self.assertEqual(
+            self.client.post(
+                self.form.get_absolute_url(), {"submission_action": "fork"}
+            ).status_code,
+            409,
+        )
+
+    def test_backward_condition_rejected_on_save_and_publish(self):
+        second = FormSection.objects.create(form_version=self.version, title="Decisión", order=1)
+        for field in self.version.fields.exclude(pk=self.name.pk):
+            field.section = second
+            field.save()
+        data = document(self.version)
+        choice = self.version.fields.get(stable_key="contactar")
+        data["rules"].append(
+            {
+                "source": str(choice.pk),
+                "target_section": str(self.name.section_id),
+                "operator": "EQUALS",
+                "expected": "si",
+                "action": "SHOW",
+            }
+        )
+        with self.assertRaisesMessage(ValidationError, "alcanzable"):
+            save_document(self.form.pk, data)
+        ConditionalRule.objects.create(
+            form_version=self.version,
+            source_field=choice,
+            target_section=self.name.section,
+            operator="EQUALS",
+            expected_value="si",
+            action="SHOW",
+        )
+        with self.assertRaisesMessage(ValidationError, "alcanzable"):
+            self.publish()
+
+    def test_forward_condition_destination_must_follow_actual_navigation(self):
+        second = FormSection.objects.create(form_version=self.version, title="Destino", order=1)
+        field = self.field("destination", "SHORT_TEXT", required=True)
+        field.section = second
+        field.save()
+        ConditionalRule.objects.create(
+            form_version=self.version,
+            source_field=self.name,
+            target_section=second,
+            operator="IS_NOT_EMPTY",
+            action="SHOW",
+        )
+        schema = FormSchema(self.version)
+        path, states = schema.journey({str(self.name.pk): "Ana"})
+        self.assertIn(str(second.pk), path)
+        self.assertTrue(states[str(field.pk)]["required"])
+        first = self.name.section
+        first.configuration = {"next_section": "SUBMIT"}
+        first.save()
+        with self.assertRaisesMessage(ValidationError, "alcanzable"):
+            self.publish()
 
     def test_historical_float_identity_matches_integral_number(self):
         field = self.field("documento", "NUMBER")
