@@ -59,14 +59,13 @@ Conexiones sin persistencia y cursores de servidor deshabilitados para facilitar
 uso con ASGI y poolers. La configuración de producción activa HTTPS y cookies
 seguras. No se confía en headers de proxy sin validar cómo los normaliza el hosting.
 
-Cloudflare Python Workers sigue siendo el target, **no un despliegue validado**.
-En Fase 10 se debe probar compatibilidad real de Django, psycopg y su transporte
-PostgreSQL, Unfold/static, R2, correo y generación/streaming de exportaciones bajo
-los límites del runtime. El wheel nativo usado localmente no prueba compatibilidad
-con Pyodide. El alojamiento solicitado debe ser gratuito y permanecer en Cloudflare. Ver
-[compatibilidad y trabajo pendiente](cloudflare-deployment.md).
+El despliegue configurado es Vercel, con el dominio logicforms.xyz; consulta
+`vercel.json` y el README para la configuración vigente. Cloudflare R2 proporciona
+almacenamiento privado. Python Workers se conserva como alternativa experimental,
+con empaquetado en CI, sin afirmar compatibilidad operativa del runtime.
+Consulta [compatibilidad y trabajo pendiente](cloudflare-deployment.md).
 En hosting convencional se debe servir `STATIC_ROOT` después de `collectstatic`.
-No hay secretos, dominios reales ni despliegue configurados en este repositorio.
+Las credenciales se configuran fuera del repositorio.
 
 ## Ajustes del alcance detallado de Fase 1
 

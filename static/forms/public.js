@@ -469,6 +469,14 @@
         return;
       }
     }
+    const entries = [...new FormData(form)];
+    const fileCount = entries.filter(([, value]) => value instanceof File).length;
+    if (fileCount > schema.max_submission_files ||
+        entries.length - fileCount > schema.max_submission_fields) {
+      event.preventDefault();
+      status.textContent = "El envío supera el límite de selecciones o archivos. Reduce las respuestas o los adjuntos antes de reintentar.";
+      return;
+    }
     if (schema.max_submission_bytes) {
       const encoder = new TextEncoder();
       let size = 0;
@@ -501,6 +509,11 @@
       event.preventDefault();
       return;
     }
+    if (window.publicDraft) {
+      event.preventDefault();
+      window.publicDraft.submit();
+      return;
+    }
     button.disabled = true;
     status.textContent = form.dataset.edit ? "Guardando cambios…" : "Enviando respuesta…";
   });
@@ -510,6 +523,10 @@
     update();
   });
   update();
+  form.addEventListener("draft:restored", () => {
+    update();
+    document.dispatchEvent(new CustomEvent("public:section-change"));
+  });
   const firstError = form.querySelector("[data-field] .errorlist");
   if (firstError) goTo(firstError.closest("[data-section]").dataset.section, false);
   document.getElementById("error-summary")?.addEventListener("click", (event) => {

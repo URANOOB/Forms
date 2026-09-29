@@ -35,6 +35,9 @@
   const snapshot = () => JSON.stringify({
     title: state.title, description: state.description,
     appearance: state.appearance || {}, welcome: state.welcome || {},
+    notifications: state.notifications || {},
+    response_summary: state.response_summary || {},
+    duplicate_fields: state.duplicate_fields || [],
     sections: state.sections, rules: state.rules,
   });
   let currentSnapshot = snapshot(), savedSnapshot = currentSnapshot;
@@ -627,6 +630,13 @@
       else input.innerHTML = options([["", "Automático"], ...emailFields.map((field) => [field.stable_key, field.label]), ...(emailKey && !emailFields.some((field) => field.stable_key === emailKey) ? [[emailKey, "Campo eliminado — elige otro"]] : [])], emailKey);
     });
     const summary = state.response_summary || {};
+    const identityFields = fields().filter((field) => ["SHORT_TEXT", "NUMBER", "EMAIL", "PHONE", "SINGLE_CHOICE"].includes(field.field_type));
+    document.getElementById("duplicate-fields").innerHTML = [0, 1, 2].map((i) => {
+      const selected = state.duplicate_fields?.[i] || "";
+      const choices = [["", "Sin seleccionar"], ...identityFields.map((field) => [field.stable_key, field.label])];
+      if (selected && !identityFields.some((field) => field.stable_key === selected)) choices.push([selected, "Campo eliminado — elige otro"]);
+      return `<label>Campo de identificación ${i + 1}<select data-duplicate-field>${options(choices, selected)}</select></label>`;
+    }).join("");
     const eligible = fields().filter((field) => !["HEADING", "INFORMATION", "IMAGE", "FILE", "DOCUMENT", "GRID_SINGLE", "GRID_MULTIPLE"].includes(field.field_type));
     const choices = [["", "Automático"], ...eligible.map((field) => [field.stable_key, field.label])];
     const summaryOptions = (selected, empty) => options([["", empty], ...choices.slice(1), ...(selected && !eligible.some((field) => field.stable_key === selected) ? [[selected, "Campo eliminado — elige otro"]] : [])], selected || "");
@@ -930,6 +940,11 @@
   root.addEventListener("focusout", () => { lastEdit = null; });
   root.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.matches("[data-duplicate-field]")) {
+      state.duplicate_fields = [...root.querySelectorAll("[data-duplicate-field]")].map((input) => input.value).filter(Boolean);
+      changed();
+      return;
+    }
     if (el.matches("[data-notification]")) {
       state.notifications = { notify_internal_on_submission: true, notify_respondent_on_validated: true, notify_respondent_on_rejected: true, respondent_email_stable_key: "", ...state.notifications };
       state.notifications[el.dataset.notification] = el.type === "checkbox" ? el.checked : el.value;

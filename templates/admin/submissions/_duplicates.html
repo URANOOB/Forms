@@ -1,0 +1,7 @@
+{% if possible_duplicates %}
+<section class="response-case-box review-note" aria-label="Posibles duplicados">
+    <h3>Posibles duplicados</h3>
+    <p>Los campos de identificación coinciden con estas respuestas del mismo formulario. Revisa si corresponden a una corrección o a una solicitud nueva.</p>
+    <ul>{% for match in possible_duplicates %}<li><a href="{% url 'admin:submissions_submission_detail' match.pk %}">Respuesta del {{ match.submitted_at|date:"d/m/Y H:i" }} · {{ match.get_status_display }}</a></li>{% endfor %}</ul>
+</section>
+{% endif %}

@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.contrib.auth.models import Group
+from django.db import transaction
 from django.db.models import Count, Q
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm
 
+from .admin_safety import LAST_ADMIN_MESSAGE, has_other_administrator, lock_user_administration
 from .forms import PlatformUserChangeForm, PlatformUserCreationForm
 from .models import User
 from .roles import ADMINISTRATOR, OPERATOR, ROLE_CHOICES, visible_users
@@ -55,6 +57,24 @@ class UserStatusFilter(admin.SimpleListFilter):
 
 @admin.register(User)
 class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
+    def changeform_view(self, request, *args, **kwargs):
+        with transaction.atomic():
+            if request.method == "POST":
+                lock_user_administration()
+            return super().changeform_view(request, *args, **kwargs)
+
+    def delete_view(self, request, *args, **kwargs):
+        with transaction.atomic():
+            if request.method == "POST":
+                lock_user_administration()
+            return super().delete_view(request, *args, **kwargs)
+
+    def get_deleted_objects(self, objs, request):
+        deleted, counts, permissions, protected = super().get_deleted_objects(objs, request)
+        if not has_other_administrator([obj.pk for obj in objs]):
+            protected.append(LAST_ADMIN_MESSAGE)
+        return deleted, counts, permissions, protected
+
     change_list_template = "admin/accounts/users/list.html"
     change_form_template = "admin/accounts/users/form.html"
     add_form_template = "admin/accounts/users/form.html"
@@ -103,6 +123,12 @@ class UserAdmin(SuperuserOnlyMixin, DjangoUserAdmin, ModelAdmin):
         return visible_users(super().get_queryset(request))
 
     def changelist_view(self, request, extra_context=None):
+        with transaction.atomic():
+            if request.method == "POST":
+                lock_user_administration()
+            return self._users_changelist_view(request, extra_context)
+
+    def _users_changelist_view(self, request, extra_context=None):
         response = super().changelist_view(request, extra_context)
         context = getattr(response, "context_data", None)
         if context is None or "cl" not in context:

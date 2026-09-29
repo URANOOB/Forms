@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 
-from .summary import normalized, role
+from .summary import grid_answer_text, normalized, role
 
 MONTHS = ("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 
@@ -121,18 +121,7 @@ def response_sections(obj):
                 )
             text = "" if attachments else "No proporcionado"
         elif answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
-            config = answer.field.configuration
-            columns = {column["id"]: column["label"] for column in config.get("columns", [])}
-            value = value if isinstance(value, dict) else {}
-            lines = []
-            for row in config.get("rows", []):
-                selected = value.get(row["id"], [])
-                selected = selected if isinstance(selected, list) else [selected]
-                result = (
-                    ", ".join(columns.get(item, item) for item in selected) or "No proporcionado"
-                )
-                lines.append(f"{row['label']}: {result}")
-            text = "\n".join(lines)
+            text = grid_answer_text(answer)
         elif answer.field.field_type in {"LINEAR_SCALE", "RATING"} and value is not None:
             text = f"{value} de {answer.field.configuration.get('max', 5)}"
         elif answer.field.field_type == "SINGLE_CHOICE" and isinstance(value, dict):

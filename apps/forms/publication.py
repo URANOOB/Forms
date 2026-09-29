@@ -54,6 +54,16 @@ def set_form_status(form_id, status):
 
 
 @transaction.atomic
+def unarchive_form(form_id):
+    form = Form.objects.select_for_update().get(pk=form_id)
+    if form.deleted_at or form.status != Form.Status.ARCHIVED:
+        raise ValidationError("Solo se pueden restaurar formularios archivados, no eliminados.")
+    form.status = Form.Status.DRAFT
+    form.save(update_fields=["status", "updated_at"])
+    return form
+
+
+@transaction.atomic
 def set_form_access(form_id, operation):
     form = Form.objects.select_for_update().get(pk=form_id)
     if form.deleted_at or form.status == Form.Status.ARCHIVED:

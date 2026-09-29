@@ -4,6 +4,16 @@
 {% block extra_styles %}<link rel="stylesheet" href="{% static 'forms/date-picker.css' %}?v=calendar-1"><link rel="stylesheet" href="{% static 'forms/select-picker.css' %}?v=option-images-2"><link rel="stylesheet" href="{% static 'forms/file-picker.css' %}?v=upload-1">{% endblock %}
 {% block page_class %}form-layout {% if welcome and not response_form.is_bound %}showing-welcome{% endif %}{% endblock %}
 {% block content %}
+{% if not preview and not staff_edit %}
+<section id="draft-panel" class="draft-panel" aria-label="Borrador del formulario" hidden>
+    <label id="draft-choice-label" hidden>Borrador guardado <select id="draft-choice"></select></label>
+    <p id="draft-status" role="status" aria-live="polite"></p>
+    <div class="section-navigation">
+        <button type="button" id="draft-continue" hidden>Continuar borrador</button>
+        <button type="button" id="draft-discard" class="secondary">Descartar datos guardados</button>
+    </div>
+</section>
+{% endif %}
 {% if welcome %}
 <section class="welcome-screen" id="welcome-screen" data-horizontal="{{ welcome.horizontal }}" data-vertical="{{ welcome.vertical }}" aria-labelledby="welcome-title" {% if response_form.is_bound %}hidden{% endif %}>
     {% if welcome.image_url %}<img class="welcome-background" src="{{ welcome.image_url }}" alt="">{% endif %}
@@ -27,7 +37,7 @@
     {% if form_description %}<p class="description">{{ form_description|linebreaksbr }}</p>{% endif %}
     <p class="hint">{% if staff_edit %}Actualice la información registrada y guarde los cambios.{% else %}Diligencie la información solicitada.{% endif %} Los campos marcados con <span aria-label="asterisco">*</span> son obligatorios.</p>
 </header>
-<form method="post" enctype="multipart/form-data" id="public-form" {% if preview %}data-preview="true"{% endif %} {% if staff_edit %}data-edit="true"{% endif %} novalidate>
+<form method="post" enctype="multipart/form-data" id="public-form" data-form-id="{{ form.pk }}" data-version-id="{{ form.active_version_id }}" data-bound="{{ response_form.is_bound|yesno:'true,false' }}" {% if preview %}data-preview="true"{% endif %} {% if staff_edit %}data-edit="true"{% endif %} novalidate>
     {% csrf_token %}
     <input type="hidden" name="submission_token" value="{{ token }}">
     {% if staff_edit %}
@@ -108,7 +118,8 @@
 {% endblock %}
 {% block scripts %}
 {{ schema|json_script:"form-schema" }}
-<script src="{% static 'forms/public.js' %}?v=accessibility-1" defer></script>
+<script src="{% static 'forms/public-draft.js' %}?v=audit-20260929" defer></script>
+<script src="{% static 'forms/public.js' %}?v=audit-20260929" defer></script>
 <script src="{% static 'forms/date-picker.js' %}?v=calendar-1" defer></script>
 <script src="{% static 'forms/select-picker.js' %}?v=accessibility-1" defer></script>
 <script src="{% static 'forms/file-picker.js' %}?v=accessibility-1" defer></script>
