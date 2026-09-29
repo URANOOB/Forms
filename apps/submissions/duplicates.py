@@ -1,5 +1,6 @@
 """Possible matches are advisory; never reject or overwrite a person's response."""
 
+import math
 import unicodedata
 
 from apps.forms.duplicates import DUPLICATE_TYPES
@@ -10,6 +11,10 @@ from .models import Submission, SubmissionActivity, SubmissionAnswer
 def normalized_identity(value, field_type):
     if isinstance(value, dict):
         value = value.get("selected")
+    if field_type == "NUMBER" and isinstance(value, float):
+        if not math.isfinite(value) or not value.is_integer():
+            return ""
+        value = int(value)
     if isinstance(value, bool) or not isinstance(value, (str, int)):
         return ""
     text = unicodedata.normalize("NFKC", str(value)).strip().casefold()

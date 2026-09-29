@@ -14,6 +14,7 @@ from apps.forms.conditions import FormSchema
 from apps.forms.question_fields import FILE_TYPES
 
 from .duplicates import duplicates_for
+from .file_cleanup import compensate_uploads, queue_file_deletion
 from .models import Submission, SubmissionActivity, SubmissionAnswer, SubmissionFile, SubmissionNote
 from .panel import history_for, panel_context
 from .presentation import render_response_details, response_sections
@@ -351,9 +352,7 @@ def response_edit(model_admin, request, object_id):
                             submission.save(update_fields=["review_revision"])
                     model_admin.log_change(request, submission, "Editó los datos de la respuesta.")
                     for file in removed:
-                        transaction.on_commit(
-                            lambda file=file: file.delete(save=False), robust=True
-                        )
+                        queue_file_deletion(file.name)
                     messages.success(request, "Respuesta actualizada.")
                     return redirect("admin:submissions_submission_detail", object_id=submission.pk)
                 if request.FILES:
@@ -380,8 +379,7 @@ def response_edit(model_admin, request, object_id):
                 status=422 if response_form.errors else 200,
             )
     except Exception:
-        for file in stored:
-            file.delete(save=False)
+        compensate_uploads(stored)
         raise
 
 

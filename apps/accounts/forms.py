@@ -2,6 +2,7 @@ from django import forms
 from unfold.forms import UserChangeForm, UserCreationForm
 from unfold.widgets import UnfoldAdminSelectWidget
 
+from .admin_safety import LAST_ADMIN_MESSAGE, has_other_administrator
 from .models import User
 from .roles import ADMINISTRATOR, OPERATOR, ROLE_CHOICES, assign_role
 
@@ -25,6 +26,16 @@ class RoleFormMixin:
         super().__init__(*args, **kwargs)
         if not self.instance._state.adding:
             self.initial["role"] = ADMINISTRATOR if self.instance.is_superuser else OPERATOR
+
+    def clean(self):
+        cleaned = super().clean()
+        if (
+            not self.instance._state.adding
+            and (cleaned.get("role") != ADMINISTRATOR or not cleaned.get("is_active"))
+            and not has_other_administrator([self.instance.pk])
+        ):
+            raise forms.ValidationError(LAST_ADMIN_MESSAGE)
+        return cleaned
 
     def save(self, commit=True):
         user = super().save(commit=False)

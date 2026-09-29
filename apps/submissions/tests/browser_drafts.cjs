@@ -177,6 +177,7 @@ if (process.env.FORMS_DRAFT_MODE === "files") {
     await page.locator("#id_answer_correo").fill("ana@example.test");
     await page.locator("#id_answer_fecha").fill("2026-09-29");
     await page.locator('input[name="answer_multiple"][value="uno"]').check();
+    await wait(async () => (await draft())?.answers.answer_multiple?.includes("uno"));
     assert.equal((await draft()).answers.answer_nombre[0], "Ana de prueba");
     const expiry = (await draft()).updatedAt;
     await page.reload();
@@ -252,6 +253,7 @@ if (process.env.FORMS_DRAFT_MODE === "files") {
     if (await page.locator("#welcome-start").isVisible())
       await page.locator("#welcome-start").click();
     await page.locator("#id_answer_nombre").fill("Borrador de otra versión");
+    await wait(async () => (await draft())?.answers.answer_nombre?.[0] === "Borrador de otra versión");
     await page.evaluate((k) => {
       const d = JSON.parse(localStorage.getItem(k));
       d.version = "older-version";
@@ -273,6 +275,7 @@ if (process.env.FORMS_DRAFT_MODE === "files") {
     if (await page.locator("#welcome-start").isVisible())
       await page.locator("#welcome-start").click();
     await page.locator("#id_answer_nombre").fill("Expira");
+    await wait(async () => (await draft())?.answers.answer_nombre?.[0] === "Expira");
     await page.evaluate((k) => {
       const d = JSON.parse(localStorage.getItem(k));
       d.updatedAt = Date.now() - 86400001;

@@ -39,6 +39,7 @@ jobs:
         run: >-
           uv run --with playwright python manage.py test
           apps.submissions.tests.browser_public_audit
+          apps.submissions.tests.browser_september_audit
           apps.forms.tests.browser_gallery
           apps.accounts.tests.browser_dashboard
           apps.accounts.tests.browser_users

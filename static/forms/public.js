@@ -469,6 +469,14 @@
         return;
       }
     }
+    const entries = [...new FormData(form)];
+    const fileCount = entries.filter(([, value]) => value instanceof File).length;
+    if (fileCount > schema.max_submission_files ||
+        entries.length - fileCount > schema.max_submission_fields) {
+      event.preventDefault();
+      status.textContent = "El envío supera el límite de selecciones o archivos. Reduce las respuestas o los adjuntos antes de reintentar.";
+      return;
+    }
     if (schema.max_submission_bytes) {
       const encoder = new TextEncoder();
       let size = 0;

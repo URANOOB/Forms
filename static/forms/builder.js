@@ -35,6 +35,9 @@
   const snapshot = () => JSON.stringify({
     title: state.title, description: state.description,
     appearance: state.appearance || {}, welcome: state.welcome || {},
+    notifications: state.notifications || {},
+    response_summary: state.response_summary || {},
+    duplicate_fields: state.duplicate_fields || [],
     sections: state.sections, rules: state.rules,
   });
   let currentSnapshot = snapshot(), savedSnapshot = currentSnapshot;

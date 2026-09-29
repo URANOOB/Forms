@@ -23,7 +23,7 @@ from .models import (
     FormVersion,
 )
 from .presets import PRESETS, create_preset_fields
-from .publication import delete_form, publish_form, set_form_status
+from .publication import delete_form, publish_form, set_form_status, unarchive_form
 
 
 class PlatformAdmin(ModelAdmin):
@@ -73,7 +73,7 @@ class FormAdmin(PlatformAdmin):
         "updated_at",
     ]
     inlines = [VersionInline]
-    actions = ["publish_forms", "pause_forms", "archive_forms", "delete_forms"]
+    actions = ["publish_forms", "pause_forms", "archive_forms", "unarchive_forms", "delete_forms"]
 
     def get_urls(self):
         urls = [
@@ -229,12 +229,18 @@ class FormAdmin(PlatformAdmin):
     def pause_forms(self, request, queryset):
         self.apply_action(request, queryset, "pause")
 
+    @admin.action(description="Desarchivar como borrador", permissions=["change"])
+    def unarchive_forms(self, request, queryset):
+        self.apply_action(request, queryset, "unarchive")
+
     def apply_action(self, request, queryset, action):
         for form in queryset:
             if self.has_change_permission(request, form):
                 try:
                     if action == "publish":
                         updated = publish_form(form.pk)
+                    elif action == "unarchive":
+                        updated = unarchive_form(form.pk)
                     else:
                         updated = set_form_status(
                             form.pk, "PAUSED" if action == "pause" else "ARCHIVED"

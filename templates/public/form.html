@@ -6,6 +6,7 @@
 {% block content %}
 {% if not preview and not staff_edit %}
 <section id="draft-panel" class="draft-panel" aria-label="Borrador del formulario" hidden>
+    <label id="draft-choice-label" hidden>Borrador guardado <select id="draft-choice"></select></label>
     <p id="draft-status" role="status" aria-live="polite"></p>
     <div class="section-navigation">
         <button type="button" id="draft-continue" hidden>Continuar borrador</button>
@@ -117,8 +118,8 @@
 {% endblock %}
 {% block scripts %}
 {{ schema|json_script:"form-schema" }}
-<script src="{% static 'forms/public-draft.js' %}?v=drafts-1" defer></script>
-<script src="{% static 'forms/public.js' %}?v=drafts-1" defer></script>
+<script src="{% static 'forms/public-draft.js' %}?v=audit-20260929" defer></script>
+<script src="{% static 'forms/public.js' %}?v=audit-20260929" defer></script>
 <script src="{% static 'forms/date-picker.js' %}?v=calendar-1" defer></script>
 <script src="{% static 'forms/select-picker.js' %}?v=accessibility-1" defer></script>
 <script src="{% static 'forms/file-picker.js' %}?v=accessibility-1" defer></script>

@@ -32,6 +32,40 @@ uv run python manage.py runserver
 
 Abrir <http://127.0.0.1:8000/admin/>. En macOS/Linux, usar `cp .env.example .env`.
 
+### Django dentro de Docker (alternativa para Windows)
+
+Si aparece `DLL load failed ... Una directiva de Control de aplicaciones bloqueó
+este archivo` al importar `psycopg`, Windows está bloqueando una biblioteca del
+controlador. PostgreSQL puede estar saludable y Django fallar antes de conectarse.
+El perfil `app` permite ejecutar Python y sus dependencias Linux dentro de Docker:
+
+```powershell
+docker compose build app
+docker compose run --rm app python manage.py migrate --noinput
+docker compose --profile app up -d --wait
+```
+
+Abrir <http://127.0.0.1:8000/admin/>. El código se recarga al editar archivos.
+Las dependencias se instalan en `/opt/venv`, separado de `.venv` de Windows.
+Este perfil usa exclusivamente el PostgreSQL local de Compose, archivos locales y
+notificaciones desactivadas. No carga `.env` ni `.env.supabase`. Mantiene el volumen
+existente de la base; no borra datos. La imagen de desarrollo no se usa en Vercel.
+
+Para preparar roles o crear un administrador en esa base local:
+
+```powershell
+docker compose exec app python manage.py setup_roles
+docker compose exec app python manage.py createsuperuser
+```
+
+Consultar registros con `docker compose logs --tail 80 app` y detener únicamente
+Django con `docker compose stop app`. Si cambia `uv.lock` o `pyproject.toml`, ejecutar
+`docker compose --profile app up -d --build --wait`. Los comandos de gestión y tests
+pueden ejecutarse con `docker compose exec app python manage.py ...`.
+Si el puerto 8000 está ocupado, detener el servidor anterior antes de iniciar el perfil.
+
+Referencia: [desarrollo con uv en Docker](https://docs.astral.sh/uv/guides/integration/docker/).
+
 Para ejecutar con la base Supabase y los archivos R2 ya trasladados, arrancar
 explícitamente con su configuración (este es el entorno activo del servidor local):
 
@@ -109,9 +143,9 @@ La sección **Reportes** del panel permite filtrar por formulario y fechas de re
 (ambos días incluidos, zona horaria de Bogotá), y ordenar por fecha o formulario.
 Muestra una vista previa paginada de las dos hojas del Excel: **Respuestas** (una
 fila por envío, con fecha y una columna por campo respondido) y **Documentos** (inventario
-de adjuntos). Las preguntas con el mismo título se reúnen en una columna, incluso
-entre formularios; si una respuesta contiene más de una, sus valores se separan por
-saltos de línea. Las columnas siguen el orden de las preguntas en el formulario.
+de adjuntos). Las columnas se identifican por formulario y clave estable de pregunta;
+las preguntas con títulos iguales conservan columnas separadas si su identidad
+es distinta. Las cuadrículas muestran las etiquetas de la versión respondida. Las columnas siguen el orden de las preguntas en el formulario.
 Sin fechas, incluye todas
 las respuestas. Las descargas usan los mismos filtros y el mismo orden, sin
 limitarse a la página visible. **Documentos

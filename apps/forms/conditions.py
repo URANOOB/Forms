@@ -15,6 +15,7 @@ from .public_fields import (
     public_field,
 )
 from .question_fields import FILE_TYPES, GRID_TYPES, SCALE_TYPES
+from .request_budget import validate_request_budget
 
 
 class FormSchema:
@@ -50,6 +51,7 @@ class FormSchema:
         if any(field.section.form_version_id != version.pk for field in self.fields):
             raise ValidationError("Todos los campos deben pertenecer a secciones de esta versión.")
         self.inputs = {str(field.pk): public_field(field) for field in self.fields}
+        validate_request_budget(self.fields, self.inputs)
         self.option_filters = option_filters(self.fields)
         self.groups = []
         grouped = {}
@@ -245,6 +247,8 @@ class FormSchema:
     def browser_spec(self):
         return {
             "max_submission_bytes": settings.SUBMISSION_MAX_BYTES,
+            "max_submission_fields": settings.DATA_UPLOAD_MAX_NUMBER_FIELDS,
+            "max_submission_files": settings.DATA_UPLOAD_MAX_NUMBER_FILES,
             "sections": self.section_ids,
             "navigation": self.navigation,
             "order": self.order,

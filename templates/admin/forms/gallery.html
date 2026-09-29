@@ -78,7 +78,7 @@
                                 <form method="post" class="card-actions">{% csrf_token %}<input type="hidden" name="_selected_action" value="{{ card.form.pk }}">
                                     {% if card.form.status == 'PUBLISHED' %}<button name="action" value="pause_forms"><span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>Pausar recepción</button>
                                     {% elif card.form.status != 'ARCHIVED' %}<button name="action" value="publish_forms"><span class="material-symbols-outlined" aria-hidden="true">publish</span>Publicar formulario</button>{% endif %}
-                                    {% if card.form.status != 'ARCHIVED' %}<button name="action" value="archive_forms"><span class="material-symbols-outlined" aria-hidden="true">archive</span>Archivar</button>{% endif %}
+                                    {% if card.form.status != 'ARCHIVED' %}<button name="action" value="archive_forms"><span class="material-symbols-outlined" aria-hidden="true">archive</span>Archivar</button>{% else %}<button name="action" value="unarchive_forms"><span class="material-symbols-outlined" aria-hidden="true">unarchive</span>Desarchivar como borrador</button>{% endif %}
                                     <button name="action" value="delete_forms" class="delete-form-action"><span class="material-symbols-outlined" aria-hidden="true">delete</span>Eliminar formulario</button>
                                 </form>
                                 {% endif %}

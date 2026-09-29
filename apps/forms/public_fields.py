@@ -92,6 +92,10 @@ def public_field(field):
     if kind in TEXT_TYPES:
         kwargs.update(validation)
         kwargs.setdefault("max_length", 10000 if kind == "LONG_TEXT" else 500)
+        if kind in {"PHONE", "EMAIL"}:
+            domain_min, domain_max = (6, 25) if kind == "PHONE" else (6, 320)
+            kwargs["min_length"] = max(kwargs.get("min_length", 0), domain_min)
+            kwargs["max_length"] = min(kwargs["max_length"], domain_max)
         if kwargs.get("min_length", 0) > kwargs["max_length"]:
             raise ValidationError(f"El mínimo supera al máximo de texto en «{field.label}».")
         if kind == "EMAIL":
@@ -128,6 +132,12 @@ def public_field(field):
                 }
             )
     elif kind == "NUMBER":
+        lower = max(0, validation.get("min_value", 0))
+        upper = min(MAX_SAFE_INTEGER, validation.get("max_value", MAX_SAFE_INTEGER))
+        if math.ceil(lower) > math.floor(upper):
+            raise ValidationError(
+                f"Los límites de «{field.label}» no admiten ningún entero válido."
+            )
         result = DigitsNumberField(
             **kwargs,
             **validation,

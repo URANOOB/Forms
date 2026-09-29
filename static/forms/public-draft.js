@@ -3,12 +3,20 @@
   if (!form || form.dataset.preview || form.dataset.edit) return;
   const ttl = 24 * 60 * 60 * 1000;
   const prefix = "forms:draft:v1:";
-  const key = prefix + form.dataset.formId;
+  const baseKey = prefix + form.dataset.formId;
+  let key = baseKey;
+  let storedRevision = null;
+  let writes = Promise.resolve();
+  let separateDraft = false;
   const panel = document.getElementById("draft-panel");
   const message = document.getElementById("draft-status");
   const resumeButton = document.getElementById("draft-continue");
   const discardButton = document.getElementById("draft-discard");
+  const draftChoice = document.getElementById("draft-choice");
+  const draftChoiceLabel = document.getElementById("draft-choice-label");
   const token = form.elements.namedItem("submission_token");
+  const initialToken = token.value;
+  let forkToken = null;
   const submitButton = document.getElementById("submit-button");
   const status = document.getElementById("submit-status");
   const controls = () =>
@@ -34,13 +42,18 @@
       "Este navegador no permite guardar el borrador. Mantén esta página abierta hasta confirmar el envío.",
     );
   }
+  function storageOperation(operation) {
+    writes = writes.then(() => navigator.locks
+      ? navigator.locks.request(baseKey, operation)
+      : operation()).catch(storageFailure);
+    return writes;
+  }
   function removeStored() {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      storageFailure();
-    }
     clearTimeout(expiryTimer);
+    return storageOperation(() => {
+      if (localStorage.getItem(key) === storedRevision) localStorage.removeItem(key);
+      storedRevision = null;
+    });
   }
   function armExpiry() {
     clearTimeout(expiryTimer);
@@ -52,6 +65,7 @@
         pending = false;
         form.inert = false;
         resumeButton.hidden = true;
+        draftChoiceLabel.hidden = true;
         say(
           "El borrador guardado venció. Puedes completar el formulario; los próximos cambios iniciarán un nuevo borrador.",
         );
@@ -61,14 +75,31 @@
   }
   function store() {
     if (!draft || !available) return;
-    try {
-      localStorage.setItem(key, JSON.stringify(draft));
+    const snapshot = { ...draft };
+    return storageOperation(() => {
+      // A lock makes the comparison and write atomic across tabs. Without Web Locks,
+      // use a private key for this page instead of sharing a read/modify/write slot.
+      if (localStorage.getItem(key) !== storedRevision ||
+          (!navigator.locks && !separateDraft)) {
+        key = `${baseKey}:${crypto.randomUUID()}`;
+        separateDraft = true;
+        forkToken = initialToken;
+      }
+      if (forkToken) {
+        snapshot.token = forkToken;
+        token.value = forkToken;
+        if (draft) draft.token = forkToken;
+      }
+      const serialized = JSON.stringify(snapshot);
+      localStorage.setItem(key, serialized);
+      storedRevision = serialized;
+      try { sessionStorage.setItem(baseKey, key); } catch { /* Optional resume hint. */ }
       armExpiry();
-    } catch {
-      storageFailure();
-    }
+      if (separateDraft)
+        say("Borrador guardado por separado para evitar sobrescribir los datos de otra pestaña. Puedes recuperarlo al volver a esta pestaña.");
+    });
   }
-  function save(changed = false) {
+  async function save(changed = false) {
     if (pending || completed) return;
     const answers = {};
     for (const input of controls()) {
@@ -95,8 +126,8 @@
         ) ||
         Boolean(draft?.hadFiles),
     };
-    store();
-    if (available)
+    await store();
+    if (available && !separateDraft)
       say(
         navigator.onLine
           ? "Borrador guardado en este navegador durante 24 horas desde el último cambio."
@@ -118,6 +149,8 @@
         throw new Error(
           response.status === 413
             ? "Los archivos superan el límite del servidor. Reduce su tamaño y reintenta."
+            : response.status === 400
+              ? "El envío supera los límites o contiene datos no válidos. Reduce las selecciones o los archivos y reintenta; tus respuestas siguen en esta página."
             : response.status === 429
               ? "Se alcanzó el límite de intentos. Espera un minuto y vuelve a intentar."
               : response.status === 403
@@ -142,19 +175,20 @@
     if (!result.response.ok)
       throw new Error(result.data.message || "No se pudo verificar el envío.");
     if (result.data.received) {
-      confirm(result.data);
+      await confirm(result.data);
       return true;
     }
     token.value = result.data.token;
+    if (forkToken) forkToken = token.value;
     if (draft) {
       draft.token = token.value;
-      store();
+      await store();
     }
     return false;
   }
-  function confirm(data) {
+  async function confirm(data) {
     completed = true;
-    removeStored();
+    await removeStored();
     draft = null;
     status.textContent = "Respuesta recibida.";
     location.assign(data.redirect);
@@ -170,6 +204,7 @@
     pending = false;
     form.inert = false;
     resumeButton.hidden = true;
+    draftChoiceLabel.hidden = true;
     for (const input of controls()) {
       const values = draft.answers[input.name];
       if (!Array.isArray(values)) continue;
@@ -196,6 +231,7 @@
     if (!draft) return;
     resumeButton.disabled = true;
     discardButton.disabled = true;
+    draftChoice.disabled = true;
     token.value = draft.token;
     try {
       if (navigator.onLine && (await recover())) return;
@@ -212,11 +248,12 @@
     } finally {
       resumeButton.disabled = false;
       discardButton.disabled = false;
+      draftChoice.disabled = false;
     }
   });
-  discardButton.addEventListener("click", () => {
+  discardButton.addEventListener("click", async () => {
     if (busy) return;
-    removeStored();
+    await removeStored();
     draft = null;
     // A new visit gets a new signed nonce and resets custom attachment widgets too.
     location.reload();
@@ -254,7 +291,36 @@
         localStorage.removeItem(storedKey);
       }
     }
-    draft = JSON.parse(localStorage.getItem(key));
+    let remembered;
+    try { remembered = sessionStorage.getItem(baseKey); } catch { /* Optional hint. */ }
+    const candidates = Object.keys(localStorage).filter((name) =>
+      name === baseKey || name.startsWith(`${baseKey}:`));
+    if (remembered && candidates.includes(remembered)) key = remembered;
+    else if (candidates.length) key = candidates.sort((a, b) =>
+      JSON.parse(localStorage.getItem(b)).updatedAt - JSON.parse(localStorage.getItem(a)).updatedAt)[0];
+    storedRevision = localStorage.getItem(key);
+    draft = JSON.parse(storedRevision);
+    for (const [index, name] of candidates.entries()) {
+      const item = JSON.parse(localStorage.getItem(name));
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = `Borrador ${index + 1} · ${new Date(item.updatedAt).toLocaleString()}`;
+      option.selected = name === key;
+      draftChoice.append(option);
+    }
+    draftChoice.addEventListener("change", () => {
+      if (!pending || busy) return;
+      try {
+        key = draftChoice.value;
+        storedRevision = localStorage.getItem(key);
+        draft = JSON.parse(storedRevision);
+        if (!draft) { location.reload(); return; }
+        sessionStorage.setItem(baseKey, key);
+        armExpiry();
+        resumeButton.textContent = draft.version === form.dataset.versionId
+          ? "Continuar borrador" : "Comprobar envío anterior";
+      } catch { storageFailure(); }
+    });
     if (
       draft &&
       (!draft.answers ||
@@ -272,6 +338,7 @@
     form.inert = true;
     armExpiry();
     resumeButton.hidden = false;
+    draftChoiceLabel.hidden = draftChoice.options.length < 2;
     const changedVersion = draft.version !== form.dataset.versionId;
     resumeButton.textContent = changedVersion
       ? "Comprobar envío anterior"
@@ -294,7 +361,6 @@
   window.publicDraft = {
     async submit() {
       if (busy || pending || completed) return;
-      save();
       busy = true;
       submitButton.disabled = true;
       discardButton.disabled = true;
@@ -302,11 +368,12 @@
       form.setAttribute("aria-busy", "true");
       status.textContent = "Comprobando el envío…";
       try {
+        await save();
         if (await recover()) return;
         status.textContent = "Enviando respuesta…";
         const { response, data } = await request(new FormData(form));
         if (response.ok && data.received) {
-          confirm(data);
+          await confirm(data);
           return;
         }
         if (data.token) {

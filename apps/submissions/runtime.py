@@ -11,6 +11,7 @@ from apps.forms.models import Form
 from apps.forms.public_fields import empty, json_value, phone_presentation
 from apps.forms.question_fields import FILE_TYPES, AttachmentField, GridField
 
+from .file_cleanup import compensate_uploads
 from .models import Submission, SubmissionAnswer, SubmissionFile
 
 TOKEN_SALT = "public-form-submission"
@@ -265,6 +266,5 @@ def save_response(form_id, version_id, nonce, answers):
             return submission
     except Exception:
         # File storage is not transactional; remove writes if the database rolls back.
-        for stored in stored_files:
-            stored.delete(save=False)
+        compensate_uploads(stored_files)
         raise

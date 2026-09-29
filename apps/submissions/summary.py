@@ -88,8 +88,24 @@ def load_summary_data(submissions):
     )
 
 
+def grid_answer_text(answer):
+    """Use the immutable field version attached to this historical answer."""
+    config = answer.field.configuration
+    columns = {column["id"]: column["label"] for column in config.get("columns", [])}
+    value = answer.value if isinstance(answer.value, dict) else {}
+    lines = []
+    for row in config.get("rows", []):
+        selected = value.get(row["id"], [])
+        selected = selected if isinstance(selected, list) else [selected]
+        result = ", ".join(columns.get(item, item) for item in selected) or "No proporcionado"
+        lines.append(f"{row['label']}: {result}")
+    return "\n".join(lines)
+
+
 def answer_text(answer):
     value = answer.value
+    if answer.field.field_type in {"GRID_SINGLE", "GRID_MULTIPLE"}:
+        return grid_answer_text(answer)
     if answer.field.field_type in {"FILE", "DOCUMENT"}:
         return ", ".join(file.original_name for file in answer.files.all())
     if value is None or value == "":
