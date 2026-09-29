@@ -1572,6 +1572,7 @@
       }
     });
   window.addEventListener("beforeunload", (e) => {
+    if (window.platformSessionExpired) return;
     if (dirty || busy) {
       e.preventDefault();
       e.returnValue = "";

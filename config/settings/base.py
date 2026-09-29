@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "config.middleware.PublicUploadLimitsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.sessions.IdleSessionMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "config.middleware.DevelopmentNotFoundMiddleware",
@@ -145,6 +146,15 @@ R2_FREE_STORAGE_REFERENCE_BYTES = env_capacity("R2_FREE_STORAGE_REFERENCE_BYTES"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
+try:
+    SESSION_IDLE_TIMEOUT_SECONDS = int(os.environ.get("SESSION_IDLE_TIMEOUT_SECONDS", "1800"))
+    if not 60 <= SESSION_IDLE_TIMEOUT_SECONDS <= 86400:
+        raise ValueError
+except ValueError:
+    raise ImproperlyConfigured(
+        "SESSION_IDLE_TIMEOUT_SECONDS debe ser un entero entre 60 y 86400."
+    ) from None
+SESSION_COOKIE_AGE = SESSION_IDLE_TIMEOUT_SECONDS
 CSRF_COOKIE_SAMESITE = "Lax"
 X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True

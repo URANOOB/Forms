@@ -12,6 +12,7 @@
     <div class="auth-content">
         <div class="auth-card">
             <a class="auth-brand" href="{% url 'home' %}" aria-label="LogicForms, inicio"><img src="{% static 'forms/brand/logicforms-logo.png' %}?v=2" alt="LogicForms" width="2089" height="753"></a>
+            {% if request.GET.expired %}<p role="status">Tu sesión se cerró por inactividad. Inicia sesión de nuevo para continuar.</p>{% endif %}
             {% block content %}{% endblock %}
         </div>
         {% include "unfold/helpers/unauthenticated_header.html" %}
